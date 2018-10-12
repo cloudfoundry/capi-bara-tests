@@ -12,31 +12,12 @@ import (
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/validationerrors"
 )
 
-const (
-	CredhubAssistedMode    = "assisted"
-	CredhubNonAssistedMode = "non-assisted"
-)
-
 type config struct {
 	ApiEndpoint *string `json:"api"`
 	AppsDomain  *string `json:"apps_domain"`
-	UseHttp     *bool   `json:"use_http"`
 
 	AdminPassword *string `json:"admin_password"`
 	AdminUser     *string `json:"admin_user"`
-
-	ExistingUser         *string `json:"existing_user"`
-	ExistingUserPassword *string `json:"existing_user_password"`
-	ShouldKeepUser       *bool   `json:"keep_user_at_suite_end"`
-	UseExistingUser      *bool   `json:"use_existing_user"`
-
-	UseExistingOrganization *bool   `json:"use_existing_organization"`
-	ExistingOrganization    *string `json:"existing_organization"`
-
-	ConfigurableTestPassword *string `json:"test_password"`
-
-	IsolationSegmentName   *string `json:"isolation_segment_name"`
-	IsolationSegmentDomain *string `json:"isolation_segment_domain"`
 
 	SkipSSLValidation *bool `json:"skip_ssl_validation"`
 
@@ -62,69 +43,19 @@ type config struct {
 	RubyBuildpackName       *string `json:"ruby_buildpack_name"`
 	StaticFileBuildpackName *string `json:"staticfile_buildpack_name"`
 
-	IncludeApps                     *bool `json:"include_apps"`
-	IncludeBackendCompatiblity      *bool `json:"include_backend_compatibility"`
-	IncludeCapiExperimental         *bool `json:"include_capi_experimental"`
-	IncludeCapiNoBridge             *bool `json:"include_capi_no_bridge"`
-	IncludeContainerNetworking      *bool `json:"include_container_networking"`
-	IncludeDetect                   *bool `json:"include_detect"`
-	IncludeDocker                   *bool `json:"include_docker"`
-	IncludeInternetDependent        *bool `json:"include_internet_dependent"`
-	IncludePrivateDockerRegistry    *bool `json:"include_private_docker_registry"`
-	IncludeRouteServices            *bool `json:"include_route_services"`
-	IncludeRouting                  *bool `json:"include_routing"`
-	IncludeSSO                      *bool `json:"include_sso"`
-	IncludeSecurityGroups           *bool `json:"include_security_groups"`
-	IncludeServices                 *bool `json:"include_services"`
-	IncludeServiceDiscovery         *bool `json:"include_service_discovery"`
-	IncludeServiceInstanceSharing   *bool `json:"include_service_instance_sharing"`
-	IncludeSsh                      *bool `json:"include_ssh"`
-	IncludeTasks                    *bool `json:"include_tasks"`
-	IncludeTCPRouting               *bool `json:"include_tcp_routing"`
-	IncludeV3                       *bool `json:"include_v3"`
-	IncludeZipkin                   *bool `json:"include_zipkin"`
-	IncludeIsolationSegments        *bool `json:"include_isolation_segments"`
-	IncludeRoutingIsolationSegments *bool `json:"include_routing_isolation_segments"`
-
-	UseLogCache *bool `json:"use_log_cache"`
-
-	CredhubMode         *string `json:"credhub_mode"`
-	CredhubLocation     *string `json:"credhub_location"`
-	CredhubClientName   *string `json:"credhub_client"`
-	CredhubClientSecret *string `json:"credhub_secret"`
-
-	IncludeWindows        *bool   `json:"include_windows"`
-	UseWindowsTestTask    *bool   `json:"use_windows_test_task"`
-	UseWindowsContextPath *bool   `json:"use_windows_context_path"`
-	WindowsStack          *string `json:"windows_stack"`
-
-	PrivateDockerRegistryImage    *string `json:"private_docker_registry_image"`
-	PrivateDockerRegistryUsername *string `json:"private_docker_registry_username"`
-	PrivateDockerRegistryPassword *string `json:"private_docker_registry_password"`
-	PublicDockerAppImage          *string `json:"public_docker_app_image"`
-
-	UnallocatedIPForSecurityGroup *string `json:"unallocated_ip_for_security_group"`
-	RequireProxiedAppTraffic      *bool   `json:"require_proxied_app_traffic"`
-
 	NamePrefix *string `json:"name_prefix"`
 
 	ReporterConfig *reporterConfig `json:"reporter_config"`
 }
 
 type reporterConfig struct {
-	HoneyCombWriteKey string                 `json:"honeycomb_write_key"`
-	HoneyCombDataset  string                 `json:"honeycomb_dataset"`
-	CustomTags        map[string]interface{} `json:"custom_tags"`
+	CustomTags map[string]interface{} `json:"custom_tags"`
 }
 
 var defaults = config{}
 
 func ptrToString(str string) *string {
 	return &str
-}
-
-func ptrToBool(b bool) *bool {
-	return &b
 }
 
 func ptrToInt(i int) *int {
@@ -136,9 +67,6 @@ func ptrToFloat(f float64) *float64 {
 }
 
 func getDefaults() config {
-	defaults.IsolationSegmentName = ptrToString("")
-	defaults.IsolationSegmentDomain = ptrToString("")
-
 	defaults.BinaryBuildpackName = ptrToString("binary_buildpack")
 	defaults.GoBuildpackName = ptrToString("go_buildpack")
 	defaults.HwcBuildpackName = ptrToString("hwc_buildpack")
@@ -149,51 +77,7 @@ func getDefaults() config {
 	defaults.RubyBuildpackName = ptrToString("ruby_buildpack")
 	defaults.StaticFileBuildpackName = ptrToString("staticfile_buildpack")
 
-	defaults.IncludeApps = ptrToBool(true)
-	defaults.IncludeDetect = ptrToBool(true)
-	defaults.IncludeRouting = ptrToBool(true)
-	defaults.IncludeV3 = ptrToBool(true)
-
-	defaults.IncludeBackendCompatiblity = ptrToBool(false)
-	defaults.IncludeCapiExperimental = ptrToBool(false)
-	defaults.IncludeCapiNoBridge = ptrToBool(true)
-	defaults.IncludeContainerNetworking = ptrToBool(false)
-	defaults.CredhubMode = ptrToString("")
-	defaults.CredhubLocation = ptrToString("https://credhub.service.cf.internal:8844")
-	defaults.CredhubClientName = ptrToString("credhub_admin_client")
-	defaults.CredhubClientSecret = ptrToString("")
-	defaults.IncludeDocker = ptrToBool(false)
-	defaults.IncludeInternetDependent = ptrToBool(false)
-	defaults.IncludeIsolationSegments = ptrToBool(false)
-	defaults.IncludePrivateDockerRegistry = ptrToBool(false)
-	defaults.IncludeRouteServices = ptrToBool(false)
-	defaults.IncludeRoutingIsolationSegments = ptrToBool(false)
-	defaults.IncludeSSO = ptrToBool(false)
-	defaults.IncludeSecurityGroups = ptrToBool(false)
-	defaults.IncludeServiceDiscovery = ptrToBool(false)
-	defaults.IncludeServices = ptrToBool(false)
-	defaults.IncludeSsh = ptrToBool(false)
-	defaults.IncludeTasks = ptrToBool(false)
-	defaults.IncludeZipkin = ptrToBool(false)
-	defaults.IncludeServiceInstanceSharing = ptrToBool(false)
-	defaults.IncludeTCPRouting = ptrToBool(false)
-
-	defaults.UseLogCache = ptrToBool(true)
-
-	defaults.IncludeWindows = ptrToBool(false)
-	defaults.UseWindowsContextPath = ptrToBool(false)
-	defaults.WindowsStack = ptrToString("windows2012R2")
-	defaults.UseWindowsTestTask = ptrToBool(false)
-
-
 	defaults.ReporterConfig = &reporterConfig{}
-
-	defaults.UseHttp = ptrToBool(false)
-	defaults.UseExistingUser = ptrToBool(false)
-	defaults.ShouldKeepUser = ptrToBool(false)
-
-	defaults.UseExistingOrganization = ptrToBool(false)
-	defaults.ExistingOrganization = ptrToString("")
 
 	defaults.AsyncServiceOperationTimeout = ptrToInt(120)
 	defaults.BrokerStartTimeout = ptrToInt(300)
@@ -203,21 +87,12 @@ func getDefaults() config {
 	defaults.LongCurlTimeout = ptrToInt(120)
 	defaults.SleepTimeout = ptrToInt(30)
 
-	defaults.ConfigurableTestPassword = ptrToString("")
-
 	defaults.TimeoutScale = ptrToFloat(2.0)
 
 	defaults.ArtifactsDirectory = ptrToString(filepath.Join("..", "results"))
 
-	defaults.PrivateDockerRegistryImage = ptrToString("")
-	defaults.PrivateDockerRegistryUsername = ptrToString("")
-	defaults.PrivateDockerRegistryPassword = ptrToString("")
-	defaults.PublicDockerAppImage = ptrToString("cloudfoundry/diego-docker-app-custom:latest")
-
-	defaults.UnallocatedIPForSecurityGroup = ptrToString("10.0.244.255")
-	defaults.RequireProxiedAppTraffic = ptrToBool(false)
-
 	defaults.NamePrefix = ptrToString("BARA")
+
 	return defaults
 }
 
@@ -255,54 +130,6 @@ func validateConfig(config *config) Errors {
 		errs.Add(err)
 	}
 
-	err = validatePublicDockerAppImage(config)
-	if err != nil {
-		errs.Add(err)
-	}
-
-	err = validatePrivateDockerRegistry(config)
-	if err != nil {
-		errs.Add(err)
-	}
-
-	err = validateIsolationSegments(config)
-	if err != nil {
-		errs.Add(err)
-	}
-
-	err = validateRoutingIsolationSegments(config)
-	if err != nil {
-		errs.Add(err)
-	}
-
-	err = validateCredHubSettings(config)
-	if err != nil {
-		errs.Add(err)
-	}
-
-	err = validateWindows(config)
-	if err != nil {
-		errs.Add(err)
-	}
-
-	if config.UseHttp == nil {
-		errs.Add(fmt.Errorf("* 'use_http' must not be null"))
-	}
-	if config.ShouldKeepUser == nil {
-		errs.Add(fmt.Errorf("* 'keep_user_at_suite_end' must not be null"))
-	}
-	if config.UseExistingUser == nil {
-		errs.Add(fmt.Errorf("* 'use_existing_user' must not be null"))
-	}
-	if config.ConfigurableTestPassword == nil {
-		errs.Add(fmt.Errorf("* 'test_password' must not be null"))
-	}
-	if config.IsolationSegmentName == nil {
-		errs.Add(fmt.Errorf("* 'isolation_segment_name' must not be null"))
-	}
-	if config.IsolationSegmentDomain == nil {
-		errs.Add(fmt.Errorf("* 'isolation_segment_domain' must not be null"))
-	}
 	if config.SkipSSLValidation == nil {
 		errs.Add(fmt.Errorf("* 'skip_ssl_validation' must not be null"))
 	}
@@ -359,84 +186,6 @@ func validateConfig(config *config) Errors {
 	}
 	if config.StaticFileBuildpackName == nil {
 		errs.Add(fmt.Errorf("* 'staticfile_buildpack_name' must not be null"))
-	}
-	if config.IncludeApps == nil {
-		errs.Add(fmt.Errorf("* 'include_apps' must not be null"))
-	}
-	if config.IncludeBackendCompatiblity == nil {
-		errs.Add(fmt.Errorf("* 'include_backend_compatibility' must not be null"))
-	}
-
-	if config.IncludeCapiExperimental == nil {
-		errs.Add(fmt.Errorf("* 'include_capi_experimental' must not be null"))
-	}
-
-	if config.IncludeCapiNoBridge == nil {
-		errs.Add(fmt.Errorf("* 'include_capi_no_bridge' must not be null"))
-	}
-
-	if config.IncludeContainerNetworking == nil {
-		errs.Add(fmt.Errorf("* 'include_container_networking' must not be null"))
-	}
-	if config.IncludeDetect == nil {
-		errs.Add(fmt.Errorf("* 'include_detect' must not be null"))
-	}
-	if config.IncludeDocker == nil {
-		errs.Add(fmt.Errorf("* 'include_docker' must not be null"))
-	}
-	if config.IncludeInternetDependent == nil {
-		errs.Add(fmt.Errorf("* 'include_internet_dependent' must not be null"))
-	}
-	if config.IncludePrivateDockerRegistry == nil {
-		errs.Add(fmt.Errorf("* 'include_private_docker_registry' must not be null"))
-	}
-	if config.IncludeRouteServices == nil {
-		errs.Add(fmt.Errorf("* 'include_route_services' must not be null"))
-	}
-	if config.IncludeRouting == nil {
-		errs.Add(fmt.Errorf("* 'include_routing' must not be null"))
-	}
-	if config.IncludeSSO == nil {
-		errs.Add(fmt.Errorf("* 'include_sso' must not be null"))
-	}
-	if config.IncludeSecurityGroups == nil {
-		errs.Add(fmt.Errorf("* 'include_security_groups' must not be null"))
-	}
-	if config.IncludeServiceDiscovery == nil {
-		errs.Add(fmt.Errorf("* 'include_service_discovery' must not be null"))
-	}
-	if config.IncludeServices == nil {
-		errs.Add(fmt.Errorf("* 'include_services' must not be null"))
-	}
-	if config.IncludeServiceInstanceSharing == nil {
-		errs.Add(fmt.Errorf("* 'include_service_instance_sharing' must not be null"))
-	}
-	if config.IncludeSsh == nil {
-		errs.Add(fmt.Errorf("* 'include_ssh' must not be null"))
-	}
-	if config.IncludeTasks == nil {
-		errs.Add(fmt.Errorf("* 'include_tasks' must not be null"))
-	}
-	if config.IncludeTCPRouting == nil {
-		errs.Add(fmt.Errorf("* 'include_tcp_routing' must not be null"))
-	}
-	if config.IncludeV3 == nil {
-		errs.Add(fmt.Errorf("* 'include_v3' must not be null"))
-	}
-	if config.IncludeZipkin == nil {
-		errs.Add(fmt.Errorf("* 'include_zipkin' must not be null"))
-	}
-	if config.IncludeIsolationSegments == nil {
-		errs.Add(fmt.Errorf("* 'include_isolation_segments' must not be null"))
-	}
-	if config.PrivateDockerRegistryImage == nil {
-		errs.Add(fmt.Errorf("* 'private_docker_registry_image' must not be null"))
-	}
-	if config.PrivateDockerRegistryUsername == nil {
-		errs.Add(fmt.Errorf("* 'private_docker_registry_username' must not be null"))
-	}
-	if config.PrivateDockerRegistryPassword == nil {
-		errs.Add(fmt.Errorf("* 'private_docker_registry_password' must not be null"))
 	}
 	if config.NamePrefix == nil {
 		errs.Add(fmt.Errorf("* 'name_prefix' must not be null"))
@@ -520,121 +269,6 @@ func validateAdminPassword(config *config) error {
 	return nil
 }
 
-func validatePublicDockerAppImage(config *config) error {
-	if config.PublicDockerAppImage == nil {
-		return fmt.Errorf("* 'public_docker_app_image' must not be null")
-	}
-	if config.GetPublicDockerAppImage() == "" {
-		return fmt.Errorf("* Invalid configuration: 'public_docker_app_image' must be set to a valid image source")
-	}
-	return nil
-}
-
-func validatePrivateDockerRegistry(config *config) error {
-	if config.IncludePrivateDockerRegistry == nil {
-		return fmt.Errorf("* 'include_private_docker_registry' must not be null")
-	}
-	if config.PrivateDockerRegistryImage == nil {
-		return fmt.Errorf("* 'private_docker_registry_image' must not be null")
-	}
-	if config.PrivateDockerRegistryUsername == nil {
-		return fmt.Errorf("* 'private_docker_registry_username' must not be null")
-	}
-	if config.PrivateDockerRegistryPassword == nil {
-		return fmt.Errorf("* 'private_docker_registry_password' must not be null")
-	}
-
-	if !config.GetIncludePrivateDockerRegistry() {
-		return nil
-	}
-
-	if config.GetPrivateDockerRegistryImage() == "" {
-		return fmt.Errorf("* Invalid configuration: 'private_docker_registry_image' must be provided if 'include_private_docker_registry' is true")
-	}
-	if config.GetPrivateDockerRegistryUsername() == "" {
-		return fmt.Errorf("* Invalid configuration: 'private_docker_registry_username' must be provided if 'include_private_docker_registry' is true")
-	}
-	if config.GetPrivateDockerRegistryPassword() == "" {
-		return fmt.Errorf("* Invalid configuration: 'private_docker_registry_password' must be provided if 'include_private_docker_registry' is true")
-	}
-
-	return nil
-}
-
-func validateIsolationSegments(config *config) error {
-	if config.IncludeIsolationSegments == nil {
-		return fmt.Errorf("* 'include_isolation_segments' must not be null")
-	}
-	if config.IsolationSegmentName == nil {
-		return fmt.Errorf("* 'isolation_segment_name' must not be null")
-	}
-
-	if !config.GetIncludeIsolationSegments() {
-		return nil
-	}
-
-	if config.GetIsolationSegmentName() == "" {
-		return fmt.Errorf("* Invalid configuration: 'isolation_segment_name' must be provided if 'include_isolation_segments' is true")
-	}
-	return nil
-}
-
-func validateRoutingIsolationSegments(config *config) error {
-	if config.IncludeRoutingIsolationSegments == nil {
-		return fmt.Errorf("* 'include_routing_isolation_segments' must not be null")
-	}
-	if config.IsolationSegmentName == nil {
-		return fmt.Errorf("* 'isolation_segment_name' must not be null")
-	}
-	if config.IsolationSegmentDomain == nil {
-		return fmt.Errorf("* 'isolation_segment_domain' must not be null")
-	}
-
-	if !config.GetIncludeRoutingIsolationSegments() {
-		return nil
-	}
-
-	if config.GetIsolationSegmentName() == "" {
-		return fmt.Errorf("* Invalid configuration: 'isolation_segment_name' must be provided if 'include_routing_isolation_segments' is true")
-	}
-	if config.GetIsolationSegmentDomain() == "" {
-		return fmt.Errorf("* Invalid configuration: 'isolation_segment_domain' must be provided if 'include_routing_isolation_segments' is true")
-	}
-	return nil
-}
-
-func validateCredHubSettings(config *config) error {
-	if config.CredhubMode == nil {
-		return fmt.Errorf("* 'credhub_mode' must not be null")
-	}
-
-	if config.GetIncludeCredhubAssisted() || config.GetIncludeCredhubNonAssisted() {
-		if config.GetCredHubBrokerClientSecret() == "" || config.GetCredHubBrokerClientSecret() == "" {
-			return fmt.Errorf("* 'credhub_client' and 'credhub_secret' must not be null")
-		}
-	}
-
-	return nil
-}
-
-func validateWindows(config *config) error {
-	if config.IncludeWindows == nil {
-		return fmt.Errorf("* 'include_windows' must not be null")
-	}
-
-	if !config.GetIncludeWindows() {
-		return nil
-	}
-
-	switch config.GetWindowsStack() {
-	case "windows2012R2", "windows2016":
-	default:
-		return fmt.Errorf("* Invalid configuration: unknown Windows stack %s", config.GetWindowsStack())
-	}
-
-	return nil
-}
-
 func load(path string, config *config) Errors {
 	errs := Errors{}
 	err := loadConfigFromPath(path, config)
@@ -699,11 +333,7 @@ func (c *config) AsyncServiceOperationTimeoutDuration() time.Duration {
 }
 
 func (c *config) Protocol() string {
-	if *c.UseHttp {
-		return "http://"
-	} else {
-		return "https://"
-	}
+	return "https://"
 }
 
 func (c *config) GetAppsDomain() string {
@@ -718,52 +348,8 @@ func (c *config) GetArtifactsDirectory() string {
 	return *c.ArtifactsDirectory
 }
 
-func (c *config) GetIsolationSegmentName() string {
-	return *c.IsolationSegmentName
-}
-
-func (c *config) GetIsolationSegmentDomain() string {
-	return *c.IsolationSegmentDomain
-}
-
 func (c *config) GetNamePrefix() string {
 	return *c.NamePrefix
-}
-
-func (c *config) GetExistingOrganization() string {
-	return *c.ExistingOrganization
-}
-
-func (c *config) GetUseExistingOrganization() bool {
-	return *c.UseExistingOrganization
-}
-
-func (c *config) GetExistingSpace() string {
-	return ""
-}
-
-func (c *config) GetUseExistingSpace() bool {
-	return false
-}
-
-func (c *config) GetUseExistingUser() bool {
-	return *c.UseExistingUser
-}
-
-func (c *config) GetExistingUser() string {
-	return *c.ExistingUser
-}
-
-func (c *config) GetExistingUserPassword() string {
-	return *c.ExistingUserPassword
-}
-
-func (c *config) GetConfigurableTestPassword() string {
-	return *c.ConfigurableTestPassword
-}
-
-func (c *config) GetShouldKeepUser() bool {
-	return *c.ShouldKeepUser
 }
 
 func (c *config) GetAdminUser() string {
@@ -776,126 +362,6 @@ func (c *config) GetAdminPassword() string {
 
 func (c *config) GetApiEndpoint() string {
 	return *c.ApiEndpoint
-}
-
-func (c *config) GetIncludeSsh() bool {
-	return *c.IncludeSsh
-}
-
-func (c *config) GetIncludeApps() bool {
-	return *c.IncludeApps
-}
-
-func (c *config) GetIncludeBackendCompatiblity() bool {
-	return *c.IncludeBackendCompatiblity
-}
-
-func (c *config) GetIncludeContainerNetworking() bool {
-	return *c.IncludeContainerNetworking
-}
-
-func (c *config) GetIncludeDetect() bool {
-	return *c.IncludeDetect
-}
-
-func (c *config) GetIncludeDocker() bool {
-	return *c.IncludeDocker
-}
-
-func (c *config) GetIncludeInternetDependent() bool {
-	return *c.IncludeInternetDependent
-}
-
-func (c *config) GetIncludeRouteServices() bool {
-	return *c.IncludeRouteServices
-}
-
-func (c *config) GetIncludeRouting() bool {
-	return *c.IncludeRouting
-}
-
-func (c *config) GetIncludeZipkin() bool {
-	return *c.IncludeZipkin
-}
-
-func (c *config) GetIncludeTasks() bool {
-	return *c.IncludeTasks
-}
-
-func (c *config) GetIncludePrivateDockerRegistry() bool {
-	return *c.IncludePrivateDockerRegistry
-}
-
-func (c *config) GetIncludeSecurityGroups() bool {
-	return *c.IncludeSecurityGroups
-}
-
-func (c *config) GetIncludeServices() bool {
-	return *c.IncludeServices
-}
-
-func (c *config) GetIncludeSSO() bool {
-	return *c.IncludeSSO
-}
-
-func (c *config) GetIncludeTCPRouting() bool {
-	return *c.IncludeTCPRouting
-}
-
-func (c *config) GetIncludeV3() bool {
-	return *c.IncludeV3
-}
-
-func (c *config) GetIncludeIsolationSegments() bool {
-	return *c.IncludeIsolationSegments
-}
-
-func (c *config) GetIncludeRoutingIsolationSegments() bool {
-	return *c.IncludeRoutingIsolationSegments
-}
-
-func (c *config) GetIncludeCapiExperimental() bool {
-	return *c.IncludeCapiExperimental
-}
-
-func (c *config) GetIncludeCapiNoBridge() bool {
-	return *c.IncludeCapiNoBridge
-}
-
-func (c *config) GetIncludeCredhubAssisted() bool {
-	return *c.CredhubMode == CredhubAssistedMode
-}
-
-func (c *config) GetIncludeCredhubNonAssisted() bool {
-	return *c.CredhubMode == CredhubNonAssistedMode
-}
-
-func (c *config) GetCredHubBrokerClientCredential() string {
-	return *c.CredhubClientName
-}
-
-func (c *config) GetCredHubBrokerClientSecret() string {
-	return *c.CredhubClientSecret
-}
-
-func (c *config) GetCredHubLocation() string {
-	return *c.CredhubLocation
-}
-
-func (c *config) GetIncludeServiceInstanceSharing() bool {
-	return *c.IncludeServiceInstanceSharing
-}
-
-func (c *config) GetIncludeWindows() bool {
-	return *c.IncludeWindows
-}
-
-func (c *config) GetIncludeServiceDiscovery() bool {
-	return *c.IncludeServiceDiscovery
-}
-
-func (c *config) GetUseLogCache() bool {
-	return *c.UseLogCache
 }
 
 func (c *config) GetRubyBuildpackName() string {
@@ -926,42 +392,6 @@ func (c *config) GetStaticFileBuildpackName() string {
 	return *c.StaticFileBuildpackName
 }
 
-func (c *config) GetPrivateDockerRegistryImage() string {
-	return *c.PrivateDockerRegistryImage
-}
-
-func (c *config) GetPrivateDockerRegistryUsername() string {
-	return *c.PrivateDockerRegistryUsername
-}
-
-func (c *config) GetPrivateDockerRegistryPassword() string {
-	return *c.PrivateDockerRegistryPassword
-}
-
-func (c *config) GetPublicDockerAppImage() string {
-	return *c.PublicDockerAppImage
-}
-
-func (c *config) GetUnallocatedIPForSecurityGroup() string {
-	return *c.UnallocatedIPForSecurityGroup
-}
-
-func (c *config) GetRequireProxiedAppTraffic() bool {
-	return *c.RequireProxiedAppTraffic
-}
-
-func (c *config) GetUseWindowsTestTask() bool {
-	return *c.UseWindowsTestTask
-}
-
-func (c *config) GetUseWindowsContextPath() bool {
-	return *c.UseWindowsContextPath
-}
-
-func (c *config) GetWindowsStack() string {
-	return *c.WindowsStack
-}
-
 func (c *config) GetReporterConfig() reporterConfig {
 	reporterConfigFromConfig := c.ReporterConfig
 
@@ -971,3 +401,14 @@ func (c *config) GetReporterConfig() reporterConfig {
 
 	return reporterConfig{}
 }
+
+// Unused?
+func (c *config) GetConfigurableTestPassword() string { return "" }
+func (c *config) GetExistingOrganization() string     { return "" }
+func (c *config) GetExistingSpace() string            { return "" }
+func (c *config) GetExistingUser() string             { return "" }
+func (c *config) GetExistingUserPassword() string     { return "" }
+func (c *config) GetShouldKeepUser() bool             { return false }
+func (c *config) GetUseExistingUser() bool            { return false }
+func (c *config) GetUseExistingOrganization() bool    { return false }
+func (c *config) GetUseExistingSpace() bool           { return false }

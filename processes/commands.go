@@ -1,4 +1,4 @@
-package capi_experimental
+package processes
 
 import (
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = CapiExperimentalDescribe("setting_process_commands", func() {
+var _ = Describe("setting_process_commands", func() {
 	var (
 		appName             string
 		appGUID             string
