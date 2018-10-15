@@ -1,4 +1,4 @@
-# CAPI Banausic Acceptance & Regression Avoidance Tests (CATs)
+# CAPI BARAS - Banausic Acceptance & Regression Avoidance Suite
 This suite exercises a [Cloud Foundry](https://github.com/cloudfoundry/cf-deployment)
 deployment using the `cf` CLI and `curl`.
 It is scoped to testing user-facing,
@@ -13,7 +13,7 @@ For more info on how to write BARA tests, please see the
 [CATS README](https://github.com/cloudfoundry/cf-acceptance-tests).
 
 ## Test Setup
-### Prerequisites for running CATS
+### Prerequisites for running BARAS
 
 - Same as for [CATS](https://github.com/cloudfoundry/cf-acceptance-tests),
   with the following exceptions:
@@ -44,48 +44,10 @@ cat > integration_config.json <<EOF
   "admin_user": "admin",
   "admin_password": "admin",
   "skip_ssl_validation": true,
-  "use_http": true,
-  "use_log_cache": false,
-  "include_apps": true,
-  "include_backend_compatibility": false,
-  "include_capi_experimental": true,
-  "include_capi_no_bridge": false,
-  "include_container_networking": false,
-  "credhub_mode" : "assisted",
-  "include_detect": true,
-  "include_docker": false,
-  "include_internet_dependent": false,
-  "include_isolation_segments": false,
-  "include_private_docker_registry": false,
-  "include_route_services": false,
-  "include_routing": true,
-  "include_routing_isolation_segments": false,
-  "include_security_groups": true,
-  "include_service_discovery": false,
-  "include_services": true,
-  "include_service_instance_sharing": false,
-  "include_ssh": false,
-  "include_sso": true,
-  "include_tasks": true,
-  "include_v3": true,
-  "include_zipkin": false
 }
 EOF
 export CONFIG=$PWD/integration_config.json
 ```
-
-Only the following test groups are run by default:
-```
-include_apps
-include_capi_experimental
-include_detect
-include_routing
-include_v3
-include_capi_no_bridge
-```
-
-Note that this differs from CATS, where `include_capi_experimental`
-is not run by default.
 
 ## Test Execution
 To execute all test groups, run the following from the root directory of cf-acceptance-tests:
@@ -139,5 +101,3 @@ You can of course combine the `-v` flag with the `-nodes=N` flag.
 
 - See [CATS](https://github.com/cloudfoundry/cf-acceptance-tests).
 
-[networking-releases]: https://github.com/cloudfoundry-incubator/cf-networking-release/releases
-[credhub-secure-service-credentials]: https://github.com/pivotal-cf/credhub-release/blob/master/docs/secure-service-credentials.md
