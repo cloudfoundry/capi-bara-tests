@@ -13,6 +13,7 @@ import (
 	"github.com/mholt/archiver"
 
 	_ "github.com/cloudfoundry/capi-bara-tests/processes"
+	_ "github.com/cloudfoundry/capi-bara-tests/rolling_deployments"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
