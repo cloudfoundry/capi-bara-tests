@@ -14,7 +14,6 @@ import (
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gexec"
 )
 
 type appsResultType struct {
@@ -64,6 +63,22 @@ var _ = FDescribe("webish_processes", func() {
 		WaitForBuildToStage(buildGUID)
 		dropletGuid = GetDropletFromBuild(buildGUID)
 
+		AssignDropletToApp(appGUID, dropletGuid)
+
+		CreateAndMapRoute(appGUID, spaceName, Config.GetAppsDomain(), appName)
+		instances := 4
+		ScaleApp(appGUID, instances)
+
+		StartApp(appGUID)
+		Expect(string(cf.Cf("apps").Wait().Out.Contents())).To(MatchRegexp(fmt.Sprintf("(v3-)?(%s)*(-web)?(\\s)+(started)", "web")))
+
+		By("waiting until all instances are running")
+		Eventually(func() int {
+			guid := GetProcessGuidForType(appGUID, "web")
+			Expect(guid).ToNot(BeEmpty())
+			return GetRunningInstancesStats(guid)
+		}).Should(Equal(instances))
+
 	})
 
 	AfterEach(func() {
@@ -76,14 +91,17 @@ var _ = FDescribe("webish_processes", func() {
 			deploymentGuid := CreateDeployment(appGUID)
 			Expect(deploymentGuid).ToNot(BeEmpty())
 			v3_processes := GetProcesses(appGUID, appName)
-			Expect(len(v3_processes)).To(Equal(2))
+			numWebProcesses := 0
 			for _, v3_process := range(v3_processes) {
 				Expect(v3_process.Name).To(Equal(appName))
+				if v3_process.Type == "web" {
+					numWebProcesses += 1
+				}
 			}
+			Expect(numWebProcesses).To(Equal(2))
 
 			// Ignore older processes in the v2 world
 			session := cf.Cf("curl", "/v2/apps?results-per-page=1&page=1")
-			Expect(session).To(Exit(0))
 			bytes := session.Wait().Out.Contents()
 			var v2process appsResultType
 			json.Unmarshal(bytes, &v2process)
