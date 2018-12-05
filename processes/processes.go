@@ -32,7 +32,7 @@ type appsResultType struct {
 	} `json:"resources"`
 }
 
-var _ = FDescribe("webish_processes", func() {
+var _ = Describe("webish_processes", func() {
 	var (
 		appName             string
 		appGUID             string
