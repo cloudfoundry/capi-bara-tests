@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = FDescribe("mixed v2 and v3 rolling deploys", func() {
+var _ = Describe("mixed v2 and v3 rolling deploys", func() {
 	var (
 		appName string
 	)
