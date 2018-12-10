@@ -1,3 +1,13 @@
 #!/bin/sh
 
-cf push -v BARA-1-APP-417c453c5c304989 -b ruby_buildpack -m 128MB -i 2 -p assets/dora -d legend-chill.capi.land
+set -x
+
+NUM_INSTANCES=1
+cf delete -f dora
+cf push dora -b ruby_buildpack -p ../cf-acceptance-tests/assets/dora/ -m 128MB -i $NUM_INSTANCES -d legend-chill.capi.land -v
+curl dora.legend-chill.capi.land
+cf push dora -b staticfile_buildpack -p ../cf-acceptance-tests/assets/staticfile/ -m 128MB -i $NUM_INSTANCES -d legend-chill.capi.land -v
+for x in {1..10} ; do
+  curl dora.legend-chill.capi.land
+  sleep 1
+done
