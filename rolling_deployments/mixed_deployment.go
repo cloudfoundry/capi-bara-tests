@@ -1,8 +1,9 @@
 package rolling_deployments
 
 import (
+	"strings"
 	"time"
-	
+
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
@@ -14,12 +15,14 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
+var eventuallyTimeOut time.Duration
+
 var _ = Describe("mixed v2 and v3 rolling deploys", func() {
 	var (
 		appName string
 	)
 
-	It("can replace a zdt process with a v2 process", func() {
+	XIt("can replace a zdt process with a v2 process", func() {
 		appName = random_name.BARARandomName("APP")
 
 		By("cf push my-app create the app in the first place")
@@ -47,7 +50,7 @@ var _ = Describe("mixed v2 and v3 rolling deploys", func() {
 		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 	})
 	
-	It("can immediately replace one process with another", func() {
+	XIt("can immediately replace one process with another", func() {
 		appName = random_name.BARARandomName("APP")
 
 		By("cf push my-app create the app in the first place")
@@ -75,8 +78,9 @@ var _ = Describe("mixed v2 and v3 rolling deploys", func() {
 		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 	})
 	
-	FIt("can eventually replace one process with another", func() {
+	It("can eventually replace one process with another", func() {
 		appName = random_name.BARARandomName("APP")
+		eventuallyTimeOut = 33 * time.Second
 
 		By("cf push my-app create the app in the first place")
 		pushRubyApp(appName)
@@ -84,28 +88,39 @@ var _ = Describe("mixed v2 and v3 rolling deploys", func() {
 
 		By("cf push my-app the running app gets new code")
 		pushStaticApp(appName)
-		Eventually(helpers.CurlAppRoot(Config, appName), 330 * time.Second).Should(Equal("Hello from a staticfile"))
+		eventuallyCurlsAs(appName, "Hello from a staticfile")
 
 		By("cf push my-app the running app goes back to dora")
 		pushRubyApp(appName)
-		Eventually(helpers.CurlAppRoot(Config, appName), 330 * time.Second).Should(Equal("Hi, I'm Dora!"))
-/*
+		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 
 		By("cf restart my-app the running app does not change")
 		restartApp(appName)
-		Eventually(helpers.CurlAppRoot(Config, appName), 330 * time.Second).Should(Equal("Hi, I'm Dora!"))
+		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 
 		By("cf push my-app the running app goes back to staticfile")
 		pushStaticApp(appName)
-		Eventually(helpers.CurlAppRoot(Config, appName), 330 * time.Second).Should(Equal("Hello from a staticfile"))
+		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 
 		By("cf restart my-app the running app does not change")
 		restartApp(appName)
-		Eventually(helpers.CurlAppRoot(Config, appName), 330 * time.Second).Should(Equal("Hello from a staticfile"))
-*/
+		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 	})
 
 })
+
+func eventuallyCurlsAs(appName string, expected string) {
+	counter := 0
+	Eventually(func() int {
+		body := helpers.CurlAppRoot(Config, appName)
+		if strings.Contains(body, expected) {
+			counter++
+		} else {
+			counter = 0
+		}
+		return counter
+	}, eventuallyTimeOut).Should(Equal(10))
+}
 
 func restartApp(appName string) {
 	Expect(cf.Cf("restart",

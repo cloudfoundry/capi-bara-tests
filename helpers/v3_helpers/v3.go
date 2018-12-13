@@ -134,7 +134,8 @@ func CreateAndMapRoute(appGuid, space, domain, host string) {
 	}{}
 	json.Unmarshal([]byte(routeBody), &routeJSON)
 	routeGuid := routeJSON.Resources[0].Metadata.Guid
-	Expect(cf.Cf("curl", fmt.Sprintf("/v2/routes/%s/apps/%s", routeGuid, appGuid), "-X", "PUT").Wait()).To(Exit(0))
+	Expect(cf.Cf("curl", fmt.Sprintf("/v2/routes/%s/apps/%s", routeGuid, appGuid), "-X", "PUT").
+		Wait()).To(Exit(0))
 }
 
 func UnmapAllRoutes(appGuid string) {
