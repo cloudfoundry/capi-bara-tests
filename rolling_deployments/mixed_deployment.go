@@ -92,7 +92,7 @@ var _ = Describe("mixed v2 and v3 rolling deploys", func() {
 
 		By("cf push my-app the running app goes back to dora")
 		pushRubyApp(appName)
-		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+		eventuallyCurlsAs(appName, "Hi, I'm Dora!")
 
 		By("cf restart my-app the running app does not change")
 		restartApp(appName)
@@ -100,7 +100,7 @@ var _ = Describe("mixed v2 and v3 rolling deploys", func() {
 
 		By("cf push my-app the running app goes back to staticfile")
 		pushStaticApp(appName)
-		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
+		eventuallyCurlsAs(appName, "Hello from a staticfile")
 
 		By("cf restart my-app the running app does not change")
 		restartApp(appName)

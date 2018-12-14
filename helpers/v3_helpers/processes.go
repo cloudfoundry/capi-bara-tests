@@ -33,6 +33,21 @@ func GetProcesses(appGuid, appName string) []Process {
 	return processes.Processes
 }
 
+func GetProcessesByType(appGuid, appName string, processType string) []Process {
+	processesURL := fmt.Sprintf("/v3/apps/%s/processes?types=%s", appGuid, processType)
+	session := cf.Cf("curl", processesURL)
+	bytes := session.Wait().Out.Contents()
+
+	processes := ProcessList{}
+	json.Unmarshal(bytes, &processes)
+
+	for i, _ := range processes.Processes {
+		processes.Processes[i].Name = appName
+	}
+
+	return processes.Processes
+}
+
 func GetProcessByType(processes []Process, processType string) Process {
 	for _, process := range processes {
 		if process.Type == processType {

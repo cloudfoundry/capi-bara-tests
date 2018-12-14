@@ -87,16 +87,9 @@ var _ = Describe("webish_processes", func() {
 	Describe("Creating new processes on the same app", func() {
 		It("ignores older processes on the same app", func() {
 			deploymentGuid := CreateDeployment(appGUID)
+			webProcesses := GetProcessesByType(appGUID, appName, "web")
 			Expect(deploymentGuid).ToNot(BeEmpty())
-			v3_processes := GetProcesses(appGUID, appName)
-			numWebProcesses := 0
-			for _, v3_process := range v3_processes {
-				Expect(v3_process.Name).To(Equal(appName))
-				if v3_process.Type == "web" {
-					numWebProcesses += 1
-				}
-			}
-			Expect(numWebProcesses).To(Equal(2))
+			Expect(len(webProcesses)).To(Equal(2))
 
 			// Ignore older processes in the v2 world
 			session := cf.Cf("curl", "/v2/apps?results-per-page=1&page=1")
