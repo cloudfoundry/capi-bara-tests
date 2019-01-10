@@ -12,10 +12,17 @@ type ProcessList struct {
 }
 
 type Process struct {
-	Guid    string `json:"guid"`
-	Type    string `json:"type"`
-	Command string `json:"command"`
-	Name    string `json:"-"`
+	Guid          string `json:"guid"`
+	Type          string `json:"type"`
+	Command       string `json:"command"`
+	Name          string `json:"-"`
+	Relationships struct {
+		Revision struct {
+			Data struct {
+				Guid string `json:"guid"`
+			} `json:"data"`
+		} `json:"revision"`
+	} `json:"relationships"`
 }
 
 func GetProcesses(appGuid, appName string) []Process {
@@ -33,7 +40,7 @@ func GetProcesses(appGuid, appName string) []Process {
 	return processes.Processes
 }
 
-func GetProcessByType(processes []Process, processType string) Process {
+func GetFirstProcessByType(processes []Process, processType string) Process {
 	for _, process := range processes {
 		if process.Type == processType {
 			return process

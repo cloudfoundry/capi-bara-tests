@@ -30,6 +30,7 @@ type Assets struct {
 	SecurityGroupBuildpack     string
 	ServiceBroker              string
 	Staticfile                 string
+	StaticfileZip              string
 	SyslogDrainListener        string
 	Binary                     string
 	LoggingRouteService        string
@@ -73,6 +74,7 @@ func NewAssets() Assets {
 		SecurityGroupBuildpack:     "assets/security_group_buildpack.zip",
 		ServiceBroker:              "assets/service_broker",
 		Staticfile:                 "assets/staticfile",
+		StaticfileZip:              "assets/staticfile.zip",
 		SyslogDrainListener:        "assets/syslog-drain-listener",
 		Binary:                     "assets/binary",
 		LoggingRouteService:        "assets/logging-route-service",

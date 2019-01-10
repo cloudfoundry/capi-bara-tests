@@ -14,22 +14,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-type appsResultType struct {
-	TotalResults int    `json:"total_results"`
-	TotalPages   int    `json:"total_pages"`
-	PrevURL      string `json:"prev_url"`
-	NextURL      string `json:"next_url"`
-	Resources    []struct {
-		Metadata struct {
-			Guid      string `json:"guid"`
-			CreatedAt string `json:"created_at"`
-		} `json:"metadata"`
-		Entity struct {
-			Name string `json:"name"`
-		} `json:"entity"`
-	} `json:"resources"`
-}
-
 var _ = Describe("webish_processes", func() {
 	var (
 		appName     string
@@ -72,9 +56,9 @@ var _ = Describe("webish_processes", func() {
 
 		By("waiting until all instances are running")
 		Eventually(func() int {
-			guid := GetProcessGuidForType(appGUID, "web")
-			Expect(guid).ToNot(BeEmpty())
-			return GetRunningInstancesStats(guid)
+			guids := GetProcessGuidsForType(appGUID, "web")
+			Expect(guids).ToNot(BeEmpty())
+			return GetRunningInstancesStats(guids[0])
 		}).Should(Equal(instances))
 
 	})
@@ -101,7 +85,22 @@ var _ = Describe("webish_processes", func() {
 			// Ignore older processes in the v2 world
 			session := cf.Cf("curl", "/v2/apps?results-per-page=1&page=1")
 			bytes := session.Wait().Out.Contents()
-			var v2process appsResultType
+			var v2process struct {
+				TotalResults int    `json:"total_results"`
+				TotalPages   int    `json:"total_pages"`
+				PrevURL      string `json:"prev_url"`
+				NextURL      string `json:"next_url"`
+				Resources    []struct {
+					Metadata struct {
+						Guid      string `json:"guid"`
+						CreatedAt string `json:"created_at"`
+					} `json:"metadata"`
+					Entity struct {
+						Name string `json:"name"`
+					} `json:"entity"`
+				} `json:"resources"`
+			}
+
 			json.Unmarshal(bytes, &v2process)
 			Expect(len(v2process.Resources)).To(Equal(1))
 			Expect(v2process.TotalResults).To(Equal(1))

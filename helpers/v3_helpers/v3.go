@@ -58,6 +58,20 @@ func CancelDeployment(deploymentGuid string) {
 	Expect(session).To(Exit(0))
 }
 
+func WaitUntilDeployed(deploymentGuid string) {
+	deploymentPath := fmt.Sprintf("/v3/deployments/%s", deploymentGuid)
+	deploymentJson := struct {
+		State string `json:"state"`
+	}{}
+
+	Eventually(func() string {
+		session := cf.Cf("curl", deploymentPath).Wait()
+		Expect(session.Wait()).To(Exit(0))
+		json.Unmarshal(session.Out.Contents(), &deploymentJson)
+		return deploymentJson.State
+	}, Config.LongCurlTimeoutDuration()).Should(Equal("DEPLOYED"))
+}
+
 func ScaleApp(appGuid string, instances int) {
 	scalePath := fmt.Sprintf("/v3/apps/%s/processes/web/actions/scale", appGuid)
 	scaleBody := fmt.Sprintf(`{"instances": "%d"}`, instances)
@@ -86,9 +100,10 @@ func GetRunningInstancesStats(processGuid string) int {
 	return numRunning
 }
 
-func GetProcessGuidForType(appGuid string, processType string) string {
+func GetProcessGuidsForType(appGuid string, processType string) []string {
 	processesPath := fmt.Sprintf("/v3/apps/%s/processes?types=%s", appGuid, processType)
 	session := cf.Cf("curl", processesPath).Wait()
+
 	processesJSON := struct {
 		Resources []struct {
 			Guid string `json:"guid"`
@@ -96,10 +111,17 @@ func GetProcessGuidForType(appGuid string, processType string) string {
 	}{}
 	bytes := session.Wait().Out.Contents()
 	err := json.Unmarshal(bytes, &processesJSON)
+
+	guids := []string{}
 	if err != nil || len(processesJSON.Resources) == 0 {
-		return ""
+		return guids
 	}
-	return processesJSON.Resources[0].Guid
+
+	for _, resource := range processesJSON.Resources {
+		guids = append(guids, resource.Guid)
+	}
+
+	return guids
 }
 
 func AssignDropletToApp(appGuid, dropletGuid string) {
@@ -436,6 +458,11 @@ func StopApp(appGuid string) {
 	Expect(cf.Cf("curl", stopURL, "-X", "POST").Wait()).To(Exit(0))
 }
 
+func RestartApp(appGuid string) {
+	restartURL := fmt.Sprintf("/v3/apps/%s/actions/restart", appGuid)
+	Expect(cf.Cf("curl", restartURL, "-X", "POST").Wait()).To(Exit(0))
+}
+
 func UnassignIsolationSegmentFromSpace(spaceGuid string) {
 	Eventually(cf.Cf("curl", fmt.Sprintf("/v3/spaces/%s/relationships/isolation_segment", spaceGuid),
 		"-X",
@@ -458,6 +485,12 @@ func UnsetDefaultIsolationSegment(orgGuid string) {
 func UploadPackage(uploadUrl, packageZipPath, token string) {
 	bits := fmt.Sprintf(`bits=@%s`, packageZipPath)
 	curl := helpers.Curl(Config, "-v", "-s", uploadUrl, "-F", bits, "-H", fmt.Sprintf("Authorization: %s", token)).Wait()
+	Expect(curl).To(Exit(0))
+}
+
+func EnableRevisions(appGuid string) {
+	path := fmt.Sprintf("/v3/apps/%s/features/revisions", appGuid)
+	curl := cf.Cf("curl", path, "-X", "PATCH", "-d", `{"enabled": true}`).Wait()
 	Expect(curl).To(Exit(0))
 }
 

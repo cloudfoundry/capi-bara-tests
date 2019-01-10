@@ -2,7 +2,6 @@ package bara_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"testing"
@@ -10,9 +9,9 @@ import (
 
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
-	"github.com/mholt/archiver"
 
 	_ "github.com/cloudfoundry/capi-bara-tests/processes"
+	_ "github.com/cloudfoundry/capi-bara-tests/revisions"
 	_ "github.com/cloudfoundry/capi-bara-tests/rolling_deployments"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
@@ -60,17 +59,9 @@ func TestBARA(t *testing.T) {
 
 		err = buildCmd.Run()
 		Expect(err).NotTo(HaveOccurred())
-
-		doraFiles, err := ioutil.ReadDir(assets.NewAssets().Dora)
-		Expect(err).NotTo(HaveOccurred())
-
-		var doraFileNames []string
-		for _, doraFile := range doraFiles {
-			doraFileNames = append(doraFileNames, assets.NewAssets().Dora+"/"+doraFile.Name())
-		}
-
-		err = archiver.Zip.Make(assets.NewAssets().DoraZip, doraFileNames)
-		Expect(err).NotTo(HaveOccurred())
+		assetPaths := assets.NewAssets()
+		ZipAsset(assetPaths.Dora, assetPaths.DoraZip)
+		ZipAsset(assetPaths.Staticfile, assetPaths.StaticfileZip)
 
 		return []byte{}
 	}, func([]byte) {
@@ -87,6 +78,7 @@ func TestBARA(t *testing.T) {
 		}
 	}, func() {
 		os.Remove(assets.NewAssets().DoraZip)
+		os.Remove(assets.NewAssets().StaticfileZip)
 	})
 
 	rs := []Reporter{}
