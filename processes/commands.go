@@ -82,7 +82,7 @@ applications:
 			PollJob(GetJobPath(response))
 
 			processes := GetProcesses(appGUID, appName)
-			webProcessWithCommandRedacted := GetProcessByType(processes, "web")
+			webProcessWithCommandRedacted := GetFirstProcessByType(processes, "web")
 			webProcess := GetProcessByGuid(webProcessWithCommandRedacted.Guid)
 			Expect(webProcess.Command).To(Equal("manifest-command.sh"))
 
@@ -110,7 +110,7 @@ applications:
 			PollJob(GetJobPath(response))
 
 			processes := GetProcesses(appGUID, appName)
-			webProcessWithCommandRedacted := GetProcessByType(processes, "web")
+			webProcessWithCommandRedacted := GetFirstProcessByType(processes, "web")
 			webProcess := GetProcessByGuid(webProcessWithCommandRedacted.Guid)
 			Expect(webProcess.Command).To(Equal("manifest-command.sh"))
 
