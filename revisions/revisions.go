@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
+	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
 
@@ -23,7 +24,7 @@ func AssociateNewDroplet(appGUID, assetPath string) string {
 	WaitForPackageToBeReady(packageGUID)
 
 	By("Creating a Build")
-	buildGUID := StageBuildpackPackage(packageGUID, Config.GetRubyBuildpackName(), Config.GetStaticFileBuildpackName())
+	buildGUID := StageBuildpackPackage(packageGUID)
 	WaitForBuildToStage(buildGUID)
 	dropletGUID := GetDropletFromBuild(buildGUID)
 
@@ -64,12 +65,10 @@ var _ = Describe("revisions", func() {
 		StartApp(appGUID)
 		Expect(string(cf.Cf("apps").Wait().Out.Contents())).To(MatchRegexp(fmt.Sprintf("(v4-)?(%s)*(-web)?(\\s)+(started)", "web")))
 
-		By("waiting until all instances are running")
-		Eventually(func() int {
-			guids := GetProcessGuidsForType(appGUID, "web")
-			Expect(guids).ToNot(BeEmpty())
-			return GetRunningInstancesStats(guids[0])
-		}).Should(Equal(instances))
+		waitForAllInstancesToStart(appGUID, instances)
+
+		By("checking that dora responds")
+		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 
 		revisions = GetRevisions(appGUID)
 		process := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
@@ -91,11 +90,15 @@ var _ = Describe("revisions", func() {
 				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(revisionGUID))
+
+				waitForAllInstancesToStart(appGUID, instances)
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 			})
 		})
 
 		Context("when there is a new droplet", func() {
 			var newDropletGUID string
+
 			BeforeEach(func() {
 				newDropletGUID = AssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip)
 			})
@@ -109,6 +112,9 @@ var _ = Describe("revisions", func() {
 				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
+
+				waitForAllInstancesToStart(appGUID, instances)
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 			})
 		})
 	})
@@ -122,11 +128,15 @@ var _ = Describe("revisions", func() {
 				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(revisionGUID))
+
+				waitForAllInstancesToStart(appGUID, instances)
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 			})
 		})
 
 		Context("when there is a new droplet", func() {
 			var newDropletGUID string
+
 			BeforeEach(func() {
 				newDropletGUID = AssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip)
 			})
@@ -139,6 +149,9 @@ var _ = Describe("revisions", func() {
 				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
+
+				waitForAllInstancesToStart(appGUID, instances)
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 			})
 		})
 	})
@@ -156,6 +169,8 @@ var _ = Describe("revisions", func() {
 				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(revisionGUID))
+
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 			})
 		})
 	})
@@ -163,34 +178,72 @@ var _ = Describe("revisions", func() {
 	Describe("deployment", func() {
 		Context("when there is not a new droplet", func() {
 			It("does not create a new revision", func() {
-				deploymentGuid := CreateDeployment(appGUID)
-				Expect(deploymentGuid).ToNot(BeEmpty())
-				WaitUntilDeployed(deploymentGuid)
+				zdtRestartAndWait(appGUID)
 
 				Expect(GetRevisions(appGUID)).To(Equal(revisions))
 				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(revisionGUID))
+
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 			})
 		})
 
 		Context("when there is a new droplet", func() {
 			var newDropletGUID string
+
 			BeforeEach(func() {
 				newDropletGUID = AssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip)
 			})
 
 			It("creates a new revision", func() {
-				deploymentGuid := CreateDeployment(appGUID)
-				Expect(deploymentGuid).ToNot(BeEmpty())
-				WaitUntilDeployed(deploymentGuid)
+				zdtRestartAndWait(appGUID)
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
 				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(newDropletGUID))
 				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
+
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
+			})
+		})
+
+		Context("rollbacks", func() {
+			BeforeEach(func() {
+				AssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip)
+				zdtRestartAndWait(appGUID)
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
+			})
+
+			It("creates a new revision with the droplet from the specified revision", func() {
+				deploymentGUID := RollbackDeployment(appGUID, revisionGUID)
+				Expect(deploymentGUID).ToNot(BeEmpty())
+				WaitUntilDeployed(deploymentGUID)
+
+				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 2))
+				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
+				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
+				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
+
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 			})
 		})
 	})
 })
+
+func waitForAllInstancesToStart(appGUID string, instances int) {
+	By("waiting until all instances are running")
+	Eventually(func() int {
+		guids := GetProcessGuidsForType(appGUID, "web")
+		Expect(guids).ToNot(BeEmpty())
+		return GetRunningInstancesStats(guids[0])
+	}).Should(Equal(instances))
+}
+
+func zdtRestartAndWait(appGUID string) {
+	deploymentGUID := CreateDeployment(appGUID)
+	Expect(deploymentGUID).ToNot(BeEmpty())
+	WaitUntilDeployed(deploymentGUID)
+}

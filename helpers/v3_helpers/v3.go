@@ -51,6 +51,20 @@ func CreateDeploymentForDroplet(appGuid, dropletGuid string) string {
 	return deployment.Guid
 }
 
+func RollbackDeployment(appGuid, revisionGuid string) string {
+	deploymentPath := fmt.Sprintf("/v3/deployments")
+	deploymentRequestBody := fmt.Sprintf(`{"revision": { "guid": "%s" },"relationships": {"app": {"data": {"guid": "%s"}}}}`, revisionGuid, appGuid)
+	session := cf.Cf("curl", deploymentPath, "-X", "POST", "-d", deploymentRequestBody).Wait()
+	Expect(session).To(Exit(0))
+	var deployment struct {
+		Guid string `json:"guid"`
+	}
+
+	bytes := session.Wait().Out.Contents()
+	json.Unmarshal(bytes, &deployment)
+	return deployment.Guid
+}
+
 func CancelDeployment(deploymentGuid string) {
 	deploymentPath := fmt.Sprintf("/v3/deployments/%s/actions/cancel", deploymentGuid)
 	session := cf.Cf("curl", deploymentPath, "-X", "POST", "-i").Wait()
@@ -424,7 +438,12 @@ func SetDefaultIsolationSegment(orgGuid, isoSegGuid string) {
 }
 
 func StageBuildpackPackage(packageGuid string, buildpacks ...string) string {
-	stageBody := fmt.Sprintf(`{"lifecycle":{ "type": "buildpack", "data": { "buildpacks": ["%s"] } }, "package": { "guid" : "%s"}}`, strings.Join(buildpacks, `", "`), packageGuid)
+	buildpackString := "null"
+	if len(buildpacks) > 0 {
+		buildpackString = fmt.Sprintf(`["%s"]`, strings.Join(buildpacks, `", "`))
+	}
+
+	stageBody := fmt.Sprintf(`{"lifecycle":{ "type": "buildpack", "data": { "buildpacks": %s } }, "package": { "guid" : "%s"}}`, buildpackString, packageGuid)
 	stageUrl := "/v3/builds"
 	session := cf.Cf("curl", stageUrl, "-X", "POST", "-d", stageBody)
 	bytes := session.Wait().Out.Contents()
