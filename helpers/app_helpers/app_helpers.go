@@ -1,11 +1,10 @@
 package app_helpers
 
 import (
-	"strings"
 	"fmt"
+	"strings"
+
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
-	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/logs"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
@@ -19,19 +18,6 @@ func GetAppGuid(appName string) string {
 	appGuid := strings.TrimSpace(string(cfApp.Out.Contents()))
 	Expect(appGuid).NotTo(Equal(""))
 	return appGuid
-}
-
-func AppReport(appName string) {
-	if appName == "" {
-		return
-	}
-
-	printStartAppReport(appName)
-
-	Eventually(cf.Cf("app", appName, "--guid")).Should(Exit())
-	Eventually(logs.Tail(Config.GetUseLogCache(), appName)).Should(Exit())
-
-	printEndAppReport(appName)
 }
 
 func printStartAppReport(appName string) {

@@ -10,9 +10,7 @@ import (
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 
-	_ "github.com/cloudfoundry/capi-bara-tests/processes"
-	_ "github.com/cloudfoundry/capi-bara-tests/revisions"
-	_ "github.com/cloudfoundry/capi-bara-tests/rolling_deployments"
+	_ "github.com/cloudfoundry/capi-bara-tests/baras"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"

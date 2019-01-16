@@ -49,6 +49,11 @@ type BaraConfig interface {
 	GetUseExistingUser() bool
 	GetUseExistingOrganization() bool
 	GetUseExistingSpace() bool
+
+	GetIncludePrivateDockerRegistry() bool
+	GetPrivateDockerRegistryImage() string
+	GetPrivateDockerRegistryUsername() string
+	GetPrivateDockerRegistryPassword() string
 }
 
 func NewBaraConfig(path string) (BaraConfig, error) {

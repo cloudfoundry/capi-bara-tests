@@ -43,6 +43,11 @@ type config struct {
 	RubyBuildpackName       *string `json:"ruby_buildpack_name"`
 	StaticFileBuildpackName *string `json:"staticfile_buildpack_name"`
 
+	IncludePrivateDockerRegistry  *bool   `json:"include_private_docker_registry"`
+	PrivateDockerRegistryImage    *string `json:"private_docker_registry_image"`
+	PrivateDockerRegistryUsername *string `json:"private_docker_registry_username"`
+	PrivateDockerRegistryPassword *string `json:"private_docker_registry_password"`
+
 	NamePrefix *string `json:"name_prefix"`
 
 	ReporterConfig *reporterConfig `json:"reporter_config"`
@@ -53,6 +58,10 @@ type reporterConfig struct {
 }
 
 var defaults = config{}
+
+func ptrToBool(b bool) *bool {
+	return &b
+}
 
 func ptrToString(str string) *string {
 	return &str
@@ -88,6 +97,11 @@ func getDefaults() config {
 	defaults.SleepTimeout = ptrToInt(30)
 
 	defaults.TimeoutScale = ptrToFloat(2.0)
+
+	defaults.IncludePrivateDockerRegistry = ptrToBool(false)
+	defaults.PrivateDockerRegistryImage = ptrToString("")
+	defaults.PrivateDockerRegistryUsername = ptrToString("")
+	defaults.PrivateDockerRegistryPassword = ptrToString("")
 
 	defaults.ArtifactsDirectory = ptrToString(filepath.Join("..", "results"))
 
@@ -390,6 +404,22 @@ func (c *config) GetBinaryBuildpackName() string {
 
 func (c *config) GetStaticFileBuildpackName() string {
 	return *c.StaticFileBuildpackName
+}
+
+func (c *config) GetIncludePrivateDockerRegistry() bool {
+	return *c.IncludePrivateDockerRegistry
+}
+
+func (c *config) GetPrivateDockerRegistryImage() string {
+	return *c.PrivateDockerRegistryImage
+}
+
+func (c *config) GetPrivateDockerRegistryUsername() string {
+	return *c.PrivateDockerRegistryUsername
+}
+
+func (c *config) GetPrivateDockerRegistryPassword() string {
+	return *c.PrivateDockerRegistryPassword
 }
 
 func (c *config) GetReporterConfig() reporterConfig {
