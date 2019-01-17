@@ -239,7 +239,7 @@ func waitForAllInstancesToStart(appGUID string, instances int) {
 		guids := GetProcessGuidsForType(appGUID, "web")
 		Expect(guids).ToNot(BeEmpty())
 		return GetRunningInstancesStats(guids[0])
-	}).Should(Equal(instances))
+	}, Config.CfPushTimeoutDuration()).Should(Equal(instances))
 }
 
 func zdtRestartAndWait(appGUID string) {
