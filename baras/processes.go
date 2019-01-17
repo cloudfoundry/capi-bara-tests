@@ -83,7 +83,7 @@ var _ = Describe("webish_processes", func() {
 			Expect(numWebProcesses).To(Equal(2))
 
 			// Ignore older processes in the v2 world
-			session := cf.Cf("curl", fmt.Sprintf("/v2/apps?results-per-page=1&page=1&q=space_guid:%s", spaceGUID))
+			session := cf.Cf("curl", fmt.Sprintf("/v2/apps?results-per-page=1&page=1&q=space_guid:%s&q=name:%s", spaceGUID, appName))
 			bytes := session.Wait().Out.Contents()
 			var v2process struct {
 				TotalResults int    `json:"total_results"`
