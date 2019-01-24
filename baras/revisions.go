@@ -81,7 +81,7 @@ var _ = Describe("revisions", func() {
 	})
 
 	Describe("stopping and starting", func() {
-		Context("when there is not a new droplet", func() {
+		Context("when there is not a new droplet or env vars", func() {
 			It("does not create a new revision", func() {
 				StopApp(appGUID)
 				StartApp(appGUID)
@@ -93,6 +93,27 @@ var _ = Describe("revisions", func() {
 
 				waitForAllInstancesToStart(appGUID, instances)
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+			})
+		})
+
+		Context("when environment variables have changed on the app", func() {
+			BeforeEach(func() {
+				UpdateEnvironmentVariables(appGUID, `{"foo2":"bar2"}`)
+			})
+
+			It("creates a new revision", func() {
+				StopApp(appGUID)
+				StartApp(appGUID)
+
+				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
+				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
+				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
+				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
+
+				waitForAllInstancesToStart(appGUID, instances)
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlApp(Config, appName, "/env/foo2")).To(Equal("bar2"))
 			})
 		})
 
@@ -120,7 +141,7 @@ var _ = Describe("revisions", func() {
 	})
 
 	Describe("restarting", func() {
-		Context("when there is not a new droplet", func() {
+		Context("when there is not a new droplet or env vars", func() {
 			It("does not create a new revision", func() {
 				RestartApp(appGUID)
 
@@ -131,6 +152,26 @@ var _ = Describe("revisions", func() {
 
 				waitForAllInstancesToStart(appGUID, instances)
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+			})
+		})
+
+		Context("when environment variables have changed on the app", func() {
+			BeforeEach(func() {
+				UpdateEnvironmentVariables(appGUID, `{"foo2":"bar2"}`)
+			})
+
+			It("creates a new revision", func() {
+				RestartApp(appGUID)
+
+				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
+				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
+				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
+				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
+
+				waitForAllInstancesToStart(appGUID, instances)
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlApp(Config, appName, "/env/foo2")).To(Equal("bar2"))
 			})
 		})
 
