@@ -148,6 +148,12 @@ func AssignDropletToApp(appGuid, dropletGuid string) {
 	}
 }
 
+func UpdateEnvironmentVariables(appGuid, envVars string) {
+	appUpdatePath := fmt.Sprintf("/v3/apps/%s/environment_variables", appGuid)
+	appUpdateBody := fmt.Sprintf(`{"var": %s}`, envVars)
+	Expect(cf.Cf("curl", appUpdatePath, "-X", "PATCH", "-d", appUpdateBody).Wait()).To(Exit(0))
+}
+
 func AssignIsolationSegmentToSpace(spaceGuid, isoSegGuid string) {
 	Eventually(cf.Cf("curl", fmt.Sprintf("/v3/spaces/%s/relationships/isolation_segment", spaceGuid),
 		"-X",
