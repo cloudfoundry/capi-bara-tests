@@ -19,48 +19,60 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
+func makeApp(token string, spaceGUID string) app {
+	var newApp app
+	newApp.name = random_name.BARARandomName("APP")
+	newApp.orgName = TestSetup.RegularUserContext().Org
+
+	newApp.guid = CreateApp(newApp.name, spaceGUID, `{"foo":"bar"}`)
+	newApp.packageGUID = CreatePackage(newApp.guid)
+
+	uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), newApp.packageGUID)
+
+	UploadPackage(uploadURL, assets.NewAssets().DoraZip, token)
+	WaitForPackageToBeReady(newApp.packageGUID)
+
+	buildGUID := StageBuildpackPackage(newApp.packageGUID, Config.GetRubyBuildpackName())
+	WaitForBuildToStage(buildGUID)
+	newApp.dropletGUID = GetDropletFromBuild(buildGUID)
+	AssignDropletToApp(newApp.guid, newApp.dropletGUID)
+
+	randomRoutePrefix := random_name.BARARandomName("ROUTE")
+	newApp.route = fmt.Sprintf("%s.%s", randomRoutePrefix, Config.GetAppsDomain())
+
+	StartApp(newApp.guid)
+	return newApp
+}
+
+type app struct {
+	guid        string
+	name        string
+	packageGUID string
+	orgName     string
+	dropletGUID string
+	route       string
+}
+
 var _ = Describe("apply_manifest", func() {
 	var (
-		appName         string
-		appGUID         string
-		broker          ServiceBroker
-		packageGUID     string
-		serviceInstance string
-		route           string
-		spaceGUID       string
-		spaceName       string
-		orgName         string
-		token           string
-		dropletGuid     string
+		apps             []app
+		broker           ServiceBroker
+		serviceInstance  string
+		token            string
+		spaceName        string
+		spaceGUID        string
+		manifestToApply  string
+		expectedManifest string
+
+		applyEndpoint       string
+		getManifestEndpoint string
 	)
 
 	BeforeEach(func() {
-		appName = random_name.BARARandomName("APP")
-		spaceName = TestSetup.RegularUserContext().Space
-		orgName = TestSetup.RegularUserContext().Org
-		spaceGUID = GetSpaceGuidFromName(spaceName)
-		By("Creating an App")
-		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
-		By("Creating a Package")
-		packageGUID = CreatePackage(appGUID)
 		token = GetAuthToken()
-		uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
-
-		By("Uploading a Package")
-		UploadPackage(uploadURL, assets.NewAssets().DoraZip, token)
-		WaitForPackageToBeReady(packageGUID)
-
-		By("Creating a Build")
-		buildGUID := StageBuildpackPackage(packageGUID, Config.GetRubyBuildpackName())
-		WaitForBuildToStage(buildGUID)
-		dropletGuid = GetDropletFromBuild(buildGUID)
-		AssignDropletToApp(appGUID, dropletGuid)
-
-		By("Creating a Route")
-		By("Starting an App")
-		StartApp(appGUID)
-		random_route_prefix := random_name.BARARandomName("ROUTE")
-		route = fmt.Sprintf("%s.%s", random_route_prefix, Config.GetAppsDomain())
+		spaceName = TestSetup.RegularUserContext().Space
+		spaceGUID = GetSpaceGuidFromName(spaceName)
+		apps = []app{makeApp(token, spaceGUID)}
 
 		By("Registering a Service Broker")
 		broker = NewServiceBroker(
@@ -80,24 +92,61 @@ var _ = Describe("apply_manifest", func() {
 	})
 
 	AfterEach(func() {
-		FetchRecentLogs(appGUID, token, Config)
-		DeleteApp(appGUID)
+		FetchRecentLogs(apps[0].guid, token, Config)
+		DeleteApp(apps[0].guid)
 
 		broker.Destroy()
 	})
 
-	Describe("Applying manifest to existing app", func() {
-		var (
-			manifestToApply  string
-			expectedManifest string
-
-			applyEndpoint       string
-			getManifestEndpoint string
-		)
-
+	Describe("with a second app", func() {
 		BeforeEach(func() {
-			applyEndpoint = fmt.Sprintf("/v3/apps/%s/actions/apply_manifest", appGUID)
-			getManifestEndpoint = fmt.Sprintf("/v3/apps/%s/manifest", appGUID)
+			apps = append(apps, makeApp(token, spaceGUID))
+		})
+
+		AfterEach(func() {
+			DeleteApp(apps[1].guid)
+		})
+
+		Describe("Applying a manifest to multiple apps in a space", func() {
+			BeforeEach(func() {
+				applyEndpoint = fmt.Sprintf("/v3/spaces/%s/actions/apply_manifest", spaceGUID)
+				manifestToApply = fmt.Sprintf(`
+applications:
+- name: "%s"
+  env: { foo: app0 }
+- name: "%s"
+  env: { foo: app1 }
+`, apps[0].name, apps[1].name)
+			})
+
+			It("successfully updates both apps", func() {
+				session := cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
+				Expect(session.Wait()).To(Exit(0))
+				response := session.Out.Contents()
+				Expect(string(response)).To(ContainSubstring("202 Accepted"))
+
+				PollJob(GetJobPath(response))
+
+				workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
+					target := cf.Cf("target", "-o", apps[0].orgName, "-s", spaceName).Wait()
+					Expect(target).To(Exit(0))
+
+					session = cf.Cf("env", apps[0].name).Wait()
+					Eventually(session).Should(Say("foo:\\s+app0"))
+					Eventually(session).Should(Exit(0))
+
+					session = cf.Cf("env", apps[1].name).Wait()
+					Eventually(session).Should(Say("foo:\\s+app1"))
+					Eventually(session).Should(Exit(0))
+				})
+			})
+		})
+	})
+
+	Describe("Applying a manifest to a single existing app", func() {
+		BeforeEach(func() {
+			applyEndpoint = fmt.Sprintf("/v3/apps/%s/actions/apply_manifest", apps[0].guid)
+			getManifestEndpoint = fmt.Sprintf("/v3/apps/%s/manifest", apps[0].guid)
 		})
 
 		Describe("routing", func() {
@@ -119,7 +168,7 @@ applications:
   health-check-type: http
   health-check-http-endpoint: /env
   timeout: 75
-`, appName, serviceInstance, route)
+`, apps[0].name, serviceInstance, apps[0].route)
 					expectedManifest = fmt.Sprintf(`
 applications:
 - name: %s
@@ -146,7 +195,7 @@ applications:
     instances: 0
     memory: 256M
     type: worker
-`, appName, route, serviceInstance)
+`, apps[0].name, apps[0].route, serviceInstance)
 				})
 
 				It("successfully completes the job", func() {
@@ -157,33 +206,32 @@ applications:
 
 					PollJob(GetJobPath(response))
 
-					session = cf.Cf("restage", appName).Wait(Config.CfPushTimeoutDuration())
+					session = cf.Cf("restage", apps[0].name).Wait(Config.CfPushTimeoutDuration())
 
 					workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
-						target := cf.Cf("target", "-o", orgName, "-s", spaceName).Wait()
+						target := cf.Cf("target", "-o", apps[0].orgName, "-s", spaceName).Wait()
 						Expect(target).To(Exit(0), "failed targeting")
 
-						session = cf.Cf("app", appName).Wait()
+						session = cf.Cf("app", apps[0].name).Wait()
 						Eventually(session).Should(Say("Showing health"))
-						Eventually(session).Should(Say("routes:\\s+(?:%s.%s,\\s+)?%s", appName, Config.GetAppsDomain(), route))
+						Eventually(session).Should(Say("routes:\\s+(?:%s.%s,\\s+)?%s", apps[0].name, Config.GetAppsDomain(), apps[0].route))
 						Eventually(session).Should(Say("stack:\\s+cflinuxfs2"))
 						Eventually(session).Should(Say("buildpacks:\\s+ruby"))
 						Eventually(session).Should(Say("instances:\\s+.*?\\d+/2"))
 						Eventually(session).Should(Exit(0))
-						session = cf.Cf("app", appName).Wait()
 
-						session = cf.Cf("env", appName).Wait()
+						session = cf.Cf("env", apps[0].name).Wait()
 						Eventually(session).Should(Say("foo:\\s+qux"))
 						Eventually(session).Should(Say("snack:\\s+walnuts"))
 						Eventually(session).Should(Exit(0))
 
-						session = cf.Cf("get-health-check", appName).Wait()
+						session = cf.Cf("get-health-check", apps[0].name).Wait()
 						Eventually(session).Should(Say("health check type:\\s+http"))
 						Eventually(session).Should(Say("endpoint \\(for http type\\):\\s+/env"))
 						Eventually(session).Should(Exit(0))
 
 						session = cf.Cf("service", serviceInstance).Wait()
-						Eventually(session).Should(Say("(?s)bound apps:.*%s", appName))
+						Eventually(session).Should(Say("(?s)bound apps:.*%s", apps[0].name))
 						Eventually(session).Should(Exit(0))
 
 						session = cf.Cf("curl", "-i", getManifestEndpoint)
@@ -204,7 +252,7 @@ applications:
 applications:
 - name: "%s"
   no-route: true
-`, appName)
+`, apps[0].name)
 				})
 
 				It("removes existing routes from the app", func() {
@@ -216,10 +264,10 @@ applications:
 					PollJob(GetJobPath(response))
 
 					workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
-						target := cf.Cf("target", "-o", orgName, "-s", spaceName).Wait()
+						target := cf.Cf("target", "-o", apps[0].orgName, "-s", spaceName).Wait()
 						Expect(target).To(Exit(0), "failed targeting")
 
-						session = cf.Cf("app", appName).Wait()
+						session = cf.Cf("app", apps[0].name).Wait()
 						Eventually(session).Should(Say("Showing health"))
 						Eventually(session).Should(Say("routes:\\s*\\n"))
 						Eventually(session).Should(Exit(0))
@@ -229,13 +277,13 @@ applications:
 
 			Context("when random-route is specified", func() {
 				BeforeEach(func() {
-					UnmapAllRoutes(appGUID)
+					UnmapAllRoutes(apps[0].guid)
 
 					manifestToApply = fmt.Sprintf(`
 applications:
 - name: "%s"
   random-route: true
-`, appName)
+`, apps[0].name)
 				})
 
 				It("successfully adds a random-route", func() {
@@ -247,11 +295,11 @@ applications:
 					PollJob(GetJobPath(response))
 
 					workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
-						target := cf.Cf("target", "-o", orgName, "-s", spaceName).Wait()
+						target := cf.Cf("target", "-o", apps[0].orgName, "-s", spaceName).Wait()
 						Expect(target).To(Exit(0), "failed targeting")
 
-						session = cf.Cf("app", appName).Wait()
-						Eventually(session).Should(Say("routes:\\s+%s-\\w+-\\w+.%s", appName, Config.GetAppsDomain()))
+						session = cf.Cf("app", apps[0].name).Wait()
+						Eventually(session).Should(Say("routes:\\s+%s-\\w+-\\w+.%s", apps[0].name, Config.GetAppsDomain()))
 					})
 				})
 			})
@@ -270,7 +318,7 @@ applications:
     health-check-type: http
     health-check-http-endpoint: /env
     timeout: 75
-`, appName)
+`, apps[0].name)
 			})
 
 			Context("when the process exists already", func() {
@@ -283,20 +331,20 @@ applications:
 					PollJob(GetJobPath(response))
 
 					workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
-						target := cf.Cf("target", "-o", orgName, "-s", spaceName).Wait()
+						target := cf.Cf("target", "-o", apps[0].orgName, "-s", spaceName).Wait()
 						Expect(target).To(Exit(0), "failed targeting")
 
-						session = cf.Cf("app", appName).Wait()
+						session = cf.Cf("app", apps[0].name).Wait()
 						Eventually(session).Should(Say("Showing health"))
 						Eventually(session).Should(Say("instances:\\s+.*?\\d+/2"))
 						Eventually(session).Should(Exit(0))
 
-						processes := GetProcesses(appGUID, appName)
+						processes := GetProcesses(apps[0].guid, apps[0].name)
 						webProcessWithCommandRedacted := GetFirstProcessByType(processes, "web")
 						webProcess := GetProcessByGuid(webProcessWithCommandRedacted.Guid)
 						Expect(webProcess.Command).To(Equal("new-command"))
 
-						session = cf.Cf("get-health-check", appName).Wait()
+						session = cf.Cf("get-health-check", apps[0].name).Wait()
 						Eventually(session).Should(Say("health check type:\\s+http"))
 						Eventually(session).Should(Say("endpoint \\(for http type\\):\\s+/env"))
 						Eventually(session).Should(Exit(0))
@@ -317,7 +365,7 @@ applications:
     health-check-type: http
     health-check-http-endpoint: /env
     timeout: 75
-`, appName)
+`, apps[0].name)
 				})
 
 				It("creates the process and completes the job", func() {
@@ -329,20 +377,20 @@ applications:
 					PollJob(GetJobPath(response))
 
 					workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
-						target := cf.Cf("target", "-o", orgName, "-s", spaceName).Wait()
+						target := cf.Cf("target", "-o", apps[0].orgName, "-s", spaceName).Wait()
 						Expect(target).To(Exit(0), "failed targeting")
 
-						session = cf.Cf("app", appName).Wait()
+						session = cf.Cf("app", apps[0].name).Wait()
 						Eventually(session).Should(Say("type:\\s+potato"))
 						Eventually(session).Should(Say("instances:\\s+0/2"))
 						Eventually(session).Should(Exit(0))
 
-						processes := GetProcesses(appGUID, appName)
+						processes := GetProcesses(apps[0].guid, apps[0].name)
 						potatoProcessWithCommandRedacted := GetFirstProcessByType(processes, "potato")
 						potatoProcess := GetProcessByGuid(potatoProcessWithCommandRedacted.Guid)
 						Expect(potatoProcess.Command).To(Equal("new-command"))
 
-						session = cf.Cf("v3-get-health-check", appName).Wait()
+						session = cf.Cf("v3-get-health-check", apps[0].name).Wait()
 						Eventually(session).Should(Say("potato\\s+http\\s+/env"))
 						Eventually(session).Should(Exit(0))
 					})
@@ -362,7 +410,7 @@ applications:
     health-check-type: http
     health-check-http-endpoint: /env
     timeout: 75
-`, appName)
+`, apps[0].name)
 				})
 
 				It("does not remove existing processes", func() {
@@ -374,16 +422,16 @@ applications:
 					PollJob(GetJobPath(response))
 
 					workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
-						target := cf.Cf("target", "-o", orgName, "-s", spaceName).Wait()
+						target := cf.Cf("target", "-o", apps[0].orgName, "-s", spaceName).Wait()
 						Expect(target).To(Exit(0), "failed targeting")
 
-						session = cf.Cf("app", appName).Wait()
+						session = cf.Cf("app", apps[0].name).Wait()
 						Eventually(session).Should(Say("type:\\s+bean"))
 						Eventually(session).Should(Say("instances:\\s+0/2"))
 						Eventually(session).Should(Exit(0))
-						AssignDropletToApp(appGUID, dropletGuid)
+						AssignDropletToApp(apps[0].guid, apps[0].dropletGUID)
 
-						processes := GetProcesses(appGUID, appName)
+						processes := GetProcesses(apps[0].guid, apps[0].name)
 						beanProcessWithCommandRedacted := GetFirstProcessByType(processes, "bean")
 						beanProcess := GetProcessByGuid(beanProcessWithCommandRedacted.Guid)
 						Expect(beanProcess.Command).To(Equal("new-command"))
@@ -411,7 +459,7 @@ applications:
   buildpacks:
   - staticfile_buildpack
   - ruby_buildpack
-`, appName)
+`, apps[0].name)
 				})
 
 				It("successfully adds the buildpacks", func() {
@@ -423,10 +471,10 @@ applications:
 					PollJob(GetJobPath(response))
 
 					workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
-						target := cf.Cf("target", "-o", orgName, "-s", spaceName).Wait()
+						target := cf.Cf("target", "-o", apps[0].orgName, "-s", spaceName).Wait()
 						Expect(target).To(Exit(0), "failed targeting")
 
-						session = cf.Cf("curl", fmt.Sprintf("v3/apps/%s", appGUID)).Wait()
+						session = cf.Cf("curl", fmt.Sprintf("v3/apps/%s", apps[0].guid)).Wait()
 						err := json.Unmarshal(session.Out.Contents(), &app)
 						Expect(err).ToNot(HaveOccurred())
 						Eventually(app.Lifecycle.Data.Buildpacks).Should(Equal([]string{"staticfile_buildpack", "ruby_buildpack"}))
@@ -444,7 +492,7 @@ applications:
 applications:
 - name: "%s"
   buildpacks: []
-`, appName)
+`, apps[0].name)
 					})
 
 					It("successfully updates the buildpacks to autodetect", func() {
@@ -456,10 +504,10 @@ applications:
 						PollJob(GetJobPath(response))
 
 						workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
-							target := cf.Cf("target", "-o", orgName, "-s", spaceName).Wait()
+							target := cf.Cf("target", "-o", apps[0].orgName, "-s", spaceName).Wait()
 							Expect(target).To(Exit(0), "failed targeting")
 
-							session = cf.Cf("curl", fmt.Sprintf("v3/apps/%s/droplets/current", appGUID)).Wait()
+							session = cf.Cf("curl", fmt.Sprintf("v3/apps/%s/droplets/current", apps[0].guid)).Wait()
 							Eventually(session).Should(Exit(0))
 							err := json.Unmarshal(session.Out.Contents(), &currentDrop)
 							Expect(err).ToNot(HaveOccurred())
