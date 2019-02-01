@@ -272,22 +272,28 @@ var _ = Describe("revisions", func() {
 		Context("rollbacks", func() {
 			BeforeEach(func() {
 				AssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip)
+				UpdateEnvironmentVariables(appGUID, `{"foo":"deffo-not-bar"}`)
 				zdtRestartAndWait(appGUID)
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 			})
 
-			It("creates a new revision with the droplet from the specified revision", func() {
+			It("creates a new revision with the droplet and environment variables from the specified revision", func() {
 				deploymentGUID := RollbackDeployment(appGUID, revisionGUID)
 				Expect(deploymentGUID).ToNot(BeEmpty())
 				WaitUntilDeployed(deploymentGUID)
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 2))
-				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
-				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				revision := GetNewestRevision(appGUID)
+				Expect(revision.Droplet.Guid).To(Equal(dropletGUID))
+				Expect(revision.Guid).NotTo(Equal(revisionGUID))
+
+				Expect(GetNewestRevisionEnvVars(appGUID, revisionGUID).Var["foo"]).To(Equal("bar"))
+
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlApp(Config, appName, "/env/foo")).To(Equal("bar"))
 			})
 		})
 	})
