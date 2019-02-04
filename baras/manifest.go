@@ -2,6 +2,7 @@ package baras
 
 import (
 	"fmt"
+	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
@@ -110,13 +111,17 @@ var _ = Describe("apply_manifest", func() {
 		Describe("Applying a manifest to multiple apps in a space", func() {
 			BeforeEach(func() {
 				applyEndpoint = fmt.Sprintf("/v3/spaces/%s/actions/apply_manifest", spaceGUID)
-				manifestToApply = fmt.Sprintf(`
+				manifestToApply = fmt.Sprintf(`---
 applications:
-- name: "%s"
-  env: { foo: app0 }
-- name: "%s"
-  env: { foo: app1 }
-`, apps[0].name, apps[1].name)
+  - name: "%s"
+    env: { foo: app0 }
+    routes:
+      - route: "%s"
+  - name: "%s"
+    env: { foo: app1 }
+    routes:
+      - route: "%s"
+`, apps[0].name, apps[0].route, apps[1].name, apps[1].route)
 			})
 
 			It("successfully updates both apps", func() {
@@ -138,6 +143,18 @@ applications:
 					session = cf.Cf("env", apps[1].name).Wait()
 					Eventually(session).Should(Say("foo:\\s+app1"))
 					Eventually(session).Should(Exit(0))
+				})
+
+				By("setting the routes for both apps", func() {
+					workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
+						session = helpers.Curl(Config, apps[0].route)
+						Eventually(session).Should(Say("Hi, I'm Dora!"))
+						Eventually(session).Should(Exit(0))
+
+						session = helpers.Curl(Config, apps[1].route)
+						Eventually(session).Should(Say("Hi, I'm Dora!"))
+						Eventually(session).Should(Exit(0))
+					})
 				})
 			})
 		})
