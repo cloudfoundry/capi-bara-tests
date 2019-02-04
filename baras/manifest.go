@@ -117,11 +117,18 @@ applications:
     env: { foo: app0 }
     routes:
       - route: "%s"
+    services:
+      - "%s"
   - name: "%s"
     env: { foo: app1 }
     routes:
       - route: "%s"
-`, apps[0].name, apps[0].route, apps[1].name, apps[1].route)
+    services:
+      - "%s"
+`,
+					apps[0].name, apps[0].route, serviceInstance,
+					apps[1].name, apps[1].route, serviceInstance,
+				)
 			})
 
 			It("successfully updates both apps", func() {
@@ -143,16 +150,29 @@ applications:
 					session = cf.Cf("env", apps[1].name).Wait()
 					Eventually(session).Should(Say("foo:\\s+app1"))
 					Eventually(session).Should(Exit(0))
-				})
 
-				By("setting the routes for both apps", func() {
-					workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
+					By("setting the routes for both apps", func() {
 						session = helpers.Curl(Config, apps[0].route)
 						Eventually(session).Should(Say("Hi, I'm Dora!"))
 						Eventually(session).Should(Exit(0))
 
 						session = helpers.Curl(Config, apps[1].route)
 						Eventually(session).Should(Say("Hi, I'm Dora!"))
+						Eventually(session).Should(Exit(0))
+					})
+
+					By("binding services", func() {
+						session = cf.Cf("service", serviceInstance).Wait()
+						Eventually(session).Should(Say("(?s)bound apps:"))
+						Eventually(session).Should(Say(
+							// https://golang.org/pkg/regexp/syntax/#hdr-Syntax
+							// (?s) => set the 's' flag so that . matches \n
+							`(?s)(%s.*%s|%s.*%s)`,
+							apps[0].name,
+							apps[1].name,
+							apps[1].name,
+							apps[0].name,
+						))
 						Eventually(session).Should(Exit(0))
 					})
 				})
