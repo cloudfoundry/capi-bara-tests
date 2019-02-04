@@ -132,11 +132,11 @@ applications:
 			})
 
 			It("successfully updates both apps", func() {
-				session := cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
-				Expect(session.Wait()).To(Exit(0))
-				response := session.Out.Contents()
-				Expect(string(response)).To(ContainSubstring("202 Accepted"))
+				session := cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i").Wait()
+				Eventually(session).Should(Say("202 Accepted"))
+				Eventually(session).Should(Exit(0))
 
+				response := session.Out.Contents()
 				PollJob(GetJobPath(response))
 
 				workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
