@@ -39,8 +39,8 @@ func GetNewestRevision(appGuid string) Revision {
 	return revisions[len(revisions)-1]
 }
 
-func GetNewestRevisionEnvVars(appGuid, revisionGuid string) RevisionEnvVars {
-	revisionsEnvVarsURL := fmt.Sprintf("/v3/apps/%s/revisions/%s/environment_variables", appGuid, revisionGuid)
+func GetNewestRevisionEnvVars(revisionGuid string) RevisionEnvVars {
+	revisionsEnvVarsURL := fmt.Sprintf("/v3/revisions/%s/environment_variables", revisionGuid)
 	session := cf.Cf("curl", revisionsEnvVarsURL)
 	bytes := session.Wait().Out.Contents()
 

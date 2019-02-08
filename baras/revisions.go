@@ -287,7 +287,7 @@ var _ = Describe("revisions", func() {
 				Expect(revision.Droplet.Guid).To(Equal(dropletGUID))
 				Expect(revision.Guid).NotTo(Equal(revisionGUID))
 
-				Expect(GetNewestRevisionEnvVars(appGUID, revisionGUID).Var["foo"]).To(Equal("bar"))
+				Expect(GetNewestRevisionEnvVars(revisionGUID).Var["foo"]).To(Equal("bar"))
 
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
