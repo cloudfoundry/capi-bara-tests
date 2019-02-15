@@ -114,6 +114,16 @@ func GetRunningInstancesStats(processGuid string) int {
 	return numRunning
 }
 
+func SetCommandOnProcess(appGUID, processType, command string) {
+	process := GetFirstProcessByType(GetProcesses(appGUID, "appName"), processType)
+
+	processURL := fmt.Sprintf("/v3/processes/%s", process.Guid)
+	processJSON, _ := json.Marshal(map[string]string{"command": command})
+
+	session := cf.Cf("curl", "-v", "-X", "PATCH", processURL, "-d", string(processJSON)).Wait()
+	Expect(session).To(Say("200 OK"))
+}
+
 func GetProcessGuidsForType(appGuid string, processType string) []string {
 	processesPath := fmt.Sprintf("/v3/apps/%s/processes?types=%s", appGuid, processType)
 	session := cf.Cf("curl", processesPath).Wait()

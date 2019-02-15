@@ -17,6 +17,7 @@ type Revision struct {
 	Droplet struct {
 		Guid string `json:"guid"`
 	} `json:"droplet"`
+	Processes             map[string]map[string]string `json:"processes"`
 }
 
 type RevisionEnvVars struct {

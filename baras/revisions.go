@@ -2,13 +2,11 @@ package baras
 
 import (
 	"fmt"
-
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
+	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
-
-	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -117,6 +115,33 @@ var _ = Describe("revisions", func() {
 			})
 		})
 
+		Context("when the start command has changed on the app's processes", func() {
+			var (
+				newCommand string
+			)
+
+			BeforeEach(func() {
+				newCommand = "cmd=real bundle exec rackup config.ru -p $PORT"
+				SetCommandOnProcess(appGUID, "web", newCommand)
+			})
+
+			It("creates a new revision", func() {
+				StopApp(appGUID)
+				StartApp(appGUID)
+
+				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
+				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				Expect(GetNewestRevision(appGUID).Processes["web"]["command"]).To(Equal(newCommand))
+
+				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
+				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
+
+				waitForAllInstancesToStart(appGUID, instances)
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlApp(Config, appName, "/env/cmd")).To(Equal("real"))
+			})
+		})
+
 		Context("when there is a new droplet", func() {
 			var newDropletGUID string
 
@@ -175,6 +200,32 @@ var _ = Describe("revisions", func() {
 			})
 		})
 
+		Context("when the start command has changed on the app's processes", func() {
+			var (
+				newCommand string
+			)
+
+			BeforeEach(func() {
+				newCommand = "cmd=real bundle exec rackup config.ru -p $PORT"
+				SetCommandOnProcess(appGUID, "web", newCommand)
+			})
+
+			It("creates a new revision", func() {
+				RestartApp(appGUID)
+
+				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
+				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				Expect(GetNewestRevision(appGUID).Processes["web"]["command"]).To(Equal(newCommand))
+
+				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
+				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
+
+				waitForAllInstancesToStart(appGUID, instances)
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlApp(Config, appName, "/env/cmd")).To(Equal("real"))
+			})
+		})
+
 		Context("when there is a new droplet", func() {
 			var newDropletGUID string
 
@@ -214,6 +265,28 @@ var _ = Describe("revisions", func() {
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 			})
 		})
+
+		Context("when there is a new command on a process", func() {
+			var (
+				newCommand string
+			)
+
+			BeforeEach(func() {
+				newCommand = "cmd=real bundle exec rackup config.ru -p $PORT"
+				SetCommandOnProcess(appGUID, "web", newCommand)
+			})
+
+			It("does not create a new revision", func() {
+				StartApp(appGUID)
+
+				Expect(GetRevisions(appGUID)).To(Equal(revisions))
+				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
+				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(revisionGUID))
+				Expect(newProcess.Command).NotTo(Equal(newCommand))
+
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+			})
+		})
 	})
 
 	Describe("deployment", func() {
@@ -246,6 +319,32 @@ var _ = Describe("revisions", func() {
 
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 				Expect(helpers.CurlApp(Config, appName, "/env/foo2")).To(Equal("bar2"))
+			})
+		})
+
+		Context("when the start command has changed on the app's processes", func() {
+			var (
+				newCommand string
+			)
+
+			BeforeEach(func() {
+				newCommand = "cmd=real bundle exec rackup config.ru -p $PORT"
+				SetCommandOnProcess(appGUID, "web", newCommand)
+			})
+
+			It("creates a new revision", func() {
+				zdtRestartAndWait(appGUID)
+
+				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
+				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				Expect(GetNewestRevision(appGUID).Processes["web"]["command"]).To(Equal(newCommand))
+
+				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
+				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
+
+				waitForAllInstancesToStart(appGUID, instances)
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlApp(Config, appName, "/env/cmd")).To(Equal("real"))
 			})
 		})
 
