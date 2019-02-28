@@ -46,6 +46,10 @@ func TestBARA(t *testing.T) {
 
 		buildCmd := exec.Command("go", "build", "-o", "bin/catnip")
 		buildCmd.Dir = "assets/catnip"
+		buildCmd.Env = append(os.Environ(),
+			"GOOS=linux",
+			"GOARCH=amd64",
+		)
 		buildCmd.Stdout = GinkgoWriter
 		buildCmd.Stderr = GinkgoWriter
 
