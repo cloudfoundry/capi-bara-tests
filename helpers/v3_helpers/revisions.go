@@ -17,7 +17,7 @@ type Revision struct {
 	Droplet struct {
 		Guid string `json:"guid"`
 	} `json:"droplet"`
-	Processes             map[string]map[string]string `json:"processes"`
+	Processes map[string]map[string]string `json:"processes"`
 }
 
 type RevisionEnvVars struct {
@@ -35,12 +35,23 @@ func GetRevisions(appGuid string) []Revision {
 	return revisions.Revisions
 }
 
+func GetRevision(revisionGuid string) Revision {
+	revisionsURL := fmt.Sprintf("/v3/revisions/%s", revisionGuid)
+	session := cf.Cf("curl", revisionsURL)
+	bytes := session.Wait().Out.Contents()
+
+	revision := Revision{}
+	json.Unmarshal(bytes, &revision)
+
+	return revision
+}
+
 func GetNewestRevision(appGuid string) Revision {
 	revisions := GetRevisions(appGuid)
 	return revisions[len(revisions)-1]
 }
 
-func GetNewestRevisionEnvVars(revisionGuid string) RevisionEnvVars {
+func GetRevisionEnvVars(revisionGuid string) RevisionEnvVars {
 	revisionsEnvVarsURL := fmt.Sprintf("/v3/revisions/%s/environment_variables", revisionGuid)
 	session := cf.Cf("curl", revisionsEnvVarsURL)
 	bytes := session.Wait().Out.Contents()

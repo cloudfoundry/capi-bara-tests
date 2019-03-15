@@ -2,6 +2,7 @@ package baras
 
 import (
 	"fmt"
+
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
@@ -33,14 +34,14 @@ func AssociateNewDroplet(appGUID, assetPath string) string {
 
 var _ = Describe("revisions", func() {
 	var (
-		appName      string
-		appGUID      string
-		spaceGUID    string
-		spaceName    string
-		dropletGUID  string
-		revisions    []Revision
-		revisionGUID string
-		instances    int
+		appName              string
+		appGUID              string
+		spaceGUID            string
+		spaceName            string
+		dropletGUID          string
+		revisions            []Revision
+		originalRevisionGUID string
+		instances            int
 	)
 
 	BeforeEach(func() {
@@ -69,8 +70,8 @@ var _ = Describe("revisions", func() {
 		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 
 		revisions = GetRevisions(appGUID)
-		process := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
-		revisionGUID = process.Relationships.Revision.Data.Guid
+		originalWebProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
+		originalRevisionGUID = originalWebProcess.Relationships.Revision.Data.Guid
 	})
 
 	AfterEach(func() {
@@ -87,7 +88,7 @@ var _ = Describe("revisions", func() {
 				Expect(GetRevisions(appGUID)).To(Equal(revisions))
 				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
-				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(revisionGUID))
+				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(originalRevisionGUID))
 
 				waitForAllInstancesToStart(appGUID, instances)
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
@@ -105,7 +106,7 @@ var _ = Describe("revisions", func() {
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
 				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
-				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(originalRevisionGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
@@ -130,7 +131,7 @@ var _ = Describe("revisions", func() {
 				StartApp(appGUID)
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
-				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(originalRevisionGUID))
 				Expect(GetNewestRevision(appGUID).Processes["web"]["command"]).To(Equal(newCommand))
 
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
@@ -155,7 +156,7 @@ var _ = Describe("revisions", func() {
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
 				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(newDropletGUID))
-				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(originalRevisionGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
@@ -173,7 +174,7 @@ var _ = Describe("revisions", func() {
 				Expect(GetRevisions(appGUID)).To(Equal(revisions))
 				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
-				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(revisionGUID))
+				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(originalRevisionGUID))
 
 				waitForAllInstancesToStart(appGUID, instances)
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
@@ -190,7 +191,7 @@ var _ = Describe("revisions", func() {
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
 				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
-				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(originalRevisionGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
@@ -214,7 +215,7 @@ var _ = Describe("revisions", func() {
 				RestartApp(appGUID)
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
-				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(originalRevisionGUID))
 				Expect(GetNewestRevision(appGUID).Processes["web"]["command"]).To(Equal(newCommand))
 
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
@@ -238,7 +239,7 @@ var _ = Describe("revisions", func() {
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
 				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(newDropletGUID))
-				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(originalRevisionGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
@@ -260,7 +261,7 @@ var _ = Describe("revisions", func() {
 				Expect(GetRevisions(appGUID)).To(Equal(revisions))
 				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
-				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(revisionGUID))
+				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(originalRevisionGUID))
 
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 			})
@@ -281,7 +282,7 @@ var _ = Describe("revisions", func() {
 
 				Expect(GetRevisions(appGUID)).To(Equal(revisions))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
-				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(revisionGUID))
+				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(originalRevisionGUID))
 				Expect(newProcess.Command).NotTo(Equal(newCommand))
 
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
@@ -297,7 +298,7 @@ var _ = Describe("revisions", func() {
 				Expect(GetRevisions(appGUID)).To(Equal(revisions))
 				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
-				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(revisionGUID))
+				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(originalRevisionGUID))
 
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 			})
@@ -313,7 +314,7 @@ var _ = Describe("revisions", func() {
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
 				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
-				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(originalRevisionGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
@@ -328,7 +329,7 @@ var _ = Describe("revisions", func() {
 			)
 
 			BeforeEach(func() {
-				newCommand = "cmd=real bundle exec rackup config.ru -p $PORT"
+				newCommand = "TEST_VAR=real bundle exec rackup config.ru -p $PORT"
 				SetCommandOnProcess(appGUID, "web", newCommand)
 			})
 
@@ -336,7 +337,7 @@ var _ = Describe("revisions", func() {
 				zdtRestartAndWait(appGUID)
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
-				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(originalRevisionGUID))
 				Expect(GetNewestRevision(appGUID).Processes["web"]["command"]).To(Equal(newCommand))
 
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
@@ -344,7 +345,7 @@ var _ = Describe("revisions", func() {
 
 				waitForAllInstancesToStart(appGUID, instances)
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
-				Expect(helpers.CurlApp(Config, appName, "/env/cmd")).To(Equal("real"))
+				Expect(helpers.CurlApp(Config, appName, "/env/TEST_VAR")).To(Equal("real"))
 			})
 		})
 
@@ -360,7 +361,7 @@ var _ = Describe("revisions", func() {
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
 				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(newDropletGUID))
-				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(revisionGUID))
+				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(originalRevisionGUID))
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
@@ -368,25 +369,66 @@ var _ = Describe("revisions", func() {
 			})
 		})
 
-		Context("rollbacks", func() {
+		Context("rolling back to detected dora command", func() {
+			var (
+				newCommand string
+			)
+
 			BeforeEach(func() {
 				AssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip)
 				UpdateEnvironmentVariables(appGUID, `{"foo":"deffo-not-bar"}`)
+				newCommand = "TEST_VAR=real /home/vcap/app/boot.sh"
+				SetCommandOnProcess(appGUID, "web", newCommand)
 				zdtRestartAndWait(appGUID)
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 			})
 
-			It("creates a new revision with the droplet and environment variables from the specified revision", func() {
-				deploymentGUID := RollbackDeployment(appGUID, revisionGUID)
+			It("creates a new revision with the droplet, environment variables, and detected start command from the specified revision", func() {
+				deploymentGUID := RollbackDeployment(appGUID, originalRevisionGUID)
 				Expect(deploymentGUID).ToNot(BeEmpty())
 				WaitUntilDeployed(deploymentGUID)
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 2))
 				revision := GetNewestRevision(appGUID)
 				Expect(revision.Droplet.Guid).To(Equal(dropletGUID))
-				Expect(revision.Guid).NotTo(Equal(revisionGUID))
+				Expect(revision.Guid).NotTo(Equal(originalRevisionGUID))
 
-				Expect(GetNewestRevisionEnvVars(revisionGUID).Var["foo"]).To(Equal("bar"))
+				Expect(GetRevisionEnvVars(originalRevisionGUID).Var["foo"]).To(Equal("bar"))
+				Expect(revision.Processes["web"]["command"]).To(Equal(GetRevision(originalRevisionGUID).Processes["web"]["command"]))
+
+				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
+				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
+
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlApp(Config, appName, "/env/foo")).To(Equal("bar"))
+			})
+		})
+
+		Context("rolling back to specified dora command", func() {
+			var (
+				newCommand string
+			)
+
+			BeforeEach(func() {
+				newCommand = "TEST_VAR=real bundle exec rackup config.ru -p $PORT"
+				SetCommandOnProcess(appGUID, "web", newCommand)
+				UpdateEnvironmentVariables(appGUID, `{"foo":"deffo-not-bar"}`)
+				zdtRestartAndWait(appGUID)
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+			})
+
+			It("creates a new revision with the droplet, environment variables, and detected start command from the specified revision", func() {
+				deploymentGUID := RollbackDeployment(appGUID, originalRevisionGUID)
+				Expect(deploymentGUID).ToNot(BeEmpty())
+				WaitUntilDeployed(deploymentGUID)
+
+				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 2))
+				revision := GetNewestRevision(appGUID)
+				Expect(revision.Droplet.Guid).To(Equal(dropletGUID))
+				Expect(revision.Guid).NotTo(Equal(originalRevisionGUID))
+
+				Expect(GetRevisionEnvVars(originalRevisionGUID).Var["foo"]).To(Equal("bar"))
+				Expect(revision.Processes["web"]["command"]).To(Equal(GetRevision(originalRevisionGUID).Processes["web"]["command"]))
 
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
