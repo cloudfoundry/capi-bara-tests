@@ -21,11 +21,9 @@ var _ = Describe("setting_process_commands", func() {
 		manifestToApply     string
 		nullCommandManifest string
 		applyEndpoint       string
-		packageGUID         string
 		spaceGUID           string
 		spaceName           string
-		token               string
-		dropletGuid         string
+		dropletGUID         string
 	)
 
 	BeforeEach(func() {
@@ -34,25 +32,12 @@ var _ = Describe("setting_process_commands", func() {
 		spaceGUID = GetSpaceGuidFromName(spaceName)
 		By("Creating an App")
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
+		dropletGUID = AssociateNewDroplet(appGUID, assets.NewAssets().DoraZip)
 		applyEndpoint = fmt.Sprintf("/v3/apps/%s/actions/apply_manifest", appGUID)
-		By("Creating a Package")
-		packageGUID = CreatePackage(appGUID)
-		token = GetAuthToken()
-		uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
-
-		By("Uploading a Package")
-		UploadPackage(uploadURL, assets.NewAssets().DoraZip, token)
-		WaitForPackageToBeReady(packageGUID)
-
-		By("Creating a Build")
-		buildGUID := StageBuildpackPackage(packageGUID, Config.GetRubyBuildpackName())
-		WaitForBuildToStage(buildGUID)
-		dropletGuid = GetDropletFromBuild(buildGUID)
-
 	})
 
 	AfterEach(func() {
-		FetchRecentLogs(appGUID, token, Config)
+		FetchRecentLogs(appGUID, GetAuthToken(), Config)
 		DeleteApp(appGUID)
 	})
 
@@ -86,7 +71,7 @@ applications:
 			webProcess := GetProcessByGuid(webProcessWithCommandRedacted.Guid)
 			Expect(webProcess.Command).To(Equal("manifest-command.sh"))
 
-			AssignDropletToApp(appGUID, dropletGuid)
+			AssignDropletToApp(appGUID, dropletGUID)
 
 			webProcess = GetProcessByGuid(webProcessWithCommandRedacted.Guid)
 			Expect(webProcess.Command).To(Equal("manifest-command.sh"))
@@ -114,7 +99,7 @@ applications:
 			webProcess := GetProcessByGuid(webProcessWithCommandRedacted.Guid)
 			Expect(webProcess.Command).To(Equal("manifest-command.sh"))
 
-			AssignDropletToApp(appGUID, dropletGuid)
+			AssignDropletToApp(appGUID, dropletGUID)
 
 			webProcess = GetProcessByGuid(webProcessWithCommandRedacted.Guid)
 			Expect(webProcess.Command).To(Equal("manifest-command.sh"))

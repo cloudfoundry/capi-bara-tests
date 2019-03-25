@@ -158,6 +158,25 @@ func AssignDropletToApp(appGuid, dropletGuid string) {
 	}
 }
 
+func AssociateNewDroplet(appGUID, assetPath string) string {
+	By("Creating a Package")
+	packageGUID := CreatePackage(appGUID)
+	uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
+
+	By("Uploading a Package")
+	UploadPackage(uploadURL, assetPath, GetAuthToken())
+	WaitForPackageToBeReady(packageGUID)
+
+	By("Creating a Build")
+	buildGUID := StageBuildpackPackage(packageGUID)
+	WaitForBuildToStage(buildGUID)
+	dropletGUID := GetDropletFromBuild(buildGUID)
+
+	AssignDropletToApp(appGUID, dropletGUID)
+
+	return dropletGUID
+}
+
 func UpdateEnvironmentVariables(appGuid, envVars string) {
 	appUpdatePath := fmt.Sprintf("/v3/apps/%s/environment_variables", appGuid)
 	appUpdateBody := fmt.Sprintf(`{"var": %s}`, envVars)
@@ -175,18 +194,29 @@ func AssignIsolationSegmentToSpace(spaceGuid, isoSegGuid string) {
 
 func CreateAndMapRoute(appGuid, space, domain, host string) {
 	CreateRoute(space, domain, host)
-	getRoutePath := fmt.Sprintf("/v2/routes?q=host:%s", host)
-	routeBody := cf.Cf("curl", getRoutePath).Wait().Out.Contents()
-	routeJSON := struct {
-		Resources []struct {
-			Metadata struct {
-				Guid string `json:"guid"`
-			} `json:"metadata"`
-		} `json:"resources"`
-	}{}
-	json.Unmarshal([]byte(routeBody), &routeJSON)
-	routeGuid := routeJSON.Resources[0].Metadata.Guid
+	routeGuid := getRouteGuidByHost(host)
 	Expect(cf.Cf("curl", fmt.Sprintf("/v2/routes/%s/apps/%s", routeGuid, appGuid), "-X", "PUT").Wait()).To(Exit(0))
+}
+
+func CreateAndMapRouteWithPort(appGuid, space, domain, host string, port int) {
+	CreateRoute(space, domain, host)
+
+	routeGuid := getRouteGuidByHost(host)
+
+	routeMappingJSON, err := json.Marshal(
+		struct {
+			AppGuid   string `json:"app_guid"`
+			RouteGuid string `json:"route_guid"`
+			AppPort   int    `json:"app_port"`
+		}{
+			appGuid,
+			routeGuid,
+			port,
+		},
+	)
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect(cf.Cf("curl", "/v2/route_mappings", "-X", "POST", "-d", string(routeMappingJSON)).Wait()).To(Exit(0))
 }
 
 func UnmapAllRoutes(appGuid string) {
@@ -604,4 +634,19 @@ func getHttpLoggregatorEndpoint() string {
 	Expect(err).NotTo(HaveOccurred())
 
 	return strings.Replace(response.DopplerLoggingEndpoint, "ws", "http", 1)
+}
+
+func getRouteGuidByHost(host string) string {
+	getRoutePath := fmt.Sprintf("/v2/routes?q=host:%s", host)
+	routeBody := cf.Cf("curl", getRoutePath).Wait().Out.Contents()
+	routeJSON := struct {
+		Resources []struct {
+			Metadata struct {
+				Guid string `json:"guid"`
+			} `json:"metadata"`
+		} `json:"resources"`
+	}{}
+	json.Unmarshal([]byte(routeBody), &routeJSON)
+
+	return routeJSON.Resources[0].Metadata.Guid
 }
