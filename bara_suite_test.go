@@ -70,7 +70,7 @@ func TestBARA(t *testing.T) {
 
 	SynchronizedAfterSuite(func() {
 		if TestSetup != nil {
-			TestSetup.Teardown()
+			// TestSetup.Teardown()
 		}
 	}, func() {
 		os.Remove(assets.NewAssets().DoraZip)

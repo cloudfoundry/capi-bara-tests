@@ -13,25 +13,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func AssociateNewDroplet(appGUID, assetPath string) string {
-	By("Creating a Package")
-	packageGUID := CreatePackage(appGUID)
-	uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
-
-	By("Uploading a Package")
-	UploadPackage(uploadURL, assetPath, GetAuthToken())
-	WaitForPackageToBeReady(packageGUID)
-
-	By("Creating a Build")
-	buildGUID := StageBuildpackPackage(packageGUID)
-	WaitForBuildToStage(buildGUID)
-	dropletGUID := GetDropletFromBuild(buildGUID)
-
-	AssignDropletToApp(appGUID, dropletGUID)
-
-	return dropletGUID
-}
-
 var _ = Describe("revisions", func() {
 	var (
 		appName              string
