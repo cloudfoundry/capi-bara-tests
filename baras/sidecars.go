@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = FDescribe("sidecars", func() {
+var _ = Describe("sidecars", func() {
 	var (
 		appName             string
 		appGUID             string
