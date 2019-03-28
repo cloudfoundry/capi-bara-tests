@@ -1,18 +1,17 @@
 package baras
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
+	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
-	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
+
+	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/services"
-
-	"encoding/json"
-
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -205,6 +204,13 @@ applications:
   health-check-type: http
   health-check-http-endpoint: /env
   timeout: 75
+  metadata:
+    labels:
+      potato: yams
+      juice: cherry
+    annotations:
+      contact: "jack@example.com diane@example.org"
+      cougar: mellencamp
 `, apps[0].name, serviceInstance, apps[0].route)
 					expectedManifest = fmt.Sprintf(`
 applications:
@@ -219,6 +225,13 @@ applications:
   - route: %s
   services:
   - %s
+  metadata:
+    labels:
+      potato: yams
+      juice: cherry
+    annotations:
+      contact: "jack@example.com diane@example.org"
+      cougar: mellencamp
   processes:
   - disk_quota: 1024M
     health-check-http-endpoint: /env
