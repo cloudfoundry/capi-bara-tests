@@ -92,5 +92,51 @@ var _ = Describe("sidecars", func() {
 				Eventually(session).Should(Exit(0))
 			})
 		})
+
+		Context("and a sidecar is crashing", func() {
+			It("crashes the main app and the second sidecar", func() {
+				session := cf.Cf("start", appName)
+				Eventually(session).Should(Exit(0))
+
+				session = helpers.Curl(Config, fmt.Sprintf("%s.%s", appRoutePrefix, Config.GetAppsDomain()))
+				Eventually(session).Should(Say("Hi, I'm Dora!"))
+				Eventually(session).Should(Exit(0))
+
+				session = helpers.Curl(Config, fmt.Sprintf("%s.%s/sigterm/KILL", sidecarRoutePrefix1, Config.GetAppsDomain()))
+				Eventually(session).Should(Say("502"))
+				Eventually(session).Should(Exit(0))
+
+				session = helpers.Curl(Config, fmt.Sprintf("%s.%s", appRoutePrefix, Config.GetAppsDomain()))
+				Eventually(session).Should(Say("404 Not Found: Requested route"))
+				Eventually(session).Should(Exit(0))
+
+				session = helpers.Curl(Config, fmt.Sprintf("%s.%s", sidecarRoutePrefix2, Config.GetAppsDomain()))
+				Eventually(session).Should(Say("404 Not Found: Requested route"))
+				Eventually(session).Should(Exit(0))
+			})
+		})
+
+		Context("and the app is crashing", func() {
+			It("crashes the sidecars as well", func() {
+				session := cf.Cf("start", appName)
+				Eventually(session).Should(Exit(0))
+
+				session = helpers.Curl(Config, fmt.Sprintf("%s.%s", appRoutePrefix, Config.GetAppsDomain()))
+				Eventually(session).Should(Say("Hi, I'm Dora!"))
+				Eventually(session).Should(Exit(0))
+
+				session = helpers.Curl(Config, fmt.Sprintf("%s.%s/sigterm/KILL", appRoutePrefix, Config.GetAppsDomain()))
+				Eventually(session).Should(Say("502"))
+				Eventually(session).Should(Exit(0))
+
+				session = helpers.Curl(Config, fmt.Sprintf("%s.%s", sidecarRoutePrefix1, Config.GetAppsDomain()))
+				Eventually(session).Should(Say("404 Not Found: Requested route"))
+				Eventually(session).Should(Exit(0))
+
+				session = helpers.Curl(Config, fmt.Sprintf("%s.%s", sidecarRoutePrefix2, Config.GetAppsDomain()))
+				Eventually(session).Should(Say("404 Not Found: Requested route"))
+				Eventually(session).Should(Exit(0))
+			})
+		})
 	})
 })
