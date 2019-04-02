@@ -18,6 +18,7 @@ import (
 	"github.com/cloudfoundry/capi-bara-tests/helpers/config"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
 )
 
 const minCliVersion = "6.33.1"
@@ -53,8 +54,21 @@ func TestBARA(t *testing.T) {
 		buildCmd.Stdout = GinkgoWriter
 		buildCmd.Stderr = GinkgoWriter
 
-		err = buildCmd.Run()
+		session, err := gexec.Start(buildCmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
+		Eventually(session).Should(gexec.Exit(0))
+
+		buildCmd = exec.Command("go", "build", "-o", "../sidecar-dependent/sidecar")
+		buildCmd.Dir = "assets/sidecar"
+		buildCmd.Env = append(os.Environ(),
+			"GOOS=linux",
+			"GOARCH=amd64",
+		)
+
+		session, err = gexec.Start(buildCmd, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session).Should(gexec.Exit(0))
+
 		assetPaths := assets.NewAssets()
 		ZipAsset(assetPaths.Dora, assetPaths.DoraZip)
 		ZipAsset(assetPaths.Staticfile, assetPaths.StaticfileZip)

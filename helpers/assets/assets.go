@@ -3,6 +3,7 @@ package assets
 type Assets struct {
 	AspClassic                 string
 	BatchScript                string
+	Binary                     string
 	Catnip                     string
 	CredHubEnabledApp          string
 	CredHubServiceBroker       string
@@ -13,40 +14,41 @@ type Assets struct {
 	Fuse                       string
 	GoCallsRubyZip             string
 	Golang                     string
-	HelloWorld                 string
 	HelloRouting               string
+	HelloWorld                 string
 	Java                       string
 	JavaSpringZip              string
 	JavaUnwriteableZip         string
+	LoggingRouteService        string
 	LoggregatorLoadGenerator   string
 	LoggregatorLoadGeneratorGo string
-	Python                     string
+	MultiPortApp               string
 	Node                       string
 	NodeWithProcfile           string
 	Nora                       string
 	Php                        string
 	Proxy                      string
+	Python                     string
 	RubySimple                 string
 	SecurityGroupBuildpack     string
 	ServiceBroker              string
+	SidecarDependent           string
+	SpringSleuthZip            string
 	Staticfile                 string
 	StaticfileZip              string
 	SyslogDrainListener        string
-	Binary                     string
-	LoggingRouteService        string
 	TCPListener                string
 	Wcf                        string
 	WindowsWebapp              string
 	WindowsWorker              string
 	WorkerApp                  string
-	MultiPortApp               string
-	SpringSleuthZip            string
 }
 
 func NewAssets() Assets {
 	return Assets{
 		AspClassic:                 "assets/asp-classic",
 		BatchScript:                "assets/batch-script",
+		Binary:                     "assets/binary",
 		Catnip:                     "assets/catnip/bin",
 		CredHubEnabledApp:          "assets/credhub-enabled-app/credhub-enabled-app.jar",
 		CredHubServiceBroker:       "assets/credhub-service-broker",
@@ -62,8 +64,10 @@ func NewAssets() Assets {
 		Java:                       "assets/java",
 		JavaSpringZip:              "assets/java-spring/java-spring.jar",
 		JavaUnwriteableZip:         "assets/java-unwriteable-dir/java-unwriteable-dir.jar",
+		LoggingRouteService:        "assets/logging-route-service",
 		LoggregatorLoadGenerator:   "assets/loggregator-load-generator",
 		LoggregatorLoadGeneratorGo: "assets/loggregator-load-generator-go",
+		MultiPortApp:               "assets/multi-port-app",
 		Node:                       "assets/node",
 		NodeWithProcfile:           "assets/node-with-procfile",
 		Nora:                       "assets/nora/NoraPublished",
@@ -73,17 +77,15 @@ func NewAssets() Assets {
 		RubySimple:                 "assets/ruby_simple",
 		SecurityGroupBuildpack:     "assets/security_group_buildpack.zip",
 		ServiceBroker:              "assets/service_broker",
+		SidecarDependent:           "assets/sidecar-dependent",
+		SpringSleuthZip:            "assets/spring-sleuth/spring-sleuth.jar",
 		Staticfile:                 "assets/staticfile",
 		StaticfileZip:              "assets/staticfile.zip",
 		SyslogDrainListener:        "assets/syslog-drain-listener",
-		Binary:                     "assets/binary",
-		LoggingRouteService:        "assets/logging-route-service",
 		TCPListener:                "assets/tcp-listener",
 		Wcf:                        "assets/wcf/Hello.Service.IIS",
 		WindowsWebapp:              "assets/webapp",
-		WorkerApp:                  "assets/worker-app",
 		WindowsWorker:              "assets/worker",
-		MultiPortApp:               "assets/multi-port-app",
-		SpringSleuthZip:            "assets/spring-sleuth/spring-sleuth.jar",
+		WorkerApp:                  "assets/worker-app",
 	}
 }
