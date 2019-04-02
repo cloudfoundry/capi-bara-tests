@@ -56,7 +56,7 @@ func TestBARA(t *testing.T) {
 
 		session, err := gexec.Start(buildCmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
-		Eventually(session).Should(gexec.Exit(0))
+		Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 		buildCmd = exec.Command("go", "build", "-o", "../sidecar-dependent/sidecar")
 		buildCmd.Dir = "assets/sidecar"
@@ -67,7 +67,7 @@ func TestBARA(t *testing.T) {
 
 		session, err = gexec.Start(buildCmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
-		Eventually(session).Should(gexec.Exit(0))
+		Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 		assetPaths := assets.NewAssets()
 		ZipAsset(assetPaths.Dora, assetPaths.DoraZip)
@@ -84,7 +84,7 @@ func TestBARA(t *testing.T) {
 
 	SynchronizedAfterSuite(func() {
 		if TestSetup != nil {
-			// TestSetup.Teardown()
+			TestSetup.Teardown()
 		}
 	}, func() {
 		os.Remove(assets.NewAssets().DoraZip)
