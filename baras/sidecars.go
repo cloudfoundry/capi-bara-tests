@@ -24,6 +24,7 @@ var _ = Describe("sidecars", func() {
 		appRoutePrefix      string
 		sidecarRoutePrefix1 string
 		sidecarRoutePrefix2 string
+		sidecarGUID         string
 	)
 
 	BeforeEach(func() {
@@ -89,6 +90,36 @@ var _ = Describe("sidecars", func() {
 				session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix2, Config.GetAppsDomain()))
 				Eventually(session).Should(Say("RIGHT_SIDECAR"))
 				Eventually(session).Should(Exit(0))
+			})
+		})
+
+		Context("when the app has a sidecar that just sleeps", func() {
+			BeforeEach(func() {
+				sidecarGUID = CreateSidecar("my_sidecar", []string{"web"}, "sleep 100000", appGUID)
+			})
+
+			It("stops responding only after an app restart", func() {
+				session := cf.Cf("start", appName)
+				Eventually(session).Should(Exit(0))
+
+				By("verify the sidecar is running")
+				session = cf.Cf("ssh", appName, "-c", "ps aux | grep sleep | grep -v grep")
+				Eventually(session).Should(Exit(0))
+
+				By("deleted the sidecar")
+				session = cf.Cf("curl", fmt.Sprintf("/v3/sidecars/%s", sidecarGUID), "-X", "DELETE")
+				Eventually(session).Should(Exit(0))
+
+				By("verify it still responds")
+				session = cf.Cf("ssh", appName, "-c", "ps aux | grep sleep | grep -v grep")
+				Eventually(session).Should(Exit(0))
+
+				restartApp(appName)
+
+				By("verify it no longer responds")
+				session = cf.Cf("ssh", appName, "-c", "ps aux | grep sleep | grep -v grep")
+				Eventually(session).Should(Exit(1))
+
 			})
 		})
 

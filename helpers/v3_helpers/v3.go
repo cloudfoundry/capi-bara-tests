@@ -247,7 +247,7 @@ func CreateApp(appName, spaceGuid, environmentVariables string) string {
 	return app.Guid
 }
 
-func CreateSidecar(name string, processTypes []string, command string, appGuid string) {
+func CreateSidecar(name string, processTypes []string, command string, appGuid string) string {
 	sidecarEndpoint := fmt.Sprintf("/v3/apps/%s/sidecars", appGuid)
 	sidecarOneJSON, err := json.Marshal(
 		struct {
@@ -263,6 +263,13 @@ func CreateSidecar(name string, processTypes []string, command string, appGuid s
 	Expect(err).NotTo(HaveOccurred())
 	session := cf.Cf("curl", sidecarEndpoint, "-X", "POST", "-d", string(sidecarOneJSON))
 	Eventually(session).Should(Exit(0))
+
+	var sidecarData struct {
+		Guid string `json:"guid"`
+	}
+	err = json.Unmarshal(session.Out.Contents(), &sidecarData)
+	Expect(err).NotTo(HaveOccurred())
+	return sidecarData.Guid
 }
 
 func CreateDockerApp(appName, spaceGuid, environmentVariables string) string {
