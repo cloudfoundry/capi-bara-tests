@@ -355,6 +355,84 @@ applications:
 			})
 		})
 
+		Describe("sidecars", func() {
+			BeforeEach(func() {
+				manifestToApply = fmt.Sprintf(`
+applications:
+- name: "%s"
+  processes:
+  - type: web
+  environment_variables:
+    WHAT_AM_I: MOTORCYCLE
+  sidecars:
+  - name: 'left_sidecar'
+    command: WHAT_AM_I=LEFT_SIDECAR bundle exec rackup config.ru -p 8081
+    process_types: ['web']
+  - name: 'right_sidecar'
+    process_types: ['web']
+    command: WHAT_AM_I=RIGHT_SIDECAR bundle exec rackup config.ru -p 8082
+  
+`, apps[0].name)
+			})
+
+			Context("when the manifest defines some sidecars", func() {
+				It("successfully runs the sidecar", func() {
+					session := cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
+					Expect(session.Wait()).To(Exit(0))
+					response := session.Out.Contents()
+					Expect(string(response)).To(ContainSubstring("202 Accepted"))
+
+					PollJob(GetJobPath(response))
+					appGUID := apps[0].guid
+
+					workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
+						target := cf.Cf("target", "-o", apps[0].orgName, "-s", spaceName).Wait()
+						Expect(target).To(Exit(0), "failed targeting")
+
+						appEndpoint := fmt.Sprintf("/v2/apps/%s", appGUID)
+						extraPortsJSON, err := json.Marshal(
+							struct {
+								Ports []int `json:"ports"`
+							}{
+								[]int{8080, 8081, 8082},
+							},
+						)
+						Expect(err).NotTo(HaveOccurred())
+						session := cf.Cf("curl", appEndpoint, "-X", "PUT", "-d", string(extraPortsJSON))
+						Eventually(session).Should(Exit(0))
+
+						appRoutePrefix := random_name.BARARandomName("ROUTE")
+						sidecarRoutePrefix1 := random_name.BARARandomName("ROUTE")
+						sidecarRoutePrefix2 := random_name.BARARandomName("ROUTE")
+
+						CreateAndMapRouteWithPort(appGUID, spaceName, Config.GetAppsDomain(), appRoutePrefix, 8080)
+						CreateAndMapRouteWithPort(appGUID, spaceName, Config.GetAppsDomain(), sidecarRoutePrefix1, 8081)
+						CreateAndMapRouteWithPort(appGUID, spaceName, Config.GetAppsDomain(), sidecarRoutePrefix2, 8082)
+
+						session = cf.Cf("start", apps[0].name)
+						Eventually(session).Should(Exit(0))
+
+						session = helpers.Curl(Config, fmt.Sprintf("%s.%s", appRoutePrefix, Config.GetAppsDomain()))
+						Eventually(session).Should(Say("Hi, I'm Dora!"))
+						Eventually(session).Should(Exit(0))
+
+						session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", appRoutePrefix, Config.GetAppsDomain()))
+						Eventually(session).ShouldNot(Say("MOTORCYCLE"))
+						Eventually(session).Should(Exit(0))
+
+						session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix1, Config.GetAppsDomain()))
+						Eventually(session).Should(Say("LEFT_SIDECAR"))
+						Eventually(session).Should(Exit(0))
+
+						session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix2, Config.GetAppsDomain()))
+						Eventually(session).Should(Say("RIGHT_SIDECAR"))
+						Eventually(session).Should(Exit(0))
+					})
+
+				})
+			})
+		})
+
 		Describe("processes", func() {
 			BeforeEach(func() {
 				manifestToApply = fmt.Sprintf(`
