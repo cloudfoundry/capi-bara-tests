@@ -2,6 +2,7 @@ package baras
 
 import (
 	"encoding/json"
+	"strings"
 	"fmt"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
@@ -649,3 +650,58 @@ applications:
 		})
 	})
 })
+
+var _ = Describe("Applying a manifest before pushing the app - #164994410", func() {
+	It("pushes an app with multiple process types defined in the manifest", func() {
+		appName := random_name.BARARandomName("APP")
+		session := cf.Cf("v3-create-app", appName)
+		Expect(session.Wait()).To(Exit(0))
+
+		session = cf.Cf("app", appName, "--guid")
+		Expect(session.Wait()).To(Exit(0))
+		appGUID := strings.TrimSpace(string(session.Out.Contents()))
+
+
+		applyEndpoint := fmt.Sprintf("/v3/apps/%s/actions/apply_manifest", appGUID)
+		manifestToApply := fmt.Sprintf(`
+---
+applications:
+- buildpacks:
+  - ruby_buildpack
+  name: %s
+  stack: cflinuxfs3
+  processes:
+  - type: web
+    instances: 1
+    memory: 4096M
+    disk_quota: 1024M
+    health-check-type: http
+    health-check-http-endpoint: '/'
+  - type: logs
+    instances: 1
+    memory: 4096M
+    command: "bundle exec rackup config.ru -p $PORT"
+    disk_quota: 1024M
+    health-check-type: http
+    health-check-http-endpoint: '/'
+  
+`, appName)
+
+		session = cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
+		Expect(session.Wait()).To(Exit(0))
+		response := session.Out.Contents()
+		Expect(string(response)).To(ContainSubstring("202 Accepted"))
+
+		PollJob(GetJobPath(response))
+
+		session = cf.Cf("v3-push", appName, "-p", assets.NewAssets().Dora)
+		Expect(session.Wait()).To(Exit(0))
+
+		waitForAllInstancesToStart(appGUID, 1)
+
+		session = cf.Cf("app", appName).Wait()
+		Eventually(session).Should(Say(`type:\s+logs\s+instances:\s+1/1`))
+	})
+})
+
+
