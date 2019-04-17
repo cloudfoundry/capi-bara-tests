@@ -196,7 +196,7 @@ applications:
   memory: 300M
   buildpack: ruby_buildpack
   disk_quota: 1024M
-  stack: cflinuxfs2
+  stack: cflinuxfs3
   services:
   - %s
   routes:
@@ -216,7 +216,7 @@ applications:
 					expectedManifest = fmt.Sprintf(`
 applications:
 - name: %s
-  stack: cflinuxfs2
+  stack: cflinuxfs3
   buildpacks:
   - ruby_buildpack
   env:
@@ -266,7 +266,7 @@ applications:
 						session = cf.Cf("app", apps[0].name).Wait()
 						Eventually(session).Should(Say("Showing health"))
 						Eventually(session).Should(Say("routes:\\s+(?:%s.%s,\\s+)?%s", apps[0].name, Config.GetAppsDomain(), apps[0].route))
-						Eventually(session).Should(Say("stack:\\s+cflinuxfs2"))
+						Eventually(session).Should(Say("stack:\\s+cflinuxfs3"))
 						Eventually(session).Should(Say("buildpacks:\\s+ruby"))
 						Eventually(session).Should(Say("instances:\\s+.*?\\d+/2"))
 						Eventually(session).Should(Exit(0))
