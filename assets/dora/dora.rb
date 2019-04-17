@@ -121,7 +121,9 @@ class Dora < Sinatra::Base
   end
 
   get '/config' do
+    puts "Sending a request to the config-server sidecar at localhost:#{ENV['CONFIG_SERVER_PORT']}/config/"
     response = Typhoeus.get("localhost:#{ENV['CONFIG_SERVER_PORT']}/config/")
+    puts "Received #{response.body} from the config-server sidecar"
     response.body
   end
 

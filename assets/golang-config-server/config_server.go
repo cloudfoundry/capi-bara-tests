@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/", hello)
+	// Emulate an external configuration service
 	http.HandleFunc("/config/", config)
 	fmt.Println("listening...")
 	err := http.ListenAndServe(":"+os.Getenv("CONFIG_SERVER_PORT"), nil)
@@ -22,17 +22,14 @@ type Config struct {
 	Password string
 }
 
-func hello(res http.ResponseWriter, req *http.Request) {
-	fmt.Fprintln(res, "Example config server")
-}
-
 func config(res http.ResponseWriter, req *http.Request) {
-	config := Config{"dora.admin", "not-a-real-p4$$w0rd"}
+	config := Config{"some-service.admin", "not-a-real-p4$$w0rd"}
 
 	js, err := json.Marshal(config)
 	if err != nil {
 		panic(err)
 	}
 
+	fmt.Println("Received a request for config.")
 	fmt.Fprintln(res, string(js))
 }
