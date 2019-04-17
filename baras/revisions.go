@@ -1,7 +1,9 @@
 package baras
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
@@ -11,6 +13,7 @@ import (
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gexec"
 )
 
 var _ = Describe("revisions", func() {
@@ -418,6 +421,56 @@ var _ = Describe("revisions", func() {
 				Expect(helpers.CurlApp(Config, appName, "/env/foo")).To(Equal("bar"))
 			})
 		})
+	})
+})
+
+var _ = Describe("mix v2 apps and v3 revisions", func() {
+	var (
+		appName              string
+		appGUID              string
+	)
+
+	BeforeEach(func() {
+		appName = random_name.BARARandomName("APP")
+		session := cf.Cf("push", appName, "-p", assets.NewAssets().Dora)
+		Expect(session.Wait()).To(Exit(0))
+		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+		session = cf.Cf("app", appName, "--guid")
+		Expect(session.Wait()).To(Exit(0))
+		appGUID = strings.TrimSpace(string(session.Out.Contents()))
+		session = cf.Cf("curl", "-X", "PATCH", fmt.Sprintf("/v3/apps/%s/features/revisions",appGUID), "-d",
+			`{"enabled" : true }`)
+		Expect(session.Wait()).To(Exit(0))
+
+	})
+
+	AfterEach(func() {
+		FetchRecentLogs(appGUID, GetAuthToken(), Config)
+		DeleteApp(appGUID)
+	})
+
+	It("runs the latest droplet and doesn't add revisions", func() {
+		Expect(cf.Cf("push",
+			appName,
+			"-b", "staticfile_buildpack",
+			"-p", assets.NewAssets().Staticfile,
+		).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
+		session := cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/revisions",appGUID))
+		Expect(session.Wait()).To(Exit(0))
+		revstr := session.Out.Contents()
+
+		type revisionsType struct {
+			Pagination struct {
+				TotalResults int `json:"total_results"`
+			} `json:"pagination"`
+		}
+
+		revs := revisionsType{}
+		err := json.Unmarshal(revstr, &revs)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(revs.Pagination.TotalResults).To(Equal(0))
+
 	})
 })
 
