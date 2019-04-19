@@ -424,7 +424,7 @@ var _ = Describe("revisions", func() {
 	})
 })
 
-var _ = Describe("mix v2 apps and v3 revisions", func() {
+var _ = XDescribe("mix v2 apps and v3 revisions", func() {
 	var (
 		appName              string
 		appGUID              string
