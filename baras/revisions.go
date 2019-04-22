@@ -424,7 +424,7 @@ var _ = Describe("revisions", func() {
 	})
 })
 
-var _ = XDescribe("mix v2 apps and v3 revisions", func() {
+var _ = Describe("mix v2 apps and v3 revisions", func() {
 	var (
 		appName              string
 		appGUID              string
@@ -432,7 +432,7 @@ var _ = XDescribe("mix v2 apps and v3 revisions", func() {
 
 	BeforeEach(func() {
 		appName = random_name.BARARandomName("APP")
-		session := cf.Cf("push", appName, "-p", assets.NewAssets().Dora)
+		session := cf.Cf("push", appName, "-p", assets.NewAssets().Dora, "--health-check-type", "http")
 		Expect(session.Wait()).To(Exit(0))
 		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 		session = cf.Cf("app", appName, "--guid")
@@ -449,7 +449,7 @@ var _ = XDescribe("mix v2 apps and v3 revisions", func() {
 		DeleteApp(appGUID)
 	})
 
-	It("runs the latest droplet and doesn't add revisions", func() {
+	It("runs the latest droplet and adds a revision", func() {
 		Expect(cf.Cf("push",
 			appName,
 			"-b", "staticfile_buildpack",
@@ -469,7 +469,7 @@ var _ = XDescribe("mix v2 apps and v3 revisions", func() {
 		revs := revisionsType{}
 		err := json.Unmarshal(revstr, &revs)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(revs.Pagination.TotalResults).To(Equal(0))
+		Expect(revs.Pagination.TotalResults).To(Equal(1))
 
 	})
 })
