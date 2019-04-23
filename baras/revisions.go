@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
+	. "github.com/onsi/gomega/gbytes"
 )
 
 var _ = Describe("revisions", func() {
@@ -433,7 +434,7 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 	BeforeEach(func() {
 		appName = random_name.BARARandomName("APP")
 		session := cf.Cf("push", appName, "-p", assets.NewAssets().Dora, "--health-check-type", "http")
-		Expect(session.Wait()).To(Exit(0))
+		Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 		session = cf.Cf("app", appName, "--guid")
 		Expect(session.Wait()).To(Exit(0))
@@ -441,7 +442,6 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 		session = cf.Cf("curl", "-X", "PATCH", fmt.Sprintf("/v3/apps/%s/features/revisions",appGUID), "-d",
 			`{"enabled" : true }`)
 		Expect(session.Wait()).To(Exit(0))
-
 	})
 
 	AfterEach(func() {
@@ -449,31 +449,84 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 		DeleteApp(appGUID)
 	})
 
-	It("runs the latest droplet and adds a revision", func() {
-		Expect(cf.Cf("push",
-			appName,
-			"-b", "staticfile_buildpack",
-			"-p", assets.NewAssets().Staticfile,
-		).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
-		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
-		session := cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/revisions",appGUID))
-		Expect(session.Wait()).To(Exit(0))
-		revstr := session.Out.Contents()
 
-		type revisionsType struct {
-			Pagination struct {
-				TotalResults int `json:"total_results"`
-			} `json:"pagination"`
-		}
+	Describe("cf push",  func() {
+		It("runs the latest droplet and adds a revision", func() {
+			Expect(cf.Cf("push",
+				appName,
+				"-b", "staticfile_buildpack",
+				"-p", assets.NewAssets().Staticfile,
+			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+			Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
+			session := cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/revisions",appGUID))
+			Expect(session.Wait()).To(Exit(0))
+			revstr := session.Out.Contents()
 
-		revs := revisionsType{}
-		err := json.Unmarshal(revstr, &revs)
-		Expect(err).NotTo(HaveOccurred())
+			type revisionsType struct {
+				Pagination struct {
+					TotalResults int `json:"total_results"`
+				} `json:"pagination"`
+			}
 
-		// Since we enable revisions after the first push, one "Initial revision" is created at the
-		// beginning of the second push and a second revision is created after staging
-		Expect(revs.Pagination.TotalResults).To(Equal(2))
+			revs := revisionsType{}
+			err := json.Unmarshal(revstr, &revs)
+			Expect(err).NotTo(HaveOccurred())
 
+			// Since we enable revisions after the first push, one "Initial revision" is created at the
+			// beginning of the second push and a second revision is created after staging
+			Expect(revs.Pagination.TotalResults).To(Equal(2))
+		})
+	})
+
+	Describe("cf restage",  func() {
+		It("restages the app and adds a revision", func() {
+			Expect(cf.Cf("restage", appName).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+
+			session := cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/revisions",appGUID))
+			Expect(session.Wait()).To(Exit(0))
+			revstr := session.Out.Contents()
+
+			type revisionsType struct {
+				Pagination struct {
+					TotalResults int `json:"total_results"`
+				} `json:"pagination"`
+			}
+
+			revs := revisionsType{}
+			err := json.Unmarshal(revstr, &revs)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(revs.Pagination.TotalResults).To(Equal(1))
+		})
+	})
+
+	Describe("cf restart after setting environment variables",  func() {
+		It("restarts the app and adds a revision", func() {
+			Expect(cf.Cf("set-env", appName, "ENV", "bar").Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+			Expect(cf.Cf("restart", appName).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+
+			Eventually(func() *Session {
+				session := helpers.Curl(Config, fmt.Sprintf("%s.%s/env/ENV", appName, Config.GetAppsDomain()))
+				Eventually(session).Should(Exit(0))
+				return session
+			}, Config.DefaultTimeoutDuration()).Should(Say("bar"))
+
+			session := cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/revisions", appGUID))
+			Expect(session.Wait()).To(Exit(0))
+			revstr := session.Out.Contents()
+
+			type revisionsType struct {
+				Pagination struct {
+					TotalResults int `json:"total_results"`
+				} `json:"pagination"`
+			}
+
+			revs := revisionsType{}
+			err := json.Unmarshal(revstr, &revs)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(revs.Pagination.TotalResults).To(Equal(1))
+		})
 	})
 })
 
