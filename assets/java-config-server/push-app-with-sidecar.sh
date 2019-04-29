@@ -2,6 +2,8 @@
 
 DORA_PATH="../java-dora"
 DORA_MANIFEST_PATH="../java-config-server/dora_manifest.yml"
+JAVA_DORA_JAR="build/libs/java-dora-0.0.1-SNAPSHOT.jar"
+JAVA_CONFIG_JAR="build/libs/java-config-server-0.0.1-SNAPSHOT.jar"
 
 function clean() {
     ./gradlew clean
@@ -9,14 +11,16 @@ function clean() {
 
 function build_config_server() {
     ./gradlew build
-    cp java-config-server/build/libs/*.jar ${DORA_PATH}
+    cp build/libs/*.jar "${DORA_PATH}/build/libs"
 }
 
 function push_dora_with_sidecars() {
     pushd ${DORA_PATH} > /dev/null
-      cf v3-create-app java-dora
-      cf v3-apply-manifest -f ${DORA_MANIFEST_PATH}
-      cf v3-push java-dora
+        ./gradlew build
+        zip "${JAVA_DORA_JAR}" -u "${JAVA_CONFIG_JAR}"
+        cf v3-create-app java-dora
+        cf v3-apply-manifest -f "${DORA_MANIFEST_PATH}"
+        cf v3-push java-dora -p build/libs/java-dora-0.0.1-SNAPSHOT.jar
     popd > /dev/null
 }
 

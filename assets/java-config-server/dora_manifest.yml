@@ -2,11 +2,11 @@ applications:
   - name: java-dora
     disk_quota: 1G
     instances: 1
-    memory: 256M
+    memory: 1G 
     env:
       CONFIG_SERVER_PORT: 8082
     sidecars:
       - name: java-config-server
         process_types:
           - web
-        command: 'java -jar java-config-server-*.jar'
+        command: 'java -jar java-config-server-0.0.1-SNAPSHOT.jar'
