@@ -9,4 +9,4 @@ applications:
       - name: java-config-server
         process_types:
           - web
-        command: 'java -jar java-config-server-0.0.1-SNAPSHOT.jar'
+        command: /home/vcap/app/.java-buildpack/open_jdk_jre/bin/java -jar java-config-server-0.0.1-SNAPSHOT.jar
