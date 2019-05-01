@@ -1,0 +1,12 @@
+FROM ruby:alpine
+
+WORKDIR /usr/src/app
+
+COPY . ./
+RUN bundle install
+
+COPY . .
+
+ENV PORT=8080
+EXPOSE 8080
+CMD bundle exec rackup config.ru -p $PORT -o 0.0.0.0
