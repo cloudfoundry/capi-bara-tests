@@ -371,7 +371,7 @@ var _ = Describe("revisions", func() {
 			It("creates a new revision with the droplet, environment variables, and detected start command from the specified revision", func() {
 				deploymentGUID := RollbackDeployment(appGUID, originalRevisionGUID)
 				Expect(deploymentGUID).ToNot(BeEmpty())
-				WaitUntilDeployed(deploymentGUID)
+				WaitUntilDeploymentReachesState(deploymentGUID, "DEPLOYED")
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 2))
 				revision := GetNewestRevision(appGUID)
@@ -405,7 +405,7 @@ var _ = Describe("revisions", func() {
 			It("creates a new revision with the droplet, environment variables, and detected start command from the specified revision", func() {
 				deploymentGUID := RollbackDeployment(appGUID, originalRevisionGUID)
 				Expect(deploymentGUID).ToNot(BeEmpty())
-				WaitUntilDeployed(deploymentGUID)
+				WaitUntilDeploymentReachesState(deploymentGUID, "DEPLOYED")
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 2))
 				revision := GetNewestRevision(appGUID)
@@ -542,5 +542,5 @@ func waitForAllInstancesToStart(appGUID string, instances int) {
 func zdtRestartAndWait(appGUID string) {
 	deploymentGUID := CreateDeployment(appGUID)
 	Expect(deploymentGUID).ToNot(BeEmpty())
-	WaitUntilDeployed(deploymentGUID)
+	WaitUntilDeploymentReachesState(deploymentGUID, "DEPLOYED")
 }

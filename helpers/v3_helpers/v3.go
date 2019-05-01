@@ -72,7 +72,7 @@ func CancelDeployment(deploymentGuid string) {
 	Expect(session).To(Exit(0))
 }
 
-func WaitUntilDeployed(deploymentGuid string) {
+func WaitUntilDeploymentReachesState(deploymentGuid, status string) {
 	deploymentPath := fmt.Sprintf("/v3/deployments/%s", deploymentGuid)
 	deploymentJson := struct {
 		State string `json:"state"`
@@ -83,8 +83,9 @@ func WaitUntilDeployed(deploymentGuid string) {
 		Expect(session.Wait()).To(Exit(0))
 		json.Unmarshal(session.Out.Contents(), &deploymentJson)
 		return deploymentJson.State
-	}, Config.LongCurlTimeoutDuration()).Should(Equal("DEPLOYED"))
+	}, Config.LongCurlTimeoutDuration()).Should(Equal(status))
 }
+
 
 func ScaleApp(appGuid string, instances int) {
 	scalePath := fmt.Sprintf("/v3/apps/%s/processes/web/actions/scale", appGuid)

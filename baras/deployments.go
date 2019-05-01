@@ -14,15 +14,17 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("webish_processes", func() {
+var _ = Describe("deployments", func() {
 	var (
-		appName     string
-		appGUID     string
-		packageGUID string
-		spaceGUID   string
-		spaceName   string
-		token       string
-		dropletGuid string
+		appName        string
+		appGUID        string
+		packageGUID    string
+		newPackageGUID string
+		spaceGUID      string
+		spaceName      string
+		token          string
+		dropletGuid    string
+		newDropletGuid string
 	)
 
 	BeforeEach(func() {
@@ -49,8 +51,8 @@ var _ = Describe("webish_processes", func() {
 
 		CreateAndMapRoute(appGUID, spaceName, Config.GetAppsDomain(), appName)
 		instances := 4
-		ScaleApp(appGUID, instances)
 
+		ScaleApp(appGUID, instances)
 		StartApp(appGUID)
 		Expect(string(cf.Cf("apps").Wait().Out.Contents())).To(MatchRegexp(fmt.Sprintf("(v3-)?(%s)*(-web)?(\\s)+(started)", "web")))
 
@@ -110,5 +112,36 @@ var _ = Describe("webish_processes", func() {
 			Expect(v2process.Resources[0].Metadata.Guid).To(Equal(appGUID))
 			Expect(v2process.Resources[0].Entity.Name).To(Equal(appName))
 		})
+	})
+
+	Describe("Deploy a bad droplet on the same app", func() {
+		It("reports that the deployment is failing", func() {
+			By("Creating a New Package")
+			newPackageGUID = CreatePackage(appGUID)
+			token = GetAuthToken()
+			uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), newPackageGUID)
+
+			By("Upload the Package")
+			UploadPackage(uploadURL, assets.NewAssets().BadDoraZip, token)
+			WaitForPackageToBeReady(newPackageGUID)
+
+			By("Creating a Build")
+			newBuildGUID := StageBuildpackPackage(newPackageGUID, Config.GetRubyBuildpackName())
+			WaitForBuildToStage(newBuildGUID)
+
+			By("Get the New Droplet GUID")
+			newDropletGuid = GetDropletFromBuild(newBuildGUID)
+
+			By("Assign the New Droplet GUID to the App")
+			AssignDropletToApp(appGUID, newDropletGuid)
+
+			By("Create a new Deployment")
+			newDeploymentGuid := CreateDeployment(appGUID)
+			Expect(newDeploymentGuid).ToNot(BeEmpty())
+
+			By("The Deployment is FAILING")
+			WaitUntilDeploymentReachesState(newDeploymentGuid, "FAILING")
+		})
+
 	})
 })

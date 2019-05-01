@@ -7,9 +7,11 @@ type Assets struct {
 	Catnip                     string
 	CredHubEnabledApp          string
 	CredHubServiceBroker       string
+	BadDora                    string
 	Dora                       string
 	DoraDroplet                string
 	DoraZip                    string
+	BadDoraZip                 string
 	DotnetCore                 string
 	Fuse                       string
 	GoCallsRubyZip             string
@@ -52,9 +54,11 @@ func NewAssets() Assets {
 		Catnip:                     "assets/catnip/bin",
 		CredHubEnabledApp:          "assets/credhub-enabled-app/credhub-enabled-app.jar",
 		CredHubServiceBroker:       "assets/credhub-service-broker",
+		BadDora:                    "assets/bad-dora",
 		Dora:                       "assets/dora",
 		DoraDroplet:                "assets/dora-droplet.tar.gz",
 		DoraZip:                    "assets/dora.zip",
+		BadDoraZip:                 "assets/bad-dora.zip",
 		DotnetCore:                 "assets/dotnet-core",
 		Fuse:                       "assets/fuse-mount",
 		GoCallsRubyZip:             "assets/go_calls_ruby.zip",
