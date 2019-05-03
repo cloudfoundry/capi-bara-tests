@@ -4,7 +4,7 @@ set -ex
 
 # Important: run `cf push dora -i 10` before running this script
 
-cd "$(dirname $0)"/assets
+cd "$(dirname $0)"/../assets
 
 CF_API_ENDPOINT=$(cf api | grep -i "api endpoint" | awk '{print $3}')
 APP_GUID=$(cf app dora --guid  2>/dev/null)
@@ -45,4 +45,13 @@ cf curl /v3/apps/$APP_GUID/relationships/current_droplet -X PATCH -d "$(printf '
 
 DEPLOYMENT_GUID=$(cf curl /v3/deployments -d "$(printf '{ "relationships":{ "app": { "data": { "guid": "%s" }}}}' $APP_GUID)" | tee /dev/tty | jq -r .guid)
 
-watch "cf curl /v3/deployments/$DEPLOYMENT_GUID | jq -r .state"
+timeout 130s watch "cf curl /v3/deployments/$DEPLOYMENT_GUID | jq -r .state"
+
+PREVIOUS_DROPLET_GUID=$(cf curl /v3/apps/$APPGUID/droplets?states=STAGED | jq -r '.resources[-2].guid')
+# Hopefully this droplet is good
+cf curl /v3/apps/$APP_GUID/relationships/current_droplet -X PATCH -d "$(printf '{"data": {"guid": "%s"}}' "$PREVIOUS_DROPLET_GUID")"
+
+NEW_DEPLOYMENT_GUID=$(cf curl /v3/deployments -d "$(printf '{ "relationships":{ "app": { "data": { "guid": "%s" }}}}' $APP_GUID)" | tee /dev/tty | jq -r .guid)
+
+timeout 130s watch bash -c "echo DEPLOYMENT_GUID; cf curl /v3/deployments/$DEPLOYMENT_GUID | jq -r .state ; "echo NEW_DEPLOYMENT_GUID; cf curl /v3/deployments/$NEW_DEPLOYMENT_GUID | jq -r .state"
+

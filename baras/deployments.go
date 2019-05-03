@@ -121,7 +121,7 @@ var _ = Describe("deployments", func() {
 			token = GetAuthToken()
 			uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), newPackageGUID)
 
-			By("Upload the Package")
+			By("Upload Bad Dora the Package")
 			UploadPackage(uploadURL, assets.NewAssets().BadDoraZip, token)
 			WaitForPackageToBeReady(newPackageGUID)
 
@@ -136,12 +136,15 @@ var _ = Describe("deployments", func() {
 			AssignDropletToApp(appGUID, newDropletGuid)
 
 			By("Create a new Deployment")
-			newDeploymentGuid := CreateDeployment(appGUID)
-			Expect(newDeploymentGuid).ToNot(BeEmpty())
+			badDeploymentGuid := CreateDeployment(appGUID)
+			Expect(badDeploymentGuid).ToNot(BeEmpty())
 
 			By("The Deployment is FAILING")
-			WaitUntilDeploymentReachesState(newDeploymentGuid, "FAILING")
-		})
+			WaitUntilDeploymentReachesState(badDeploymentGuid, "FAILING")
 
+			By("Make the Deployment FAILED")
+			CreateDeployment(appGUID)
+			WaitUntilDeploymentReachesState(badDeploymentGuid, "FAILED")
+		})
 	})
 })
