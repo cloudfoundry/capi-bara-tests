@@ -34,7 +34,7 @@ func TestBARA(t *testing.T) {
 		fmt.Println("Invalid configuration.  ")
 		fmt.Println(validationError)
 		fmt.Println("Please fix the contents of $CONFIG:\n  " + os.Getenv("CONFIG") + "\nbefore proceeding.")
-		t.Fail()
+		t.FailNow()
 	}
 
 	var _ = SynchronizedBeforeSuite(func() []byte {
