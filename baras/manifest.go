@@ -413,21 +413,35 @@ applications:
 						session = cf.Cf("start", apps[0].name)
 						Eventually(session).Should(Exit(0))
 
+						Eventually(func() *Session {
+							session = helpers.Curl(Config, fmt.Sprintf("%s.%s", appRoutePrefix, Config.GetAppsDomain()))
+							Eventually(session).Should(Exit(0))
+							return session
+						}).Should(Exit(0))
+
+						Eventually(func() *Session {
+							session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix1, Config.GetAppsDomain()))
+							Eventually(session).Should(Exit(0))
+							return session
+						}).Should(Exit(0))
+
+						Eventually(func() *Session {
+							session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix2, Config.GetAppsDomain()))
+							Eventually(session).Should(Exit(0))
+							return session
+						}).Should(Exit(0))
+
 						session = helpers.Curl(Config, fmt.Sprintf("%s.%s", appRoutePrefix, Config.GetAppsDomain()))
 						Eventually(session).Should(Say("Hi, I'm Dora!"))
-						Eventually(session).Should(Exit(0))
 
 						session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", appRoutePrefix, Config.GetAppsDomain()))
 						Eventually(session).ShouldNot(Say("MOTORCYCLE"))
-						Eventually(session).Should(Exit(0))
 
 						session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix1, Config.GetAppsDomain()))
 						Eventually(session).Should(Say("LEFT_SIDECAR"))
-						Eventually(session).Should(Exit(0))
 
 						session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix2, Config.GetAppsDomain()))
 						Eventually(session).Should(Say("RIGHT_SIDECAR"))
-						Eventually(session).Should(Exit(0))
 					})
 
 				})
