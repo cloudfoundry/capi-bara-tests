@@ -86,7 +86,6 @@ func WaitUntilDeploymentReachesState(deploymentGuid, status string) {
 	}, Config.LongCurlTimeoutDuration()).Should(Equal(status))
 }
 
-
 func ScaleApp(appGuid string, instances int) {
 	scalePath := fmt.Sprintf("/v3/apps/%s/processes/web/actions/scale", appGuid)
 	scaleBody := fmt.Sprintf(`{"instances": "%d"}`, instances)

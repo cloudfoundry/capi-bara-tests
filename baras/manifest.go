@@ -2,8 +2,8 @@ package baras
 
 import (
 	"encoding/json"
-	"strings"
 	"fmt"
+	"strings"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
@@ -152,13 +152,17 @@ applications:
 					Eventually(session).Should(Exit(0))
 
 					By("setting the routes for both apps", func() {
-						session = helpers.Curl(Config, apps[0].route)
-						Eventually(session).Should(Say("Hi, I'm Dora!"))
-						Eventually(session).Should(Exit(0))
+						Eventually(func() *Session {
+							session = helpers.Curl(Config, apps[0].route)
+							Eventually(session).Should(Say("Hi, I'm Dora!"))
+							return session
+						}).Should(Exit(0))
 
-						session = helpers.Curl(Config, apps[1].route)
-						Eventually(session).Should(Say("Hi, I'm Dora!"))
-						Eventually(session).Should(Exit(0))
+						Eventually(func() *Session {
+							session = helpers.Curl(Config, apps[1].route)
+							Eventually(session).Should(Say("Hi, I'm Dora!"))
+							return session
+						}).Should(Exit(0))
 					})
 
 					By("binding services", func() {
@@ -675,7 +679,6 @@ var _ = Describe("Applying a manifest before pushing the app - #164994410", func
 		Expect(session.Wait()).To(Exit(0))
 		appGUID := strings.TrimSpace(string(session.Out.Contents()))
 
-
 		applyEndpoint := fmt.Sprintf("/v3/apps/%s/actions/apply_manifest", appGUID)
 		manifestToApply := fmt.Sprintf(`
 ---
@@ -717,5 +720,3 @@ applications:
 		Eventually(session).Should(Say(`type:\s+logs\s+instances:\s+1/1`))
 	})
 })
-
-

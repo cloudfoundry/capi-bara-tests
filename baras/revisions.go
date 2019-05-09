@@ -13,8 +13,8 @@ import (
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gexec"
 	. "github.com/onsi/gomega/gbytes"
+	. "github.com/onsi/gomega/gexec"
 )
 
 var _ = Describe("revisions", func() {
@@ -427,8 +427,8 @@ var _ = Describe("revisions", func() {
 
 var _ = Describe("mix v2 apps and v3 revisions", func() {
 	var (
-		appName              string
-		appGUID              string
+		appName string
+		appGUID string
 	)
 
 	BeforeEach(func() {
@@ -439,7 +439,7 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 		session = cf.Cf("app", appName, "--guid")
 		Expect(session.Wait()).To(Exit(0))
 		appGUID = strings.TrimSpace(string(session.Out.Contents()))
-		session = cf.Cf("curl", "-X", "PATCH", fmt.Sprintf("/v3/apps/%s/features/revisions",appGUID), "-d",
+		session = cf.Cf("curl", "-X", "PATCH", fmt.Sprintf("/v3/apps/%s/features/revisions", appGUID), "-d",
 			`{"enabled" : true }`)
 		Expect(session.Wait()).To(Exit(0))
 	})
@@ -449,8 +449,7 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 		DeleteApp(appGUID)
 	})
 
-
-	Describe("cf push",  func() {
+	Describe("cf push", func() {
 		It("runs the latest droplet and adds a revision", func() {
 			Expect(cf.Cf("push",
 				appName,
@@ -458,7 +457,7 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 				"-p", assets.NewAssets().Staticfile,
 			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 			Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
-			session := cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/revisions",appGUID))
+			session := cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/revisions", appGUID))
 			Expect(session.Wait()).To(Exit(0))
 			revstr := session.Out.Contents()
 
@@ -478,11 +477,11 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 		})
 	})
 
-	Describe("cf restage",  func() {
+	Describe("cf restage", func() {
 		It("restages the app and adds a revision", func() {
 			Expect(cf.Cf("restage", appName).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 
-			session := cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/revisions",appGUID))
+			session := cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/revisions", appGUID))
 			Expect(session.Wait()).To(Exit(0))
 			revstr := session.Out.Contents()
 
@@ -500,7 +499,7 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 		})
 	})
 
-	Describe("cf restart after setting environment variables",  func() {
+	Describe("cf restart after setting environment variables", func() {
 		It("restarts the app and adds a revision", func() {
 			Expect(cf.Cf("set-env", appName, "ENV", "bar").Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 			Expect(cf.Cf("restart", appName).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
