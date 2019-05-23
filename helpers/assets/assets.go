@@ -56,7 +56,7 @@ func NewAssets() Assets {
 		CredHubServiceBroker:       "assets/credhub-service-broker",
 		BadDora:                    "assets/bad-dora",
 		Dora:                       "assets/dora",
-		DoraDroplet:                "assets/dora-droplet.tar.gz",
+		DoraDroplet:                "assets/dora-droplet.tgz",
 		DoraZip:                    "assets/dora.zip",
 		BadDoraZip:                 "assets/bad-dora.zip",
 		DotnetCore:                 "assets/dotnet-core",

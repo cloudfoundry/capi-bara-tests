@@ -16,42 +16,79 @@ import (
 )
 
 type AppDroplet struct {
-	appGuid string
-	config  config.BaraConfig
+	GUID         string
+	AppGUID      string
+	ProcessTypes *map[string]string
+	Config       config.BaraConfig
 }
 
-func NewAppDroplet(appGuid string, config config.BaraConfig) *AppDroplet {
-	return &AppDroplet{
-		appGuid: appGuid,
-		config:  config,
+func (droplet AppDroplet) MarshalJSON() ([]byte, error) {
+	var apiDroplet struct {
+		Relationships struct {
+			App struct {
+				Data struct {
+					GUID string `json:"guid"`
+				} `json:"data"`
+			} `json:"app"`
+		} `json:"relationships"`
+		ProcessTypes *map[string]string `json:"process_types,omitempty"`
 	}
+
+	apiDroplet.Relationships.App.Data.GUID = droplet.AppGUID
+	apiDroplet.ProcessTypes = droplet.ProcessTypes
+
+	return json.Marshal(apiDroplet)
+}
+
+func (droplet *AppDroplet) Create() error {
+	dropletBytes, err := json.Marshal(droplet)
+	Expect(err).ToNot(HaveOccurred())
+
+	session := cf.Cf("curl", "-X", "POST", "/v3/droplets", "-d", fmt.Sprintf("'%s'", string(dropletBytes)))
+	Eventually(session).Should(Exit(0))
+
+	// Populate the guid on the struct from the curl output
+	var guidGrabber struct {
+		GUID string `json:"guid"`
+	}
+
+	err = json.Unmarshal(session.Out.Contents(), &guidGrabber)
+	Expect(err).ToNot(HaveOccurred())
+	// Expect on this so if the api errors, we dont continue with a bad guid
+	Expect(guidGrabber.GUID).ToNot(BeEmpty())
+
+	droplet.GUID = guidGrabber.GUID
+	return nil
 }
 
 func (droplet *AppDroplet) DownloadTo(downloadPath string) (string, error) {
 	dropletTarballPath := fmt.Sprintf("%s.tar.gz", downloadPath)
-	downloadUrl := fmt.Sprintf("/v2/apps/%s/droplet/download", droplet.appGuid)
+	downloadURL := fmt.Sprintf("/v2/apps/%s/droplet/download", droplet.AppGUID)
 
-	err := download.WithRedirect(downloadUrl, dropletTarballPath, droplet.config)
+	err := download.WithRedirect(downloadURL, dropletTarballPath, droplet.Config)
 	return dropletTarballPath, err
 }
 
 func (droplet *AppDroplet) UploadFrom(uploadPath string) {
 	token := v3_helpers.GetAuthToken()
-	uploadURL := fmt.Sprintf("%s%s/v2/apps/%s/droplet/upload", droplet.config.Protocol(), droplet.config.GetApiEndpoint(), droplet.appGuid)
-	bits := fmt.Sprintf(`droplet=@%s`, uploadPath)
-	curl := helpers.Curl(droplet.config, "-v", uploadURL, "-X", "PUT", "-F", bits, "-H", fmt.Sprintf("Authorization: %s", token)).Wait()
+	uploadURL := fmt.Sprintf("%s%s/v3/droplets/%s/upload", droplet.Config.Protocol(), droplet.Config.GetApiEndpoint(), droplet.GUID)
+	bits := fmt.Sprintf(`bits=@%s`, uploadPath)
+	curl := helpers.Curl(droplet.Config, "-v", uploadURL, "-X", "POST", "-F", bits, "-H", fmt.Sprintf("Authorization: %s", token)).Wait()
 	Expect(curl).To(Exit(0))
 
-	var job struct {
-		Metadata struct {
-			Url string `json:"url"`
-		} `json:"metadata"`
+	var dropletLink struct {
+		Links struct {
+			Self struct {
+				Href string `json:"href"`
+			} `json:"self"`
+		} `json:"links"`
 	}
 	bytes := curl.Out.Contents()
-	json.Unmarshal(bytes, &job)
-	pollingUrl := job.Metadata.Url
+	json.Unmarshal(bytes, &dropletLink)
+	pollingURL := dropletLink.Links.Self.Href
+	fmt.Printf("\n%s\n", pollingURL)
 
 	Eventually(func() *Session {
-		return cf.Cf("curl", pollingUrl).Wait()
-	}).Should(Say("finished"))
+		return helpers.Curl(droplet.Config, pollingURL, "-H", fmt.Sprintf("Authorization: %s", token)).Wait()
+	}).Should(Say("STAGED"))
 }
