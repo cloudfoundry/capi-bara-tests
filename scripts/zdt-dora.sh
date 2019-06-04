@@ -29,6 +29,8 @@ while : ; do state=$(cf curl /v3/builds/$BUILD_GUID | tee /dev/tty | jq -r .stat
 
 DROPLET_GUID=$(cf curl /v3/builds/$BUILD_GUID | jq -r '.droplet.guid')
 
-cf curl /v3/deployments -X POST -d "$(printf '{ "droplet": { "guid": "%s"}, "relationships":{ "app": { "data": { "guid": "%s" }}}}' $DROPLET_GUID $APP_GUID)"
+cf curl /v3/deployments -X POST -d "$(printf '{ "droplet": { "guid": "%s"}, "relationships":{ "app": { "data": { "guid": "%s" }}}, "metadata":{"labels":{"target_completion_rate": "0.6"}}}' $DROPLET_GUID $APP_GUID)"
+
+set +x
 
 for x in {1..10000} ; do curl "dora.${CF_API_ENDPOINT#*.}"; sleep 0.5; done
