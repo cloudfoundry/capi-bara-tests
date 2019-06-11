@@ -62,6 +62,7 @@ var _ = Describe("apply_manifest", func() {
 		token            string
 		spaceName        string
 		spaceGUID        string
+		domainGUID       string
 		manifestToApply  string
 		expectedManifest string
 
@@ -73,11 +74,14 @@ var _ = Describe("apply_manifest", func() {
 		token = GetAuthToken()
 		spaceName = TestSetup.RegularUserContext().Space
 		spaceGUID = GetSpaceGuidFromName(spaceName)
+		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
 		apps = []app{makeApp(token, spaceGUID)}
 
 		By("Registering a Service Broker")
 		broker = NewServiceBroker(
 			random_name.BARARandomName("BRKR"),
+			spaceGUID,
+			domainGUID,
 			assets.NewAssets().ServiceBroker,
 			TestSetup,
 		)
@@ -410,9 +414,9 @@ applications:
 						sidecarRoutePrefix1 := random_name.BARARandomName("ROUTE")
 						sidecarRoutePrefix2 := random_name.BARARandomName("ROUTE")
 
-						CreateAndMapRouteWithPort(appGUID, spaceName, Config.GetAppsDomain(), appRoutePrefix, 8080)
-						CreateAndMapRouteWithPort(appGUID, spaceName, Config.GetAppsDomain(), sidecarRoutePrefix1, 8081)
-						CreateAndMapRouteWithPort(appGUID, spaceName, Config.GetAppsDomain(), sidecarRoutePrefix2, 8082)
+						CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, appRoutePrefix, 8080)
+						CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, sidecarRoutePrefix1, 8081)
+						CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, sidecarRoutePrefix2, 8082)
 
 						session = cf.Cf("start", apps[0].name)
 						Eventually(session).Should(Exit(0))

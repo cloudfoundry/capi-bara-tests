@@ -18,19 +18,23 @@ import (
 
 var _ = Describe("sidecars", func() {
 	var (
-		appName   string
-		appGUID   string
-		spaceGUID string
-		spaceName string
+		appName    string
+		appGUID    string
+		spaceGUID  string
+		domainGUID string
+		spaceName  string
 	)
 
 	BeforeEach(func() {
 		appName = random_name.BARARandomName("APP")
 		spaceName = TestSetup.RegularUserContext().Space
 		spaceGUID = GetSpaceGuidFromName(spaceName)
+		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
 
 		By("Creating an App")
 		appGUID = CreateApp(appName, spaceGUID, `{}`)
+		CreateAndMapRoute(appGUID, spaceGUID, domainGUID, appName)
+
 		// SidecarDependent is an app that talks to its adjacent ./sidecar binary
 		// over a unix domain socket in /tmp/sidecar.sock
 		Expect(cf.Cf("push",
@@ -38,7 +42,6 @@ var _ = Describe("sidecars", func() {
 			"-b", "go_buildpack",
 			"-p", assets.NewAssets().SidecarDependent,
 			"-f", filepath.Join(assets.NewAssets().SidecarDependent, "manifest.yml"),
-			"-d", Config.GetAppsDomain(),
 		).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 	})
 

@@ -21,6 +21,7 @@ var _ = Describe("revisions", func() {
 	var (
 		appName              string
 		appGUID              string
+		domainGUID           string
 		spaceGUID            string
 		spaceName            string
 		dropletGUID          string
@@ -33,6 +34,7 @@ var _ = Describe("revisions", func() {
 		appName = random_name.BARARandomName("APP")
 		spaceName = TestSetup.RegularUserContext().Space
 		spaceGUID = GetSpaceGuidFromName(spaceName)
+		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
 		instances = 2
 
 		By("Creating an App")
@@ -43,7 +45,7 @@ var _ = Describe("revisions", func() {
 
 		dropletGUID = AssociateNewDroplet(appGUID, assets.NewAssets().DoraZip)
 
-		CreateAndMapRoute(appGUID, spaceName, Config.GetAppsDomain(), appName)
+		CreateAndMapRoute(appGUID, spaceGUID, domainGUID, appName)
 		ScaleApp(appGUID, instances)
 
 		StartApp(appGUID)

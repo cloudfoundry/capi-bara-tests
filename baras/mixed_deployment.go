@@ -69,6 +69,5 @@ func pushRubyApp(appName string) {
 		"-m", "128MB",
 		"-i", "2",
 		"-p", assets.NewAssets().Dora,
-		"-d", Config.GetAppsDomain(),
 	).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 }

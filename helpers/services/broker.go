@@ -14,6 +14,7 @@ import (
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
 	bara_config "github.com/cloudfoundry/capi-bara-tests/helpers/config"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
@@ -43,10 +44,12 @@ type PlanSchemas struct {
 }
 
 type ServiceBroker struct {
-	Name      string
-	Path      string
-	TestSetup *workflowhelpers.ReproducibleTestSuiteSetup
-	Service   struct {
+	Name       string
+	SpaceGUID  string
+	DomainGUID string
+	Path       string
+	TestSetup  *workflowhelpers.ReproducibleTestSuiteSetup
+	Service    struct {
 		Name            string `json:"name"`
 		ID              string `json:"id"`
 		DashboardClient struct {
@@ -104,10 +107,12 @@ type SpaceJson struct {
 	}
 }
 
-func NewServiceBroker(name string, path string, TestSetup *workflowhelpers.ReproducibleTestSuiteSetup) ServiceBroker {
+func NewServiceBroker(name, spaceGUID, domainGUID, path string, TestSetup *workflowhelpers.ReproducibleTestSuiteSetup) ServiceBroker {
 	b := ServiceBroker{}
 	b.Path = path
 	b.Name = name
+	b.SpaceGUID = spaceGUID
+	b.DomainGUID = domainGUID
 	b.Service.Name = random_name.BARARandomName("SVC")
 	b.Service.ID = random_name.BARARandomName("SVC-ID")
 
@@ -128,30 +133,15 @@ func NewServiceBroker(name string, path string, TestSetup *workflowhelpers.Repro
 }
 
 func (b ServiceBroker) Push(config bara_config.BaraConfig) {
+	appGUID := v3_helpers.CreateApp(b.Name, b.SpaceGUID, `{}`)
+	v3_helpers.CreateAndMapRoute(appGUID, b.SpaceGUID, b.DomainGUID, b.Name)
+	Expect(cf.Cf("set-health-check", b.Name, "http", "--endpoint", "/v2/catalog").Wait(Config.BrokerStartTimeoutDuration())).To(Exit(0))
 	Expect(cf.Cf(
 		"push", b.Name,
-		"--no-start",
 		"-b", config.GetRubyBuildpackName(),
 		"-m", DEFAULT_MEMORY_LIMIT,
 		"-p", b.Path,
-		"-d", config.GetAppsDomain(),
 	).Wait(Config.BrokerStartTimeoutDuration())).To(Exit(0))
-	Expect(cf.Cf("set-health-check", b.Name, "http", "--endpoint", "/v2/catalog").Wait(Config.BrokerStartTimeoutDuration())).To(Exit(0))
-	Expect(cf.Cf("start", b.Name).Wait(Config.BrokerStartTimeoutDuration())).To(Exit(0))
-}
-
-func (b ServiceBroker) PushWithBuildpackAndManifest(config bara_config.BaraConfig, buildpackName string) {
-	Expect(cf.Cf(
-		"push", b.Name,
-		"--no-start",
-		"-b", buildpackName,
-		"-m", DEFAULT_MEMORY_LIMIT,
-		"-p", b.Path,
-		"-f", b.Path+"/manifest.yml",
-		"-d", config.GetAppsDomain(),
-	).Wait(Config.BrokerStartTimeoutDuration())).To(Exit(0))
-	Expect(cf.Cf("set-health-check", b.Name, "http", "--endpoint", "/v2/catalog").Wait(Config.BrokerStartTimeoutDuration())).To(Exit(0))
-	Expect(cf.Cf("start", b.Name).Wait(Config.BrokerStartTimeoutDuration())).To(Exit(0))
 }
 
 func (b ServiceBroker) Configure() {
@@ -276,15 +266,6 @@ func (b ServiceBroker) CreateServiceInstance(instanceName string) string {
 	Expect(curl).To(Exit(0))
 	json.Unmarshal(curl.Out.Contents(), &serviceInstance)
 	return serviceInstance.Resources[0].Metadata.Guid
-}
-
-func (b ServiceBroker) GetSpaceGuid() string {
-	url := fmt.Sprintf("/v2/spaces?q=name%%3A%s", b.TestSetup.RegularUserContext().Space)
-	jsonResults := SpaceJson{}
-	curl := cf.Cf("curl", url).Wait()
-	Expect(curl).To(Exit(0))
-	json.Unmarshal(curl.Out.Contents(), &jsonResults)
-	return jsonResults.Resources[0].Metadata.Guid
 }
 
 func (b ServiceBroker) Plans() []Plan {

@@ -3,6 +3,7 @@ package baras
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
@@ -20,6 +21,7 @@ var _ = Describe("sidecars", func() {
 		appName             string
 		appGUID             string
 		spaceGUID           string
+		domainGUID          string
 		spaceName           string
 		appRoutePrefix      string
 		sidecarRoutePrefix1 string
@@ -31,6 +33,7 @@ var _ = Describe("sidecars", func() {
 		appName = random_name.BARARandomName("APP")
 		spaceName = TestSetup.RegularUserContext().Space
 		spaceGUID = GetSpaceGuidFromName(spaceName)
+		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
 
 		By("Creating an App")
 		appGUID = CreateApp(appName, spaceGUID, `{"WHAT_AM_I":"MOTORCYCLE"}`)
@@ -63,9 +66,9 @@ var _ = Describe("sidecars", func() {
 			sidecarRoutePrefix1 = random_name.BARARandomName("ROUTE")
 			sidecarRoutePrefix2 = random_name.BARARandomName("ROUTE")
 
-			CreateAndMapRouteWithPort(appGUID, spaceName, Config.GetAppsDomain(), appRoutePrefix, 8080)
-			CreateAndMapRouteWithPort(appGUID, spaceName, Config.GetAppsDomain(), sidecarRoutePrefix1, 8081)
-			CreateAndMapRouteWithPort(appGUID, spaceName, Config.GetAppsDomain(), sidecarRoutePrefix2, 8082)
+			CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, appRoutePrefix, 8080)
+			CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, sidecarRoutePrefix1, 8081)
+			CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, sidecarRoutePrefix2, 8082)
 
 			Eventually(session).Should(Exit(0))
 		})

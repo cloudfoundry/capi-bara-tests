@@ -24,10 +24,11 @@ var _ = Describe("Droplets", func() {
 		appName = random_name.BARARandomName("APP")
 		spaceName := TestSetup.RegularUserContext().Space
 		spaceGUID := GetSpaceGuidFromName(spaceName)
+		domainGUID := GetDomainGUIDFromName(Config.GetAppsDomain())
 
 		By("Creating an App")
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
-		CreateAndMapRoute(appGUID, spaceName, Config.GetAppsDomain(), appName)
+		CreateAndMapRoute(appGUID, spaceGUID, domainGUID, appName)
 	})
 
 	Context("When manually performing the droplet workflow", func() {

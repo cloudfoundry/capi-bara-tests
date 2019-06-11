@@ -18,6 +18,7 @@ var _ = Describe("deployments", func() {
 	var (
 		appName        string
 		appGUID        string
+		domainGUID     string
 		packageGUID    string
 		newPackageGUID string
 		spaceGUID      string
@@ -31,6 +32,7 @@ var _ = Describe("deployments", func() {
 		appName = random_name.BARARandomName("APP")
 		spaceName = TestSetup.RegularUserContext().Space
 		spaceGUID = GetSpaceGuidFromName(spaceName)
+		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
 		By("Creating an App")
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
 		By("Creating a Package")
@@ -49,7 +51,7 @@ var _ = Describe("deployments", func() {
 
 		AssignDropletToApp(appGUID, dropletGuid)
 
-		CreateAndMapRoute(appGUID, spaceName, Config.GetAppsDomain(), appName)
+		CreateAndMapRoute(appGUID, spaceGUID, domainGUID, appName)
 		instances := 4
 
 		ScaleApp(appGUID, instances)

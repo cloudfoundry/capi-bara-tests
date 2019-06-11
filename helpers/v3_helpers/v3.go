@@ -192,16 +192,13 @@ func AssignIsolationSegmentToSpace(spaceGuid, isoSegGuid string) {
 	).Should(Exit(0))
 }
 
-func CreateAndMapRoute(appGuid, space, domain, host string) {
-	CreateRoute(space, domain, host)
-	routeGuid := getRouteGuidByHost(host)
-	Expect(cf.Cf("curl", fmt.Sprintf("/v2/routes/%s/apps/%s", routeGuid, appGuid), "-X", "PUT").Wait()).To(Exit(0))
+func CreateAndMapRoute(appGUID, spaceGUID, domainGUID, host string) {
+	routeGUID := CreateRoute(spaceGUID, domainGUID, host)
+	Expect(cf.Cf("curl", fmt.Sprintf("/v2/routes/%s/apps/%s", routeGUID, appGUID), "-X", "PUT").Wait()).To(Exit(0))
 }
 
-func CreateAndMapRouteWithPort(appGuid, space, domain, host string, port int) {
-	CreateRoute(space, domain, host)
-
-	routeGuid := getRouteGuidByHost(host)
+func CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, host string, port int) {
+	routeGUID := CreateRoute(spaceGUID, domainGUID, host)
 
 	routeMappingJSON, err := json.Marshal(
 		struct {
@@ -209,8 +206,8 @@ func CreateAndMapRouteWithPort(appGuid, space, domain, host string, port int) {
 			RouteGuid string `json:"route_guid"`
 			AppPort   int    `json:"app_port"`
 		}{
-			appGuid,
-			routeGuid,
+			appGUID,
+			routeGUID,
 			port,
 		},
 	)
@@ -325,8 +322,28 @@ func CreatePackage(appGuid string) string {
 	return pac.Guid
 }
 
-func CreateRoute(space, domain, host string) {
-	Expect(cf.Cf("create-route", space, domain, "-n", host).Wait()).To(Exit(0))
+func CreateRoute(spaceGUID, domainGUID, host string) string {
+	session := cf.Cf(
+		"curl", "/v3/routes",
+		"-X", "POST",
+		"-d", fmt.Sprintf(`{
+			"host": "%s",
+			"relationships": {
+				"domain": { "data": { "guid": "%s" } },
+				"space": { "data": { "guid": "%s" } }
+			}
+		}`, host, domainGUID, spaceGUID),
+	)
+	Eventually(session).Should(Exit(0))
+
+	var response struct {
+		GUID   string                   `json:"guid"`
+		Errors []map[string]interface{} `json:"errors"`
+	}
+	bytes := session.Out.Contents()
+	json.Unmarshal(bytes, &response)
+	Expect(response.Errors).To(BeEmpty())
+	return response.GUID
 }
 
 func HandleAsyncRequest(path string, method string) {
@@ -444,10 +461,16 @@ func GetIsolationSegmentGuidFromResponse(response []byte) string {
 	return GetResponse.Data.Guid
 }
 
-func GetSpaceGuidFromName(spaceName string) string {
-	session := cf.Cf("space", spaceName, "--guid")
+func GetSpaceGuidFromName(name string) string {
+	session := cf.Cf("curl", fmt.Sprintf("/v3/spaces?names=%s", name))
 	bytes := session.Wait().Out.Contents()
-	return strings.TrimSpace(string(bytes))
+	return GetGuidFromResponse(bytes)
+}
+
+func GetDomainGUIDFromName(name string) string {
+	session := cf.Cf("curl", fmt.Sprintf("/v3/domains?names=%s", name))
+	bytes := session.Wait().Out.Contents()
+	return GetGuidFromResponse(bytes)
 }
 
 func IsolationSegmentExists(name string) bool {
@@ -661,17 +684,3 @@ func getHttpLoggregatorEndpoint() string {
 	return strings.Replace(response.DopplerLoggingEndpoint, "ws", "http", 1)
 }
 
-func getRouteGuidByHost(host string) string {
-	getRoutePath := fmt.Sprintf("/v2/routes?q=host:%s", host)
-	routeBody := cf.Cf("curl", getRoutePath).Wait().Out.Contents()
-	routeJSON := struct {
-		Resources []struct {
-			Metadata struct {
-				Guid string `json:"guid"`
-			} `json:"metadata"`
-		} `json:"resources"`
-	}{}
-	json.Unmarshal([]byte(routeBody), &routeJSON)
-
-	return routeJSON.Resources[0].Metadata.Guid
-}
