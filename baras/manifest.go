@@ -422,19 +422,19 @@ applications:
 						Eventually(session).Should(Exit(0))
 
 						Eventually(func() *Session {
-							session = helpers.Curl(Config, fmt.Sprintf("%s.%s", appRoutePrefix, Config.GetAppsDomain()))
+							session = helpers.Curl(Config, fmt.Sprintf("%s.%s", appRoutePrefix, Config.GetAppsDomain()), "-f")
 							Eventually(session).Should(Exit(0))
 							return session
 						}).Should(Exit(0))
 
 						Eventually(func() *Session {
-							session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix1, Config.GetAppsDomain()))
+							session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix1, Config.GetAppsDomain()), "-f")
 							Eventually(session).Should(Exit(0))
 							return session
 						}).Should(Exit(0))
 
 						Eventually(func() *Session {
-							session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix2, Config.GetAppsDomain()))
+							session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix2, Config.GetAppsDomain()), "-f")
 							Eventually(session).Should(Exit(0))
 							return session
 						}).Should(Exit(0))
