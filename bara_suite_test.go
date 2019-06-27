@@ -7,6 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudfoundry/custom-cats-reporters/honeycomb"
+	"github.com/cloudfoundry/custom-cats-reporters/honeycomb/client"
+	"github.com/honeycombio/libhoney-go"
+
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 
@@ -100,6 +104,26 @@ func TestBARA(t *testing.T) {
 			helpers.EnableCFTrace(Config, "BARA")
 			rs = append(rs, helpers.NewJUnitReporter(Config, "BARA"))
 		}
+	}
+
+	reporterConfig := Config.GetReporterConfig()
+
+	if reporterConfig.HoneyCombDataset != "" && reporterConfig.HoneyCombWriteKey != "" {
+		honeyCombClient := client.New(libhoney.Config{
+			WriteKey: reporterConfig.HoneyCombWriteKey,
+			Dataset:  reporterConfig.HoneyCombDataset,
+		})
+
+		globalTags := map[string]interface{}{
+			"run_id":  os.Getenv("RUN_ID"),
+			"env_api": Config.GetApiEndpoint(),
+		}
+
+		honeyCombReporter := honeycomb.New(honeyCombClient)
+		honeyCombReporter.SetGlobalTags(globalTags)
+		honeyCombReporter.SetCustomTags(reporterConfig.CustomTags)
+
+		rs = append(rs, honeyCombReporter)
 	}
 
 	RunSpecsWithDefaultAndCustomReporters(t, "BARA", rs)
