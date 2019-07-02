@@ -717,7 +717,7 @@ applications:
 		PollJob(GetJobPath(response))
 
 		session = cf.Cf("v3-push", appName, "-p", assets.NewAssets().Dora)
-		Expect(session.Wait()).To(Exit(0))
+		Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 
 		waitForAllInstancesToStart(appGUID, 1)
 
