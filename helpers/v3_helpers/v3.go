@@ -26,7 +26,7 @@ const (
 func CreateDeployment(appGuid string) string {
 	deploymentPath := fmt.Sprintf("/v3/deployments")
 	deploymentRequestBody := fmt.Sprintf(`{"relationships": {"app": {"data": {"guid": "%s"}}}}`, appGuid)
-	session := cf.Cf("curl", deploymentPath, "-X", "POST", "-d", deploymentRequestBody).Wait()
+	session := cf.Cf("curl", "-f", deploymentPath, "-X", "POST", "-d", deploymentRequestBody).Wait()
 	Expect(session).To(Exit(0))
 	var deployment struct {
 		Guid string `json:"guid"`
@@ -40,7 +40,7 @@ func CreateDeployment(appGuid string) string {
 func CreateDeploymentForDroplet(appGuid, dropletGuid string) string {
 	deploymentPath := fmt.Sprintf("/v3/deployments")
 	deploymentRequestBody := fmt.Sprintf(`{"droplet": {"guid": "%s"}, "relationships": {"app": {"data": {"guid": "%s"}}}}`, dropletGuid, appGuid)
-	session := cf.Cf("curl", deploymentPath, "-X", "POST", "-d", deploymentRequestBody).Wait()
+	session := cf.Cf("curl", "-f", deploymentPath, "-X", "POST", "-d", deploymentRequestBody).Wait()
 	Expect(session).To(Exit(0))
 	var deployment struct {
 		Guid string `json:"guid"`
@@ -54,7 +54,7 @@ func CreateDeploymentForDroplet(appGuid, dropletGuid string) string {
 func RollbackDeployment(appGuid, revisionGuid string) string {
 	deploymentPath := fmt.Sprintf("/v3/deployments")
 	deploymentRequestBody := fmt.Sprintf(`{"revision": { "guid": "%s" },"relationships": {"app": {"data": {"guid": "%s"}}}}`, revisionGuid, appGuid)
-	session := cf.Cf("curl", deploymentPath, "-X", "POST", "-d", deploymentRequestBody).Wait()
+	session := cf.Cf("curl", "-f", deploymentPath, "-X", "POST", "-d", deploymentRequestBody).Wait()
 	Expect(session).To(Exit(0))
 	var deployment struct {
 		Guid string `json:"guid"`
@@ -67,7 +67,7 @@ func RollbackDeployment(appGuid, revisionGuid string) string {
 
 func CancelDeployment(deploymentGuid string) {
 	deploymentPath := fmt.Sprintf("/v3/deployments/%s/actions/cancel", deploymentGuid)
-	session := cf.Cf("curl", deploymentPath, "-X", "POST", "-i").Wait()
+	session := cf.Cf("curl", "-f", deploymentPath, "-X", "POST", "-i").Wait()
 	Expect(session.Out.Contents()).To(ContainSubstring("200 OK"))
 	Expect(session).To(Exit(0))
 }
@@ -79,7 +79,7 @@ func WaitUntilDeploymentReachesState(deploymentGuid, status string) {
 	}{}
 
 	Eventually(func() string {
-		session := cf.Cf("curl", deploymentPath).Wait()
+		session := cf.Cf("curl", "-f", deploymentPath).Wait()
 		Expect(session.Wait()).To(Exit(0))
 		json.Unmarshal(session.Out.Contents(), &deploymentJson)
 		return deploymentJson.State
@@ -89,12 +89,12 @@ func WaitUntilDeploymentReachesState(deploymentGuid, status string) {
 func ScaleApp(appGuid string, instances int) {
 	scalePath := fmt.Sprintf("/v3/apps/%s/processes/web/actions/scale", appGuid)
 	scaleBody := fmt.Sprintf(`{"instances": "%d"}`, instances)
-	Expect(cf.Cf("curl", scalePath, "-X", "POST", "-d", scaleBody).Wait()).To(Exit(0))
+	Expect(cf.Cf("curl", "-f", scalePath, "-X", "POST", "-d", scaleBody).Wait()).To(Exit(0))
 }
 
 func GetRunningInstancesStats(processGuid string) int {
 	processPath := fmt.Sprintf("/v3/processes/%s/stats", processGuid)
-	session := cf.Cf("curl", processPath).Wait()
+	session := cf.Cf("curl", "-f", processPath).Wait()
 	instancesJson := struct {
 		Resources []struct {
 			Type  string `json:"type"`
@@ -120,13 +120,13 @@ func SetCommandOnProcess(appGUID, processType, command string) {
 	processURL := fmt.Sprintf("/v3/processes/%s", process.Guid)
 	processJSON, _ := json.Marshal(map[string]string{"command": command})
 
-	session := cf.Cf("curl", "-v", "-X", "PATCH", processURL, "-d", string(processJSON)).Wait()
+	session := cf.Cf("curl", "-f", "-v", "-X", "PATCH", processURL, "-d", string(processJSON)).Wait()
 	Expect(session).To(Say("200 OK"))
 }
 
 func GetProcessGuidsForType(appGuid string, processType string) []string {
 	processesPath := fmt.Sprintf("/v3/apps/%s/processes?types=%s", appGuid, processType)
-	session := cf.Cf("curl", processesPath).Wait()
+	session := cf.Cf("curl", "-f", processesPath).Wait()
 
 	processesJSON := struct {
 		Resources []struct {
@@ -151,7 +151,7 @@ func GetProcessGuidsForType(appGuid string, processType string) []string {
 func AssignDropletToApp(appGuid, dropletGuid string) {
 	appUpdatePath := fmt.Sprintf("/v3/apps/%s/relationships/current_droplet", appGuid)
 	appUpdateBody := fmt.Sprintf(`{"data": {"guid":"%s"}}`, dropletGuid)
-	Expect(cf.Cf("curl", appUpdatePath, "-X", "PATCH", "-d", appUpdateBody).Wait()).To(Exit(0))
+	Expect(cf.Cf("curl", "-f", appUpdatePath, "-X", "PATCH", "-d", appUpdateBody).Wait()).To(Exit(0))
 
 	for _, process := range GetProcesses(appGuid, "") {
 		ScaleProcess(appGuid, process.Type, V3_DEFAULT_MEMORY_LIMIT)
@@ -180,11 +180,11 @@ func AssociateNewDroplet(appGUID, assetPath string) string {
 func UpdateEnvironmentVariables(appGuid, envVars string) {
 	appUpdatePath := fmt.Sprintf("/v3/apps/%s/environment_variables", appGuid)
 	appUpdateBody := fmt.Sprintf(`{"var": %s}`, envVars)
-	Expect(cf.Cf("curl", appUpdatePath, "-X", "PATCH", "-d", appUpdateBody).Wait()).To(Exit(0))
+	Expect(cf.Cf("curl", "-f", appUpdatePath, "-X", "PATCH", "-d", appUpdateBody).Wait()).To(Exit(0))
 }
 
 func AssignIsolationSegmentToSpace(spaceGuid, isoSegGuid string) {
-	Eventually(cf.Cf("curl", fmt.Sprintf("/v3/spaces/%s/relationships/isolation_segment", spaceGuid),
+	Eventually(cf.Cf("curl", "-f", fmt.Sprintf("/v3/spaces/%s/relationships/isolation_segment", spaceGuid),
 		"-X",
 		"PATCH",
 		"-d",
@@ -194,7 +194,7 @@ func AssignIsolationSegmentToSpace(spaceGuid, isoSegGuid string) {
 
 func CreateAndMapRoute(appGUID, spaceGUID, domainGUID, host string) {
 	routeGUID := CreateRoute(spaceGUID, domainGUID, host)
-	Expect(cf.Cf("curl", fmt.Sprintf("/v2/routes/%s/apps/%s", routeGUID, appGUID), "-X", "PUT").Wait()).To(Exit(0))
+	Expect(cf.Cf("curl", "-f", fmt.Sprintf("/v2/routes/%s/apps/%s", routeGUID, appGUID), "-X", "PUT").Wait()).To(Exit(0))
 }
 
 func CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, host string, port int) {
@@ -213,12 +213,12 @@ func CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, host string, port
 	)
 	Expect(err).NotTo(HaveOccurred())
 
-	Expect(cf.Cf("curl", "/v2/route_mappings", "-X", "POST", "-d", string(routeMappingJSON)).Wait()).To(Exit(0))
+	Expect(cf.Cf("curl", "-f", "/v2/route_mappings", "-X", "POST", "-d", string(routeMappingJSON)).Wait()).To(Exit(0))
 }
 
 func UnmapAllRoutes(appGuid string) {
 	getRoutespath := fmt.Sprintf("/v2/apps/%s/routes", appGuid)
-	routesBody := cf.Cf("curl", getRoutespath).Wait().Out.Contents()
+	routesBody := cf.Cf("curl", "-f", getRoutespath).Wait().Out.Contents()
 	routesJSON := struct {
 		Resources []struct {
 			Metadata struct {
@@ -230,12 +230,12 @@ func UnmapAllRoutes(appGuid string) {
 
 	for _, routeResource := range routesJSON.Resources {
 		routeGuid := routeResource.Metadata.Guid
-		Expect(cf.Cf("curl", fmt.Sprintf("/v2/routes/%s/apps/%s", routeGuid, appGuid), "-X", "DELETE").Wait()).To(Exit(0))
+		Expect(cf.Cf("curl", "-f", fmt.Sprintf("/v2/routes/%s/apps/%s", routeGuid, appGuid), "-X", "DELETE").Wait()).To(Exit(0))
 	}
 }
 
 func CreateApp(appName, spaceGuid, environmentVariables string) string {
-	session := cf.Cf("curl", "/v3/apps", "-X", "POST", "-d", fmt.Sprintf(`{"name":"%s", "relationships": {"space": {"data": {"guid": "%s"}}}, "environment_variables":%s}`, appName, spaceGuid, environmentVariables))
+	session := cf.Cf("curl", "-f", "/v3/apps", "-X", "POST", "-d", fmt.Sprintf(`{"name":"%s", "relationships": {"space": {"data": {"guid": "%s"}}}, "environment_variables":%s}`, appName, spaceGuid, environmentVariables))
 	bytes := session.Wait().Out.Contents()
 	var app struct {
 		Guid string `json:"guid"`
@@ -258,7 +258,7 @@ func CreateSidecar(name string, processTypes []string, command string, appGuid s
 		},
 	)
 	Expect(err).NotTo(HaveOccurred())
-	session := cf.Cf("curl", sidecarEndpoint, "-X", "POST", "-d", string(sidecarOneJSON))
+	session := cf.Cf("curl", "-f", sidecarEndpoint, "-X", "POST", "-d", string(sidecarOneJSON))
 	Eventually(session).Should(Exit(0))
 
 	var sidecarData struct {
@@ -270,7 +270,7 @@ func CreateSidecar(name string, processTypes []string, command string, appGuid s
 }
 
 func CreateDockerApp(appName, spaceGuid, environmentVariables string) string {
-	session := cf.Cf("curl", "/v3/apps", "-X", "POST", "-d", fmt.Sprintf(`{"name":"%s", "relationships": {"space": {"data": {"guid": "%s"}}}, "environment_variables":%s, "lifecycle": {"type": "docker", "data": {} } }`, appName, spaceGuid, environmentVariables))
+	session := cf.Cf("curl", "-f", "/v3/apps", "-X", "POST", "-d", fmt.Sprintf(`{"name":"%s", "relationships": {"space": {"data": {"guid": "%s"}}}, "environment_variables":%s, "lifecycle": {"type": "docker", "data": {} } }`, appName, spaceGuid, environmentVariables))
 	bytes := session.Wait().Out.Contents()
 	var app struct {
 		Guid string `json:"guid"`
@@ -281,7 +281,7 @@ func CreateDockerApp(appName, spaceGuid, environmentVariables string) string {
 
 func CreateDockerPackage(appGuid, imagePath string) string {
 	packageCreateUrl := fmt.Sprintf("/v3/packages")
-	session := cf.Cf("curl", packageCreateUrl, "-X", "POST", "-d", fmt.Sprintf(`{"relationships":{"app":{"data":{"guid":"%s"}}},"type":"docker", "data": {"image": "%s"}}`, appGuid, imagePath))
+	session := cf.Cf("curl", "-f", packageCreateUrl, "-X", "POST", "-d", fmt.Sprintf(`{"relationships":{"app":{"data":{"guid":"%s"}}},"type":"docker", "data": {"image": "%s"}}`, appGuid, imagePath))
 	bytes := session.Wait().Out.Contents()
 	var pac struct {
 		Guid string `json:"guid"`
@@ -291,7 +291,7 @@ func CreateDockerPackage(appGuid, imagePath string) string {
 }
 
 func CreateIsolationSegment(name string) string {
-	session := cf.Cf("curl", "/v3/isolation_segments", "-X", "POST", "-d", fmt.Sprintf(`{"name":"%s"}`, name))
+	session := cf.Cf("curl", "-f", "/v3/isolation_segments", "-X", "POST", "-d", fmt.Sprintf(`{"name":"%s"}`, name))
 	bytes := session.Wait().Out.Contents()
 
 	var isolation_segment struct {
@@ -313,7 +313,7 @@ func CreateOrGetIsolationSegment(name string) string {
 
 func CreatePackage(appGuid string) string {
 	packageCreateUrl := fmt.Sprintf("/v3/packages")
-	session := cf.Cf("curl", packageCreateUrl, "-X", "POST", "-d", fmt.Sprintf(`{"relationships":{"app":{"data":{"guid":"%s"}}},"type":"bits"}`, appGuid))
+	session := cf.Cf("curl", "-f", packageCreateUrl, "-X", "POST", "-d", fmt.Sprintf(`{"relationships":{"app":{"data":{"guid":"%s"}}},"type":"bits"}`, appGuid))
 	bytes := session.Wait().Out.Contents()
 	var pac struct {
 		Guid string `json:"guid"`
@@ -324,7 +324,7 @@ func CreatePackage(appGuid string) string {
 
 func CreateRoute(spaceGUID, domainGUID, host string) string {
 	session := cf.Cf(
-		"curl", "/v3/routes",
+		"curl", "-f", "/v3/routes",
 		"-X", "POST",
 		"-d", fmt.Sprintf(`{
 			"host": "%s",
@@ -347,7 +347,7 @@ func CreateRoute(spaceGUID, domainGUID, host string) string {
 }
 
 func HandleAsyncRequest(path string, method string) {
-	session := cf.Cf("curl", path, "-X", method, "-i")
+	session := cf.Cf("curl", "-f", path, "-X", method, "-i")
 	bytes := session.Wait().Out.Contents()
 	Expect(string(bytes)).To(ContainSubstring("202 Accepted"))
 
@@ -363,7 +363,7 @@ func GetJobPath(response []byte) string {
 
 func PollJob(jobPath string) {
 	Eventually(func() string {
-		jobSession := cf.Cf("curl", jobPath)
+		jobSession := cf.Cf("curl", "-f", jobPath)
 		return string(jobSession.Wait().Out.Contents())
 	}).Should(ContainSubstring("COMPLETE"))
 }
@@ -373,7 +373,7 @@ func DeleteApp(appGuid string) {
 }
 
 func DeleteIsolationSegment(guid string) {
-	Eventually(cf.Cf("curl", fmt.Sprintf("/v3/isolation_segments/%s", guid), "-X", "DELETE")).Should(Exit(0))
+	Eventually(cf.Cf("curl", "-f", fmt.Sprintf("/v3/isolation_segments/%s", guid), "-X", "DELETE")).Should(Exit(0))
 }
 
 func EntitleOrgToIsolationSegment(orgGuid, isoSegGuid string) {
@@ -401,14 +401,14 @@ func GetAuthToken() string {
 }
 
 func GetDefaultIsolationSegment(orgGuid string) string {
-	session := cf.Cf("curl", fmt.Sprintf("/v3/organizations/%s/relationships/default_isolation_segment", orgGuid))
+	session := cf.Cf("curl", "-f", fmt.Sprintf("/v3/organizations/%s/relationships/default_isolation_segment", orgGuid))
 	bytes := session.Wait().Out.Contents()
 	return GetIsolationSegmentGuidFromResponse(bytes)
 }
 
 func GetDropletFromBuild(buildGuid string) string {
 	buildPath := fmt.Sprintf("/v3/builds/%s", buildGuid)
-	session := cf.Cf("curl", buildPath).Wait()
+	session := cf.Cf("curl", "-f", buildPath).Wait()
 	var build struct {
 		Droplet struct {
 			Guid string `json:"guid"`
@@ -438,7 +438,7 @@ func GetGuidFromResponse(response []byte) string {
 }
 
 func GetIsolationSegmentGuid(name string) string {
-	session := cf.Cf("curl", fmt.Sprintf("/v3/isolation_segments?names=%s", name))
+	session := cf.Cf("curl", "-f", fmt.Sprintf("/v3/isolation_segments?names=%s", name))
 	bytes := session.Wait().Out.Contents()
 	return GetGuidFromResponse(bytes)
 }
@@ -462,19 +462,19 @@ func GetIsolationSegmentGuidFromResponse(response []byte) string {
 }
 
 func GetSpaceGuidFromName(name string) string {
-	session := cf.Cf("curl", fmt.Sprintf("/v3/spaces?names=%s", name))
+	session := cf.Cf("curl", "-f", fmt.Sprintf("/v3/spaces?names=%s", name))
 	bytes := session.Wait().Out.Contents()
 	return GetGuidFromResponse(bytes)
 }
 
 func GetDomainGUIDFromName(name string) string {
-	session := cf.Cf("curl", fmt.Sprintf("/v3/domains?names=%s", name))
+	session := cf.Cf("curl", "-f", fmt.Sprintf("/v3/domains?names=%s", name))
 	bytes := session.Wait().Out.Contents()
 	return GetGuidFromResponse(bytes)
 }
 
 func IsolationSegmentExists(name string) bool {
-	session := cf.Cf("curl", fmt.Sprintf("/v3/isolation_segments?names=%s", name))
+	session := cf.Cf("curl", "-f", fmt.Sprintf("/v3/isolation_segments?names=%s", name))
 	bytes := session.Wait().Out.Contents()
 	type resource struct {
 		Guid string `json:"guid"`
@@ -489,7 +489,7 @@ func IsolationSegmentExists(name string) bool {
 }
 
 func OrgEntitledToIsolationSegment(orgGuid string, isoSegName string) bool {
-	session := cf.Cf("curl", fmt.Sprintf("/v3/isolation_segments?names=%s&organization_guids=%s", isoSegName, orgGuid))
+	session := cf.Cf("curl", "-f", fmt.Sprintf("/v3/isolation_segments?names=%s&organization_guids=%s", isoSegName, orgGuid))
 	bytes := session.Wait().Out.Contents()
 
 	type resource struct {
@@ -515,7 +515,7 @@ func RevokeOrgEntitlementForIsolationSegment(orgGuid, isoSegGuid string) {
 func ScaleProcess(appGuid, processType, memoryInMb string) {
 	scalePath := fmt.Sprintf("/v3/apps/%s/processes/%s/actions/scale", appGuid, processType)
 	scaleBody := fmt.Sprintf(`{"memory_in_mb":"%s"}`, memoryInMb)
-	session := cf.Cf("curl", scalePath, "-X", "POST", "-d", scaleBody).Wait()
+	session := cf.Cf("curl", "-f", scalePath, "-X", "POST", "-d", scaleBody).Wait()
 	Expect(session).To(Exit(0))
 	result := session.Out.Contents()
 	Expect(strings.Contains(string(result), "errors")).To(BeFalse())
@@ -539,7 +539,7 @@ func StageBuildpackPackage(packageGuid string, buildpacks ...string) string {
 
 	stageBody := fmt.Sprintf(`{"lifecycle":{ "type": "buildpack", "data": { "buildpacks": %s } }, "package": { "guid" : "%s"}}`, buildpackString, packageGuid)
 	stageUrl := "/v3/builds"
-	session := cf.Cf("curl", stageUrl, "-X", "POST", "-d", stageBody)
+	session := cf.Cf("curl", "-f", stageUrl, "-X", "POST", "-d", stageBody)
 	bytes := session.Wait().Out.Contents()
 	var build struct {
 		Guid string `json:"guid"`
@@ -552,7 +552,7 @@ func StageBuildpackPackage(packageGuid string, buildpacks ...string) string {
 func StageDockerPackage(packageGuid string) string {
 	stageBody := fmt.Sprintf(`{"lifecycle": { "type" : "docker", "data": {} }, "package": { "guid" : "%s"}}`, packageGuid)
 	stageUrl := "/v3/builds"
-	session := cf.Cf("curl", stageUrl, "-X", "POST", "-d", stageBody)
+	session := cf.Cf("curl", "-f", stageUrl, "-X", "POST", "-d", stageBody)
 	bytes := session.Wait().Out.Contents()
 	var build struct {
 		Guid string `json:"guid"`
@@ -563,21 +563,21 @@ func StageDockerPackage(packageGuid string) string {
 
 func StartApp(appGuid string) {
 	startURL := fmt.Sprintf("/v3/apps/%s/actions/start", appGuid)
-	Expect(cf.Cf("curl", startURL, "-X", "POST").Wait()).To(Exit(0))
+	Expect(cf.Cf("curl", "-f", startURL, "-X", "POST").Wait()).To(Exit(0))
 }
 
 func StopApp(appGuid string) {
 	stopURL := fmt.Sprintf("/v3/apps/%s/actions/stop", appGuid)
-	Expect(cf.Cf("curl", stopURL, "-X", "POST").Wait()).To(Exit(0))
+	Expect(cf.Cf("curl", "-f", stopURL, "-X", "POST").Wait()).To(Exit(0))
 }
 
 func RestartApp(appGuid string) {
 	restartURL := fmt.Sprintf("/v3/apps/%s/actions/restart", appGuid)
-	Expect(cf.Cf("curl", restartURL, "-X", "POST").Wait()).To(Exit(0))
+	Expect(cf.Cf("curl", "-f", restartURL, "-X", "POST").Wait()).To(Exit(0))
 }
 
 func UnassignIsolationSegmentFromSpace(spaceGuid string) {
-	Eventually(cf.Cf("curl", fmt.Sprintf("/v3/spaces/%s/relationships/isolation_segment", spaceGuid),
+	Eventually(cf.Cf("curl", "-f", fmt.Sprintf("/v3/spaces/%s/relationships/isolation_segment", spaceGuid),
 		"-X",
 		"PATCH",
 		"-d",
@@ -603,14 +603,14 @@ func UploadPackage(uploadUrl, packageZipPath, token string) {
 
 func EnableRevisions(appGuid string) {
 	path := fmt.Sprintf("/v3/apps/%s/features/revisions", appGuid)
-	curl := cf.Cf("curl", path, "-X", "PATCH", "-d", `{"enabled": true}`).Wait()
+	curl := cf.Cf("curl", "-f", path, "-X", "PATCH", "-d", `{"enabled": true}`).Wait()
 	Expect(curl).To(Exit(0))
 }
 
 func WaitForBuildToStage(buildGuid string) {
 	buildPath := fmt.Sprintf("/v3/builds/%s", buildGuid)
 	Eventually(func() *Session {
-		session := cf.Cf("curl", buildPath).Wait()
+		session := cf.Cf("curl", "-f", buildPath).Wait()
 		Expect(session).NotTo(Say("FAILED"))
 		return session
 	}, Config.CfPushTimeoutDuration()).Should(Say("STAGED"))
@@ -619,7 +619,7 @@ func WaitForBuildToStage(buildGuid string) {
 func WaitForDropletToCopy(dropletGuid string) {
 	dropletPath := fmt.Sprintf("/v3/droplets/%s", dropletGuid)
 	Eventually(func() *Session {
-		session := cf.Cf("curl", dropletPath).Wait()
+		session := cf.Cf("curl", "-f", dropletPath).Wait()
 		Expect(session).NotTo(Say("FAILED"))
 		return session
 	}, Config.CfPushTimeoutDuration()).Should(Say("STAGED"))
@@ -628,7 +628,7 @@ func WaitForDropletToCopy(dropletGuid string) {
 func WaitForPackageToBeReady(packageGuid string) {
 	pkgUrl := fmt.Sprintf("/v3/packages/%s", packageGuid)
 	Eventually(func() *Session {
-		session := cf.Cf("curl", pkgUrl)
+		session := cf.Cf("curl", "-f", pkgUrl)
 		Expect(session.Wait()).To(Exit(0))
 		return session
 	}, Config.LongCurlTimeoutDuration()).Should(Say("READY"))
@@ -671,7 +671,7 @@ func GetLastAppUseEventForProcess(processType string, state string, afterGUID st
 //private
 
 func getHttpLoggregatorEndpoint() string {
-	infoCommand := cf.Cf("curl", "/v2/info")
+	infoCommand := cf.Cf("curl", "-f", "/v2/info")
 	Expect(infoCommand.Wait()).To(Exit(0))
 
 	var response struct {
