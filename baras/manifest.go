@@ -131,16 +131,12 @@ applications:
 
 				By("setting the routes for both apps", func() {
 					Eventually(func() *Session {
-						session = helpers.Curl(Config, apps[0].route)
-						Eventually(session).Should(Say("Hi, I'm Dora!"))
-						return session
-					}).Should(Exit(0))
+						return helpers.Curl(Config, apps[0].route).Wait()
+					}).Should(Say("Hi, I'm Dora!"))
 
 					Eventually(func() *Session {
-						session = helpers.Curl(Config, apps[1].route)
-						Eventually(session).Should(Say("Hi, I'm Dora!"))
-						return session
-					}).Should(Exit(0))
+						return helpers.Curl(Config, apps[1].route).Wait()
+					}).Should(Say("Hi, I'm Dora!"))
 				})
 			})
 		})
