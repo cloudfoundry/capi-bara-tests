@@ -7,6 +7,8 @@ import (
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
 
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
+	. "github.com/cloudfoundry/capi-bara-tests/helpers/app_helpers"
+	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
@@ -16,6 +18,12 @@ var _ = Describe("mixed v2 and v3 rolling deploys", func() {
 	var (
 		appName string
 	)
+
+	AfterEach(func() {
+		appGuid := GetAppGuid(appName)
+		FetchRecentLogs(appGuid, GetAuthToken(), Config)
+		DeleteApp(appGuid)
+	})
 
 	It("behaves as expected", func() {
 		appName = random_name.BARARandomName("APP")

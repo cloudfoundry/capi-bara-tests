@@ -31,6 +31,11 @@ var _ = Describe("Droplets", func() {
 		CreateAndMapRoute(appGUID, spaceGUID, domainGUID, appName)
 	})
 
+	AfterEach(func() {
+		FetchRecentLogs(appGUID, GetAuthToken(), Config)
+		DeleteApp(appGUID)
+	})
+
 	Context("When manually performing the droplet workflow", func() {
 		It("The app successfully runs with a user uploaded droplet", func() {
 			droplet := app_helpers.AppDroplet{

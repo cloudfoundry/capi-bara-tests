@@ -64,7 +64,6 @@ var _ = Describe("deployments", func() {
 			Expect(guids).ToNot(BeEmpty())
 			return GetRunningInstancesStats(guids[0])
 		}).Should(Equal(instances))
-
 	})
 
 	AfterEach(func() {
