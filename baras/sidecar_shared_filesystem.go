@@ -52,7 +52,7 @@ var _ = Describe("sidecars", func() {
 
 	Context("when the app has a sidecar associated with its web process", func() {
 		BeforeEach(func() {
-			CreateSidecar("my_sidecar1", []string{"web"}, "./sidecar", appGUID)
+			CreateSidecar("my_sidecar1", []string{"web"}, "./sidecar", 50, appGUID)
 			RestartApp(appGUID)
 		})
 

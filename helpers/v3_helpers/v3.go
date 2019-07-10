@@ -244,17 +244,19 @@ func CreateApp(appName, spaceGuid, environmentVariables string) string {
 	return app.Guid
 }
 
-func CreateSidecar(name string, processTypes []string, command string, appGuid string) string {
+func CreateSidecar(name string, processTypes []string, command string, memoryLimit int, appGuid string) string {
 	sidecarEndpoint := fmt.Sprintf("/v3/apps/%s/sidecars", appGuid)
 	sidecarOneJSON, err := json.Marshal(
 		struct {
 			Name         string   `json:"name"`
 			Command      string   `json:"command"`
 			ProcessTypes []string `json:"process_types"`
+			Memory 		 int   `json:"memory_in_mb"`
 		}{
 			name,
 			command,
 			processTypes,
+			memoryLimit,
 		},
 	)
 	Expect(err).NotTo(HaveOccurred())

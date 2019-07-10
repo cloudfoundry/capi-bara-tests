@@ -320,16 +320,18 @@ applications:
   sidecars:
   - name: 'left_sidecar'
     command: WHAT_AM_I=LEFT_SIDECAR bundle exec rackup config.ru -p 8081
+	memory: 10M
     process_types: ['web']
   - name: 'right_sidecar'
     process_types: ['web']
     command: WHAT_AM_I=RIGHT_SIDECAR bundle exec rackup config.ru -p 8082
-  
+  	memory: 20M
+
 `, apps[0].name)
 			})
 
 			Context("when the manifest defines some sidecars", func() {
-				It("successfully runs the sidecar", func() {
+				FIt("successfully runs the sidecar", func() {
 					session := cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
 					Expect(session.Wait()).To(Exit(0))
 					response := session.Out.Contents()

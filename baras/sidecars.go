@@ -47,8 +47,8 @@ var _ = Describe("sidecars", func() {
 
 	Context("when the app has a sidecar associated with its web process", func() {
 		BeforeEach(func() {
-			CreateSidecar("my_sidecar1", []string{"web"}, fmt.Sprintf("WHAT_AM_I=LEFT_SIDECAR bundle exec rackup config.ru -p %d", 8081), appGUID)
-			CreateSidecar("my_sidecar2", []string{"web"}, fmt.Sprintf("WHAT_AM_I=RIGHT_SIDECAR bundle exec rackup config.ru -p %d", 8082), appGUID)
+			CreateSidecar("my_sidecar1", []string{"web"}, fmt.Sprintf("WHAT_AM_I=LEFT_SIDECAR bundle exec rackup config.ru -p %d", 8081), 50, appGUID)
+			CreateSidecar("my_sidecar2", []string{"web"}, fmt.Sprintf("WHAT_AM_I=RIGHT_SIDECAR bundle exec rackup config.ru -p %d", 8082), 100, appGUID)
 
 			appEndpoint := fmt.Sprintf("/v2/apps/%s", appGUID)
 			extraPortsJSON, err := json.Marshal(
@@ -74,7 +74,7 @@ var _ = Describe("sidecars", func() {
 		})
 
 		Context("and the app and sidecar are listening on different ports", func() {
-			It("and successfully responds on each port", func() {
+			FIt("and successfully responds on each port", func() {
 				session := cf.Cf("start", appName)
 				Eventually(session).Should(Exit(0))
 
@@ -93,12 +93,22 @@ var _ = Describe("sidecars", func() {
 				session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix2, Config.GetAppsDomain()))
 				Eventually(session).Should(Say("RIGHT_SIDECAR"))
 				Eventually(session).Should(Exit(0))
+
+				session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/MEMORY", sidecarRoutePrefix1, Config.GetAppsDomain()))
+				Eventually(session).Should(Say("50M"))
+				Eventually(session).Should(Exit(0))
+
+				session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/MEMORY", sidecarRoutePrefix2, Config.GetAppsDomain()))
+				Eventually(session).Should(Say("100M"))
+				Eventually(session).Should(Exit(0))
+
+
 			})
 		})
 
 		Context("when the app has a sidecar that just sleeps", func() {
 			BeforeEach(func() {
-				sidecarGUID = CreateSidecar("my_sidecar", []string{"web"}, "sleep 100000", appGUID)
+				sidecarGUID = CreateSidecar("my_sidecar", []string{"web"}, "sleep 100000", 50, appGUID)
 			})
 
 			It("stops responding only after an app restart", func() {
