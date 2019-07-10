@@ -320,11 +320,13 @@ applications:
   sidecars:
   - name: 'left_sidecar'
     command: WHAT_AM_I=LEFT_SIDECAR bundle exec rackup config.ru -p 8081
+    memory: 10M
     process_types: ['web']
   - name: 'right_sidecar'
     process_types: ['web']
     command: WHAT_AM_I=RIGHT_SIDECAR bundle exec rackup config.ru -p 8082
-  
+    memory: 20M
+
 `, apps[0].name)
 			})
 
