@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
@@ -112,6 +113,14 @@ func GetRunningInstancesStats(processGuid string) int {
 		}
 	}
 	return numRunning
+}
+
+func WaitForAppToStop(appGUID string) {
+	processGUIDS := GetProcessGuidsForType(appGUID, "web")
+
+	Eventually(func() int {
+		return GetRunningInstancesStats(processGUIDS[0])
+	}, Config.CfPushTimeoutDuration(), time.Second).Should(Equal(0))
 }
 
 func SetCommandOnProcess(appGUID, processType, command string) {

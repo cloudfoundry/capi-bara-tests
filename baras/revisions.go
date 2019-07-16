@@ -70,6 +70,7 @@ var _ = Describe("revisions", func() {
 		Context("when there is not a new droplet or env vars", func() {
 			It("does not create a new revision", func() {
 				StopApp(appGUID)
+				WaitForAppToStop(appGUID)
 				StartApp(appGUID)
 
 				Expect(GetRevisions(appGUID)).To(Equal(revisions))
@@ -89,6 +90,7 @@ var _ = Describe("revisions", func() {
 
 			It("creates a new revision", func() {
 				StopApp(appGUID)
+				WaitForAppToStop(appGUID)
 				StartApp(appGUID)
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
@@ -115,6 +117,7 @@ var _ = Describe("revisions", func() {
 
 			It("creates a new revision", func() {
 				StopApp(appGUID)
+				WaitForAppToStop(appGUID)
 				StartApp(appGUID)
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
@@ -139,6 +142,7 @@ var _ = Describe("revisions", func() {
 
 			It("creates a new revision", func() {
 				StopApp(appGUID)
+				WaitForAppToStop(appGUID)
 				StartApp(appGUID)
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
