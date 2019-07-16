@@ -3,6 +3,7 @@ package baras
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
@@ -12,6 +13,7 @@ import (
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gexec"
 )
 
 var _ = Describe("deployments", func() {
@@ -116,8 +118,7 @@ var _ = Describe("deployments", func() {
 	})
 
 	Describe("Deploy a bad droplet on the same app", func() {
-		// TODO: Verify that the last_successful_healthcheck field never gets set on the bad-dora zip
-		XIt("reports that the deployment is failing", func() {
+		It("does not update the last_successful_healthcheck field", func() {
 			By("Creating a New Package")
 			newPackageGUID = CreatePackage(appGUID)
 			token = GetAuthToken()
@@ -138,15 +139,31 @@ var _ = Describe("deployments", func() {
 			AssignDropletToApp(appGUID, newDropletGuid)
 
 			By("Create a new Deployment")
-			badDeploymentGuid := CreateDeployment(appGUID)
-			Expect(badDeploymentGuid).ToNot(BeEmpty())
+			deploymentGuid := CreateDeployment(appGUID)
+			Expect(deploymentGuid).ToNot(BeEmpty())
 
-			By("The Deployment is FAILING")
-			WaitUntilDeploymentReachesState(badDeploymentGuid, "FAILING")
+			time.Sleep(60 * time.Second)
 
-			By("Make the Deployment FAILED")
-			CreateDeployment(appGUID)
-			WaitUntilDeploymentReachesState(badDeploymentGuid, "FAILED")
+			deploymentPath := fmt.Sprintf("/v3/deployments/%s", deploymentGuid)
+
+			type deploymentStatus struct {
+				Value string `json:"value"`
+				Reason string `json:"reason"`
+				HealthCheckTime string `json:"last_successful_healthcheck"`
+			}
+			deploymentJson := struct {
+				State string `json:"state"`
+				Status deploymentStatus `json:"status"`
+			}{}
+
+			session := cf.Cf("curl", "-f", deploymentPath).Wait()
+			Expect(session.Wait()).To(Exit(0))
+			json.Unmarshal(session.Out.Contents(), &deploymentJson)
+
+			Expect(deploymentJson.State).To(Equal("DEPLOYING"))
+			Expect(deploymentJson.Status.Value).To(Equal("DEPLOYING"))
+			Expect(deploymentJson.Status.Reason).To(Equal(""))
+			Expect(deploymentJson.Status.HealthCheckTime).To(Equal(""))
 		})
 	})
 })
