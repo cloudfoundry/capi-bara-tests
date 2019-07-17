@@ -379,6 +379,32 @@ func PollJob(jobPath string) {
 	}).Should(ContainSubstring("COMPLETE"))
 }
 
+func PollJobAsFailed(jobPath string) {
+	Eventually(func() string {
+		jobSession := cf.Cf("curl", "-f", jobPath)
+		return string(jobSession.Wait().Out.Contents())
+	}).Should(ContainSubstring("FAILED"))
+}
+
+type jobError struct {
+	Detail string `json:"detail"`
+	Title string `json:"title"`
+	Code int `json:"code"`
+}
+
+func GetJobErrors(jobPath string) []jobError {
+	session := cf.Cf("curl", "-f", jobPath).Wait()
+	var job struct {
+			Guid string `json:"guid"`
+			Errors []jobError `json:"errors"`
+		}
+
+	bytes := session.Wait().Out.Contents()
+	json.Unmarshal(bytes, &job)
+	return job.Errors
+}
+
+
 func DeleteApp(appGuid string) {
 	HandleAsyncRequest(fmt.Sprintf("/v3/apps/%s", appGuid), "DELETE")
 }

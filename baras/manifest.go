@@ -441,6 +441,35 @@ applications:
 						Eventually(session).Should(Exit(0))
 					})
 				})
+				Context("and there are dependent sidecars and the process memory in the update is less than or equal to sidecar memory", func() {
+					BeforeEach(func() {
+						CreateSidecar("my_sidecar1", []string{"web"}, "while true; do echo helloworld; sleep 2; done", 100, apps[0].guid)
+						manifestToApply = fmt.Sprintf(`
+applications:
+- name: "%s"
+  processes:
+  - type: web
+    instances: 2
+    memory: 100M
+    command: new-command
+    health-check-type: http
+    health-check-http-endpoint: /env
+    timeout: 75
+`, apps[0].name)
+			})
+					It("fails the job and does not change the memory", func() {
+						session := cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
+						Expect(session.Wait()).To(Exit(0))
+						response := session.Out.Contents()
+						Expect(string(response)).To(ContainSubstring("202 Accepted"))
+
+						jobPath := GetJobPath(response)
+						PollJobAsFailed(jobPath)
+
+						errors := GetJobErrors(jobPath)
+						Expect(errors[0].Detail).To(ContainSubstring("The requested memory allocation is not large enough to run all of your sidecar processes"))
+					})
+				})
 			})
 
 			Context("when the process doesn't exist already", func() {
