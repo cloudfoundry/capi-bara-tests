@@ -203,43 +203,101 @@ func AssignIsolationSegmentToSpace(spaceGuid, isoSegGuid string) {
 
 func CreateAndMapRoute(appGUID, spaceGUID, domainGUID, host string) {
 	routeGUID := CreateRoute(spaceGUID, domainGUID, host)
-	Expect(cf.Cf("curl", "-f", fmt.Sprintf("/v2/routes/%s/apps/%s", routeGUID, appGUID), "-X", "PUT").Wait()).To(Exit(0))
+
+	type app struct {
+		Guid string `json:"guid"`
+	}
+
+	type destination struct {
+		App app `json:"app"`
+	}
+
+	routeMappingJSON, err := json.Marshal(
+		struct {
+			Destinations []destination `json:"destinations"`
+		}{
+			Destinations: []destination{
+				{App: app{Guid: appGUID}},
+			},
+		},
+	)
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect(cf.Cf("curl", "-f", fmt.Sprintf("/v3/routes/%s/destinations", routeGUID), "-X", "POST", "-d", string(routeMappingJSON)).Wait()).To(Exit(0))
 }
 
 func CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, host string, port int) {
 	routeGUID := CreateRoute(spaceGUID, domainGUID, host)
 
+	type app struct {
+		Guid string `json:"guid"`
+	}
+
+	type destination struct {
+		App  app `json:"app"`
+		Port int `json:"port"`
+	}
+
 	routeMappingJSON, err := json.Marshal(
 		struct {
-			AppGuid   string `json:"app_guid"`
-			RouteGuid string `json:"route_guid"`
-			AppPort   int    `json:"app_port"`
+			Destinations []destination `json:"destinations"`
 		}{
-			appGUID,
-			routeGUID,
-			port,
+			Destinations: []destination{
+				{
+					App:  app{Guid: appGUID},
+					Port: port,
+				},
+			},
 		},
 	)
 	Expect(err).NotTo(HaveOccurred())
 
-	Expect(cf.Cf("curl", "-f", "/v2/route_mappings", "-X", "POST", "-d", string(routeMappingJSON)).Wait()).To(Exit(0))
+	Expect(cf.Cf("curl", "-f", fmt.Sprintf("/v3/routes/%s/destinations", routeGUID), "-X", "POST", "-d", string(routeMappingJSON)).Wait()).To(Exit(0))
 }
 
 func UnmapAllRoutes(appGuid string) {
-	getRoutespath := fmt.Sprintf("/v2/apps/%s/routes", appGuid)
+	getRoutespath := fmt.Sprintf("/v3/apps/%s/routes", appGuid)
 	routesBody := cf.Cf("curl", "-f", getRoutespath).Wait().Out.Contents()
 	routesJSON := struct {
 		Resources []struct {
-			Metadata struct {
-				Guid string `json:"guid"`
-			} `json:"metadata"`
+			Guid string `json:"guid"`
 		} `json:"resources"`
 	}{}
 	json.Unmarshal([]byte(routesBody), &routesJSON)
 
 	for _, routeResource := range routesJSON.Resources {
-		routeGuid := routeResource.Metadata.Guid
-		Expect(cf.Cf("curl", "-f", fmt.Sprintf("/v2/routes/%s/apps/%s", routeGuid, appGuid), "-X", "DELETE").Wait()).To(Exit(0))
+		routeGuid := routeResource.Guid
+
+		type app struct {
+			Guid string `json:"guid"`
+		}
+
+		type destination struct {
+			Guid string `json:"guid"`
+			App  app `json:"app"`
+		}
+
+		type destinations struct {
+			Destinations []destination `json:"destinations"`
+		}
+
+		getDestinationspath := fmt.Sprintf("/v3/routes/%s/destinations", routeGuid)
+		destinationsBody := cf.Cf("curl", getDestinationspath).Wait().Out.Contents()
+
+		var destinationsJSON destinations
+		json.Unmarshal([]byte(destinationsBody), &destinationsJSON)
+
+		filteredDestinations := []destination{}
+		for _, destination := range destinationsJSON.Destinations {
+			if destination.App.Guid != appGuid {
+				filteredDestinations = append(filteredDestinations, destination)
+			}
+		}
+
+		filteredDestinationsJSON, err := json.Marshal(filteredDestinations)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(cf.Cf("curl", "-f", fmt.Sprintf("/v3/routes/%s/destinations", routeGuid), "-X", "PATCH", "-d", string(filteredDestinationsJSON)).Wait()).To(Exit(0))
 	}
 }
 
@@ -388,22 +446,21 @@ func PollJobAsFailed(jobPath string) {
 
 type jobError struct {
 	Detail string `json:"detail"`
-	Title string `json:"title"`
-	Code int `json:"code"`
+	Title  string `json:"title"`
+	Code   int    `json:"code"`
 }
 
 func GetJobErrors(jobPath string) []jobError {
 	session := cf.Cf("curl", "-f", jobPath).Wait()
 	var job struct {
-			Guid string `json:"guid"`
-			Errors []jobError `json:"errors"`
-		}
+		Guid   string     `json:"guid"`
+		Errors []jobError `json:"errors"`
+	}
 
 	bytes := session.Wait().Out.Contents()
 	json.Unmarshal(bytes, &job)
 	return job.Errors
 }
-
 
 func DeleteApp(appGuid string) {
 	HandleAsyncRequest(fmt.Sprintf("/v3/apps/%s", appGuid), "DELETE")
