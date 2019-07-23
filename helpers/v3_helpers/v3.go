@@ -133,6 +133,26 @@ func SetCommandOnProcess(appGUID, processType, command string) {
 	Expect(session).To(Say("200 OK"))
 }
 
+func SetHealthCheckTimeoutOnProcess(appGUID, processType string, healthCheckTimeout int) {
+	process := GetFirstProcessByType(GetProcesses(appGUID, "appName"), processType)
+
+	type processHealthCheck struct {
+		HealthCheck struct {
+			Data struct {
+				Timeout int `json:"timeout"`
+			} `json:"data"`
+		} `json:"health_check"`
+	}
+
+	processUpdate := &processHealthCheck{}
+	processUpdate.HealthCheck.Data.Timeout = healthCheckTimeout
+	processURL := fmt.Sprintf("/v3/processes/%s", process.Guid)
+	processJSON, _ := json.Marshal(&processUpdate)
+
+	session := cf.Cf("curl", "-f", "-v", "-X", "PATCH", processURL, "-d", string(processJSON)).Wait()
+	Expect(session).To(Say("200 OK"))
+}
+
 func GetProcessGuidsForType(appGuid string, processType string) []string {
 	processesPath := fmt.Sprintf("/v3/apps/%s/processes?types=%s", appGuid, processType)
 	session := cf.Cf("curl", "-f", processesPath).Wait()

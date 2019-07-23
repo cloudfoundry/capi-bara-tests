@@ -166,4 +166,18 @@ var _ = Describe("deployments", func() {
 			Expect(deploymentJson.Status.HealthCheckTime).To(Equal(""))
 		})
 	})
+
+	Describe("Health check timeout is set on the app", func() {
+		BeforeEach(func() {
+			ScaleApp(appGUID, 2)
+			SetHealthCheckTimeoutOnProcess(appGUID, "web", 5)
+		})
+
+		It("completes the deployment", func() {
+			deploymentGUID := CreateDeployment(appGUID)
+			Expect(deploymentGUID).ToNot(BeEmpty())
+			WaitUntilDeploymentReachesState(deploymentGUID, "DEPLOYED")
+		})
+
+	})
 })
