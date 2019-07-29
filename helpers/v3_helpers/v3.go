@@ -24,6 +24,21 @@ const (
 	V3_JAVA_MEMORY_LIMIT    = "1024"
 )
 
+//is there a cleaner way to do this?
+type process struct {
+	Type string `json:"type"`
+}
+
+type app struct {
+	Guid    string  `json:"guid"`
+	Process process `json:"process"`
+}
+
+type destination struct {
+	App  app `json:"app"`
+	Port int `json:"port"`
+}
+
 func CreateDeployment(appGuid string) string {
 	deploymentPath := fmt.Sprintf("/v3/deployments")
 	deploymentRequestBody := fmt.Sprintf(`{"relationships": {"app": {"data": {"guid": "%s"}}}}`, appGuid)
@@ -221,31 +236,95 @@ func AssignIsolationSegmentToSpace(spaceGuid, isoSegGuid string) {
 	).Should(Exit(0))
 }
 
-func CreateAndMapRoute(appGUID, spaceGUID, domainGUID, host string) {
-	routeGUID := CreateRoute(spaceGUID, domainGUID, host)
-
-	type app struct {
-		Guid string `json:"guid"`
+func InsertDestinations(routeGUID string, appGUIDs []string) {
+	appGUIDsWithProcessTypes := make(map[string]string)
+	for _, appGUID := range appGUIDs {
+		appGUIDsWithProcessTypes[appGUID] = "web"
 	}
+	InsertDestinationsWithProcessTypes(routeGUID, appGUIDsWithProcessTypes)
+}
 
-	type destination struct {
-		App app `json:"app"`
+func InsertDestinationsWithProcessTypes(routeGUID string, appGUIDsWithProcessTypes map[string]string) {
+	var destinations []destination
+	var dst destination
+	for appGUID, processType := range appGUIDsWithProcessTypes {
+		dst = destination{
+			App: app{
+				Guid: appGUID,
+				Process: process{
+					Type: processType,
+				},
+			},
+		}
+		destinations = append(destinations, dst)
 	}
 
 	routeMappingJSON, err := json.Marshal(
 		struct {
 			Destinations []destination `json:"destinations"`
 		}{
-			Destinations: []destination{
-				{App: app{Guid: appGUID}},
-			},
+			Destinations: destinations,
 		},
 	)
 	Expect(err).NotTo(HaveOccurred())
-
-	Expect(cf.Cf("curl", "-f", fmt.Sprintf("/v3/routes/%s/destinations", routeGUID), "-X", "POST", "-d", string(routeMappingJSON)).Wait()).To(Exit(0))
+	Expect(cf.Cf("curl", "-f",
+		fmt.Sprintf("/v3/routes/%s/destinations", routeGUID),
+		"-X", "POST", "-d", string(routeMappingJSON)).Wait()).To(Exit(0))
 }
 
+//find a way to collapse with InsertDestinationsWithProcessTypes
+func InsertDestinationsWithPorts(routeGUID string, appGUIDsWithPorts map[string]int) {
+	var destinations []destination
+	var dst destination
+	for appGUID, port := range appGUIDsWithPorts {
+		dst = destination{
+			App: app{
+				Guid: appGUID,
+			},
+			Port: port,
+		}
+		destinations = append(destinations, dst)
+	}
+
+	routeMappingJSON, err := json.Marshal(
+		struct {
+			Destinations []destination `json:"destinations"`
+		}{
+			Destinations: destinations,
+		},
+	)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(cf.Cf("curl", "-f",
+		fmt.Sprintf("/v3/routes/%s/destinations", routeGUID),
+		"-X", "POST", "-d", string(routeMappingJSON)).Wait()).To(Exit(0))
+}
+
+func CreateAndMapRoute(appGUID, spaceGUID, domainGUID, host string) {
+	routeGUID := CreateRoute(spaceGUID, domainGUID, host)
+	InsertDestinations(routeGUID, []string{appGUID})
+	//	type app struct {
+	//		Guid string `json:"guid"`
+	//	}
+	//
+	//	type destination struct {
+	//		App app `json:"app"`
+	//	}
+	//
+	//	routeMappingJSON, err := json.Marshal(
+	//		struct {
+	//			Destinations []destination `json:"destinations"`
+	//		}{
+	//			Destinations: []destination{
+	//				{App: app{Guid: appGUID}},
+	//			},
+	//		},
+	//	)
+	//	Expect(err).NotTo(HaveOccurred())
+	//
+	//	Expect(cf.Cf("curl", "-f", fmt.Sprintf("/v3/routes/%s/destinations", routeGUID), "-X", "POST", "-d", string(routeMappingJSON)).Wait()).To(Exit(0))
+}
+
+//see if we can refactor this the same way CreateAndMapRoute/InsertDestinations have been refactored
 func CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, host string, port int) {
 	routeGUID := CreateRoute(spaceGUID, domainGUID, host)
 
@@ -294,7 +373,7 @@ func UnmapAllRoutes(appGuid string) {
 
 		type destination struct {
 			Guid string `json:"guid"`
-			App  app `json:"app"`
+			App  app    `json:"app"`
 		}
 
 		type destinations struct {

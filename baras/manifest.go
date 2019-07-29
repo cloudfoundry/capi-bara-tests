@@ -331,7 +331,7 @@ applications:
 			})
 
 			Context("when the manifest defines some sidecars", func() {
-				It("successfully runs the sidecar", func() {
+				FIt("successfully runs the sidecar", func() {
 					session := cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
 					Expect(session.Wait()).To(Exit(0))
 					response := session.Out.Contents()
@@ -456,7 +456,7 @@ applications:
     health-check-http-endpoint: /env
     timeout: 75
 `, apps[0].name)
-			})
+					})
 					It("fails the job and does not change the memory", func() {
 						session := cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
 						Expect(session.Wait()).To(Exit(0))
