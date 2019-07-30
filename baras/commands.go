@@ -30,7 +30,7 @@ var _ = Describe("setting_process_commands", func() {
 		appName = random_name.BARARandomName("APP")
 		spaceName = TestSetup.RegularUserContext().Space
 		spaceGUID = GetSpaceGuidFromName(spaceName)
-		By("Creating an App")
+		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
 		dropletGUID = AssociateNewDroplet(appGUID, assets.NewAssets().DoraZip)
 		applyEndpoint = fmt.Sprintf("/v3/apps/%s/actions/apply_manifest", appGUID)

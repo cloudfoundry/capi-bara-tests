@@ -35,7 +35,7 @@ var _ = Describe("deployments", func() {
 		spaceName = TestSetup.RegularUserContext().Space
 		spaceGUID = GetSpaceGuidFromName(spaceName)
 		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
-		By("Creating an App")
+		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
 		By("Creating a Package")
 		packageGUID = CreatePackage(appGUID)
@@ -135,7 +135,7 @@ var _ = Describe("deployments", func() {
 			By("Get the New Droplet GUID")
 			newDropletGuid = GetDropletFromBuild(newBuildGUID)
 
-			By("Assign the New Droplet GUID to the App")
+			By("Assign the New Droplet GUID to the app")
 			AssignDropletToApp(appGUID, newDropletGuid)
 
 			By("Create a new Deployment")
@@ -147,12 +147,12 @@ var _ = Describe("deployments", func() {
 			deploymentPath := fmt.Sprintf("/v3/deployments/%s", deploymentGuid)
 
 			type deploymentStatus struct {
-				Value string `json:"value"`
-				Reason string `json:"reason"`
+				Value           string `json:"value"`
+				Reason          string `json:"reason"`
 				HealthCheckTime string `json:"last_successful_healthcheck"`
 			}
 			deploymentJson := struct {
-				State string `json:"state"`
+				State  string           `json:"state"`
 				Status deploymentStatus `json:"status"`
 			}{}
 

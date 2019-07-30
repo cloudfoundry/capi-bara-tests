@@ -37,7 +37,7 @@ var _ = Describe("revisions", func() {
 		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
 		instances = 2
 
-		By("Creating an App")
+		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
 
 		By("Enabling Revisions")

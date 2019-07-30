@@ -24,6 +24,33 @@ const (
 	V3_JAVA_MEMORY_LIMIT    = "1024"
 )
 
+type process struct {
+	Type string `json:"type"`
+}
+
+type app struct {
+	Guid    string  `json:"guid"`
+	Process process `json:"process"`
+}
+
+type Destination struct {
+	App  app `json:"app"`
+	Port int `json:"port"`
+}
+
+type WeightedDestination struct {
+	App    app `json:"app"`
+	Port   int `json:"port"`
+	Weight int `json:"weight"`
+}
+
+type ResponseDestination struct {
+	Guid   string `json:"guid"`
+	App    app    `json:"app"`
+	Port   int    `json:"port"`
+	Weight int    `json:"weight"`
+}
+
 func CreateDeployment(appGuid string) string {
 	deploymentPath := fmt.Sprintf("/v3/deployments")
 	deploymentRequestBody := fmt.Sprintf(`{"relationships": {"app": {"data": {"guid": "%s"}}}}`, appGuid)
@@ -221,58 +248,118 @@ func AssignIsolationSegmentToSpace(spaceGuid, isoSegGuid string) {
 	).Should(Exit(0))
 }
 
-func CreateAndMapRoute(appGUID, spaceGUID, domainGUID, host string) {
-	routeGUID := CreateRoute(spaceGUID, domainGUID, host)
+func ToDestination(appGuid, processType string, port int) Destination {
+	return Destination{App: app{Guid: appGuid, Process: process{Type: processType}}, Port: port}
+}
 
-	type app struct {
-		Guid string `json:"guid"`
+func ToWeightedDestination(appGuid, processType string, port int, weight int) WeightedDestination {
+	return WeightedDestination{App: app{Guid: appGuid, Process: process{Type: processType}}, Port: port, Weight: weight}
+}
+
+func InsertDestinations(routeGUID string, appGUIDs []string) []string {
+	appGUIDsWithProcessTypes := make(map[string]string)
+	for _, appGUID := range appGUIDs {
+		appGUIDsWithProcessTypes[appGUID] = "web"
 	}
+	return InsertDestinationsWithProcessTypes(routeGUID, appGUIDsWithProcessTypes)
+}
 
-	type destination struct {
-		App app `json:"app"`
+func InsertDestinationsWithProcessTypes(routeGUID string, appGUIDsWithProcessTypes map[string]string) []string {
+	var destinations []Destination
+	for appGUID, processType := range appGUIDsWithProcessTypes {
+		destinations = append(destinations, ToDestination(appGUID, processType, 8080))
 	}
 
 	routeMappingJSON, err := json.Marshal(
 		struct {
-			Destinations []destination `json:"destinations"`
+			Destinations []Destination `json:"destinations"`
 		}{
-			Destinations: []destination{
-				{App: app{Guid: appGUID}},
-			},
+			Destinations: destinations,
+		},
+	)
+	Expect(err).NotTo(HaveOccurred())
+	session := cf.Cf("curl", "-f",
+		fmt.Sprintf("/v3/routes/%s/destinations", routeGUID),
+		"-X", "POST", "-d", string(routeMappingJSON), "-v")
+
+	Expect(session.Wait()).To(Exit(0))
+	response := session.Out.Contents()
+
+	var responseDestinations struct {
+		Destinations []ResponseDestination `json:"destinations"`
+	}
+	err = json.Unmarshal(response, &responseDestinations)
+	Expect(err).ToNot(HaveOccurred())
+
+	var listDstGuids []string
+	for _, dst := range responseDestinations.Destinations {
+		listDstGuids = append(listDstGuids, dst.Guid)
+	}
+	return listDstGuids
+}
+
+func InsertDestinationsWithPorts(routeGUID string, appGUIDsWithPorts map[string]int) []string {
+	var destinations []Destination
+	for appGUID, port := range appGUIDsWithPorts {
+		destinations = append(destinations,
+			ToDestination(appGUID, "web", port))
+	}
+
+	routeMappingJSON, err := json.Marshal(
+		struct {
+			Destinations []Destination `json:"destinations"`
+		}{
+			Destinations: destinations,
+		},
+	)
+	Expect(err).NotTo(HaveOccurred())
+	session := cf.Cf("curl", "-f",
+		fmt.Sprintf("/v3/routes/%s/destinations", routeGUID),
+		"-X", "POST", "-d", string(routeMappingJSON))
+
+	Expect(session.Wait()).To(Exit(0))
+	response := session.Out.Contents()
+
+	var responseDestinations struct {
+		Destinations []ResponseDestination `json:"destinations"`
+	}
+	err = json.Unmarshal(response, &responseDestinations)
+	Expect(err).ToNot(HaveOccurred())
+
+	var listDstGuids []string
+	for _, dst := range responseDestinations.Destinations {
+		listDstGuids = append(listDstGuids, dst.Guid)
+	}
+	return listDstGuids
+}
+
+func ReplaceDestinationsWithWeights(routeGUID string, destinations []WeightedDestination) []byte {
+	routeMappingJSON, err := json.Marshal(
+		struct {
+			Destinations []WeightedDestination `json:"destinations"`
+		}{
+			Destinations: destinations,
 		},
 	)
 	Expect(err).NotTo(HaveOccurred())
 
-	Expect(cf.Cf("curl", "-f", fmt.Sprintf("/v3/routes/%s/destinations", routeGUID), "-X", "POST", "-d", string(routeMappingJSON)).Wait()).To(Exit(0))
+	session := cf.Cf("curl", "-f",
+		fmt.Sprintf("/v3/routes/%s/destinations", routeGUID),
+		"-X", "PATCH", "-d", string(routeMappingJSON))
+
+	Expect(session.Wait()).To(Exit(0))
+	response := session.Out.Contents()
+	return response
+}
+
+func CreateAndMapRoute(appGUID, spaceGUID, domainGUID, host string) {
+	routeGUID := CreateRoute(spaceGUID, domainGUID, host)
+	InsertDestinations(routeGUID, []string{appGUID})
 }
 
 func CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, host string, port int) {
 	routeGUID := CreateRoute(spaceGUID, domainGUID, host)
-
-	type app struct {
-		Guid string `json:"guid"`
-	}
-
-	type destination struct {
-		App  app `json:"app"`
-		Port int `json:"port"`
-	}
-
-	routeMappingJSON, err := json.Marshal(
-		struct {
-			Destinations []destination `json:"destinations"`
-		}{
-			Destinations: []destination{
-				{
-					App:  app{Guid: appGUID},
-					Port: port,
-				},
-			},
-		},
-	)
-	Expect(err).NotTo(HaveOccurred())
-
-	Expect(cf.Cf("curl", "-f", fmt.Sprintf("/v3/routes/%s/destinations", routeGUID), "-X", "POST", "-d", string(routeMappingJSON)).Wait()).To(Exit(0))
+	InsertDestinationsWithPorts(routeGUID, map[string]int{appGUID: port})
 }
 
 func UnmapAllRoutes(appGuid string) {
@@ -294,7 +381,7 @@ func UnmapAllRoutes(appGuid string) {
 
 		type destination struct {
 			Guid string `json:"guid"`
-			App  app `json:"app"`
+			App  app    `json:"app"`
 		}
 
 		type destinations struct {
@@ -423,15 +510,12 @@ func CreateRoute(spaceGUID, domainGUID, host string) string {
 			}
 		}`, host, domainGUID, spaceGUID),
 	)
-	Eventually(session).Should(Exit(0))
+	bytes := session.Wait().Out.Contents()
 
 	var response struct {
-		GUID   string                   `json:"guid"`
-		Errors []map[string]interface{} `json:"errors"`
+		GUID string `json:"guid"`
 	}
-	bytes := session.Out.Contents()
 	json.Unmarshal(bytes, &response)
-	Expect(response.Errors).To(BeEmpty())
 	return response.GUID
 }
 
@@ -484,6 +568,10 @@ func GetJobErrors(jobPath string) []jobError {
 
 func DeleteApp(appGuid string) {
 	HandleAsyncRequest(fmt.Sprintf("/v3/apps/%s", appGuid), "DELETE")
+}
+
+func DeleteRoute(routeGuid string) {
+	HandleAsyncRequest(fmt.Sprintf("/v3/routes/%s", routeGuid), "DELETE")
 }
 
 func DeleteIsolationSegment(guid string) {

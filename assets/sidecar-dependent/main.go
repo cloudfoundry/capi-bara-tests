@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
-	"io"
-	"net"
 )
 
 func main() {
@@ -28,7 +28,6 @@ func reader(r io.Reader) []byte {
 	return buf[0:n]
 }
 
-
 func respond(res http.ResponseWriter, req *http.Request) {
 	c, err := net.Dial("unix", "/tmp/sidecar.sock")
 	if err != nil {
@@ -43,4 +42,3 @@ func respond(res http.ResponseWriter, req *http.Request) {
 	}
 	res.Write(reader(c))
 }
-

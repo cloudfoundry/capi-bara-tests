@@ -35,7 +35,7 @@ var _ = Describe("sidecars", func() {
 		spaceGUID = GetSpaceGuidFromName(spaceName)
 		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
 
-		By("Creating an App")
+		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"WHAT_AM_I":"MOTORCYCLE"}`)
 		_ = AssociateNewDroplet(appGUID, assets.NewAssets().DoraZip)
 	})

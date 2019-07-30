@@ -26,7 +26,7 @@ var _ = Describe("Droplets", func() {
 		spaceGUID := GetSpaceGuidFromName(spaceName)
 		domainGUID := GetDomainGUIDFromName(Config.GetAppsDomain())
 
-		By("Creating an App")
+		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
 		CreateAndMapRoute(appGUID, spaceGUID, domainGUID, appName)
 	})
