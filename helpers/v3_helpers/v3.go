@@ -280,7 +280,7 @@ func InsertDestinationsWithProcessTypes(routeGUID string, appGUIDsWithProcessTyp
 	Expect(err).NotTo(HaveOccurred())
 	session := cf.Cf("curl", "-f",
 		fmt.Sprintf("/v3/routes/%s/destinations", routeGUID),
-		"-X", "POST", "-d", string(routeMappingJSON), "-v")
+		"-X", "POST", "-d", string(routeMappingJSON))
 
 	Expect(session.Wait()).To(Exit(0))
 	response := session.Out.Contents()
