@@ -32,7 +32,7 @@ var _ = Describe("destinations", func() {
 		spaceGUID = GetSpaceGuidFromName(spaceName)
 		app1GUID = CreateApp(app1Name, spaceGUID, `{"foo1":"bar1"}`)
 		app2GUID = CreateApp(app2Name, spaceGUID, `{"foo2":"bar2"}`)
-		routeGUID = CreateRoute(spaceGUID, GetDomainGUIDFromName(Config.GetAppsDomain()), "anotherunrealhostname")
+		routeGUID = CreateRoute(spaceGUID, GetDomainGUIDFromName(Config.GetAppsDomain()), random_name.BARARandomName("route"))
 	})
 
 	AfterEach(func() {
