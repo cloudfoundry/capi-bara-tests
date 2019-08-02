@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
+	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gexec"
 )
 
 type RevisionList struct {
@@ -30,7 +32,8 @@ func GetRevisions(appGuid string) []Revision {
 	bytes := session.Wait().Out.Contents()
 
 	revisions := RevisionList{}
-	json.Unmarshal(bytes, &revisions)
+	err := json.Unmarshal(bytes, &revisions)
+	Expect(err).NotTo(HaveOccurred())
 
 	return revisions.Revisions
 }
@@ -41,7 +44,8 @@ func GetRevision(revisionGuid string) Revision {
 	bytes := session.Wait().Out.Contents()
 
 	revision := Revision{}
-	json.Unmarshal(bytes, &revision)
+	err := json.Unmarshal(bytes, &revision)
+	Expect(err).NotTo(HaveOccurred())
 
 	return revision
 }
@@ -57,7 +61,14 @@ func GetRevisionEnvVars(revisionGuid string) RevisionEnvVars {
 	bytes := session.Wait().Out.Contents()
 
 	envVars := RevisionEnvVars{}
-	json.Unmarshal(bytes, &envVars)
+	err := json.Unmarshal(bytes, &envVars)
+	Expect(err).NotTo(HaveOccurred())
 
 	return envVars
+}
+
+func EnableRevisions(appGuid string) {
+	path := fmt.Sprintf("/v3/apps/%s/features/revisions", appGuid)
+	curl := cf.Cf("curl", "-f", path, "-X", "PATCH", "-d", `{"enabled": true}`).Wait()
+	Expect(curl).To(Exit(0))
 }

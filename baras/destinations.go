@@ -16,13 +16,14 @@ import (
 
 var _ = Describe("destinations", func() {
 	var (
-		routeGUID string
-		app1Name  string
-		app2Name  string
-		app1GUID  string
-		app2GUID  string
-		spaceName string
-		spaceGUID string
+		routeGUID    string
+		app1Name     string
+		app2Name     string
+		app1GUID     string
+		app2GUID     string
+		spaceName    string
+		spaceGUID    string
+		destinations []Destination
 	)
 
 	BeforeEach(func() {
@@ -42,46 +43,37 @@ var _ = Describe("destinations", func() {
 	})
 
 	Describe("Insert destinations", func() {
-		var response []byte
+		var (
+			response []byte
+		)
 		JustBeforeEach(func() {
 			routePath := fmt.Sprintf("/v3/routes/%s/destinations", routeGUID)
 			session := cf.Cf("curl", routePath)
 			response = session.Wait().Out.Contents()
 		})
 
-		Describe("Regular Insert", func() {
-			BeforeEach(func() {
-				InsertDestinations(routeGUID, []string{app1GUID, app2GUID})
-			})
-
-			It("inserts both destinations", func() {
-				dst1 := ToDestination(app1GUID, "web", 8080)
-				dst2 := ToDestination(app2GUID, "web", 8080)
-				destinations := []Destination{dst1, dst2}
-
-				var responseDestinations struct {
-					Destinations []Destination `json:"destinations"`
-				}
-				err := json.Unmarshal(response, &responseDestinations)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(responseDestinations.Destinations).To(ConsistOf(destinations))
-			})
-		})
-
 		Describe("Insert with process types", func() {
 			BeforeEach(func() {
-				InsertDestinationsWithProcessTypes(routeGUID,
-					map[string]string{
-						app1GUID: "web",
-						app2GUID: "worker",
-					})
+				destinations = []Destination{
+					{
+						App: App{
+							GUID:    app1GUID,
+							Process: &DestinationProcess{Type: "web"},
+						},
+						Port: 8080,
+					},
+					{
+						App: App{
+							GUID:    app2GUID,
+							Process: &DestinationProcess{Type: "worker"},
+						},
+						Port: 8080,
+					},
+				}
+				InsertDestinations(routeGUID, destinations)
 			})
 
 			It("inserts both destinations with the appropriate process types", func() {
-				dst1 := ToDestination(app1GUID, "web", 8080)
-				dst2 := ToDestination(app2GUID, "worker", 8080)
-				destinations := []Destination{dst1, dst2}
 
 				var responseDestinations struct {
 					Destinations []Destination `json:"destinations"`
@@ -89,22 +81,35 @@ var _ = Describe("destinations", func() {
 				err := json.Unmarshal(response, &responseDestinations)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(responseDestinations.Destinations).To(ConsistOf(destinations))
+				Expect(responseDestinations.Destinations[0].App).To(Equal(destinations[0].App))
+				Expect(responseDestinations.Destinations[0].Port).To(Equal(destinations[0].Port))
+				Expect(responseDestinations.Destinations[1].App).To(Equal(destinations[1].App))
+				Expect(responseDestinations.Destinations[1].Port).To(Equal(destinations[1].Port))
 			})
 		})
 
 		Describe("Insert with ports", func() {
 			BeforeEach(func() {
-				InsertDestinationsWithPorts(routeGUID,
-					map[string]int{
-						app1GUID: 8080,
-						app2GUID: 8081,
-					})
+				destinations = []Destination{
+					{
+						App: App{
+							GUID:    app1GUID,
+							Process: &DestinationProcess{Type: "web"},
+						},
+						Port: 8080,
+					},
+					{
+						App: App{
+							GUID:    app2GUID,
+							Process: &DestinationProcess{Type: "web"},
+						},
+						Port: 8081,
+					},
+				}
+				InsertDestinations(routeGUID, destinations)
 			})
+
 			It("inserts both destinations with the appropriate ports", func() {
-				dst1 := ToDestination(app1GUID, "web", 8080)
-				dst2 := ToDestination(app2GUID, "web", 8081)
-				destinations := []Destination{dst1, dst2}
 
 				var responseDestinations struct {
 					Destinations []Destination `json:"destinations"`
@@ -112,30 +117,38 @@ var _ = Describe("destinations", func() {
 				err := json.Unmarshal(response, &responseDestinations)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(responseDestinations.Destinations).To(ConsistOf(destinations))
+				Expect(responseDestinations.Destinations[0].App).To(Equal(destinations[0].App))
+				Expect(responseDestinations.Destinations[0].Port).To(Equal(destinations[0].Port))
+				Expect(responseDestinations.Destinations[1].App).To(Equal(destinations[1].App))
+				Expect(responseDestinations.Destinations[1].Port).To(Equal(destinations[1].Port))
 			})
 		})
 	})
 
 	Describe("Remove destinations", func() {
 		var (
-			response  []byte
-			routePath string
+			response         []byte
+			destinationGUIDs []string
+			routePath        string
 		)
 		BeforeEach(func() {
-			destinations := InsertDestinations(routeGUID, []string{app1GUID})
-			InsertDestinations(routeGUID, []string{app2GUID})
+			destinations = []Destination{
+				{
+					App: App{GUID: app1GUID},
+				},
+				{
+					App: App{GUID: app2GUID},
+				},
+			}
+			destinationGUIDs = InsertDestinations(routeGUID, destinations)
 			routePath = fmt.Sprintf("/v3/routes/%s/destinations", routeGUID)
 
-			session := cf.Cf("curl", "-X", "DELETE", fmt.Sprintf("%s/%s", routePath, destinations[0]))
+			session := cf.Cf("curl", "-X", "DELETE", fmt.Sprintf("%s/%s", routePath, destinationGUIDs[0]))
 			Eventually(session).Should(Exit(0))
 
 		})
 
 		It("removes one destination", func() {
-			dst2 := ToDestination(app2GUID, "web", 8080)
-			destinations := []Destination{dst2}
-
 			var responseDestinations struct {
 				Destinations []Destination `json:"destinations"`
 			}
@@ -144,7 +157,8 @@ var _ = Describe("destinations", func() {
 			err := json.Unmarshal(response, &responseDestinations)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(responseDestinations.Destinations).To(Equal(destinations))
+			Expect(responseDestinations.Destinations[0].GUID).To(Equal(destinationGUIDs[1]))
+			Expect(len(responseDestinations.Destinations)).To(Equal(1))
 		})
 	})
 
@@ -157,7 +171,16 @@ var _ = Describe("destinations", func() {
 		BeforeEach(func() {
 			app3Name = random_name.BARARandomName("APP")
 			app3GUID = CreateApp(app3Name, spaceGUID, `{"foo3":"bar3"}`)
-			InsertDestinations(routeGUID, []string{app1GUID})
+			destinations = []Destination{
+				{
+					App: App{
+						GUID:    app3GUID,
+						Process: &DestinationProcess{Type: "web"},
+					},
+					Port: 8080,
+				},
+			}
+			InsertDestinations(routeGUID, destinations)
 		})
 
 		AfterEach(func() {
@@ -165,19 +188,33 @@ var _ = Describe("destinations", func() {
 		})
 
 		It("replaces them", func() {
-			dst1 := ToWeightedDestination(app1GUID, "web", 8080, 51)
-			dst2 := ToWeightedDestination(app2GUID, "worker", 8080, 49)
-			destinations := []WeightedDestination{dst1, dst2}
-
-			response := ReplaceDestinationsWithWeights(routeGUID, destinations)
-
-			var responseDestinations struct {
-				Destinations []WeightedDestination `json:"destinations"`
+			destinations = []Destination{
+				{
+					App: App{
+						GUID:    app1GUID,
+						Process: &DestinationProcess{Type: "web"},
+					},
+					Port:   8080,
+					Weight: 51,
+				},
+				{
+					App: App{
+						GUID:    app2GUID,
+						Process: &DestinationProcess{Type: "worker"},
+					},
+					Port:   8080,
+					Weight: 49,
+				},
 			}
-			err := json.Unmarshal(response, &responseDestinations)
-			Expect(err).ToNot(HaveOccurred())
 
-			Expect(responseDestinations.Destinations).To(ConsistOf(destinations))
+			responseDestinations := ReplaceDestinations(routeGUID, destinations)
+
+			Expect(responseDestinations.Destinations[0].App).To(Equal(destinations[0].App))
+			Expect(responseDestinations.Destinations[0].Port).To(Equal(destinations[0].Port))
+			Expect(responseDestinations.Destinations[0].Weight).To(Equal(destinations[0].Weight))
+			Expect(responseDestinations.Destinations[1].App).To(Equal(destinations[1].App))
+			Expect(responseDestinations.Destinations[1].Port).To(Equal(destinations[1].Port))
+			Expect(responseDestinations.Destinations[1].Weight).To(Equal(destinations[1].Weight))
 		})
 	})
 })
