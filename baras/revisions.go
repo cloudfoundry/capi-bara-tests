@@ -155,6 +155,21 @@ var _ = Describe("revisions", func() {
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 			})
 		})
+
+		Context("when a sidecar has been added", func() {
+			BeforeEach(func() {
+				CreateSidecar("sleepy", []string{"web"}, "sleep infinity", 50, appGUID)
+			})
+
+			It("creates a new revision", func() {
+				StopApp(appGUID)
+				WaitForAppToStop(appGUID)
+				StartApp(appGUID)
+
+				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
+				Expect(GetNewestRevision(appGUID).Sidecars[0].Name).To(Equal("sleepy"))
+			})
+		})
 	})
 
 	Describe("restarting", func() {

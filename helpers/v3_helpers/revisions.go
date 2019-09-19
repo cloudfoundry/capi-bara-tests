@@ -13,6 +13,13 @@ type RevisionList struct {
 	Revisions []Revision `json:"resources"`
 }
 
+type Sidecar struct {
+	Name         string   `json:"name"`
+	Command      string   `json:"command"`
+	ProcessTypes []string `json:"process_types"`
+	MemoryInMb   int      `json:"memory_in_mb"`
+}
+
 type Revision struct {
 	Guid    string `json:"guid"`
 	Version int    `json:"version"`
@@ -20,6 +27,7 @@ type Revision struct {
 		Guid string `json:"guid"`
 	} `json:"droplet"`
 	Processes map[string]map[string]string `json:"processes"`
+	Sidecars  []Sidecar                    `json: "sidecars"`
 }
 
 type RevisionEnvVars struct {
