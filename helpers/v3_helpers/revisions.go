@@ -13,6 +13,10 @@ type RevisionList struct {
 	Revisions []Revision `json:"resources"`
 }
 
+type SidecarList struct {
+	Sidecars []Sidecar `json:"resources"`
+}
+
 type Sidecar struct {
 	Name         string   `json:"name"`
 	Command      string   `json:"command"`
@@ -32,6 +36,52 @@ type Revision struct {
 
 type RevisionEnvVars struct {
 	Var map[string]string `json:"var"`
+}
+
+func GetSidecar(sidecarGuid string) Sidecar {
+	sidecarEndpoint := fmt.Sprintf("/v3/sidecars/%s", sidecarGuid)
+	session := cf.Cf("curl", sidecarEndpoint)
+	bytes := session.Wait().Out.Contents()
+
+	var sidecar Sidecar
+	err := json.Unmarshal(bytes, &sidecar)
+	Expect(err).NotTo(HaveOccurred())
+
+	return sidecar
+}
+
+func GetSidecars(appGuid string) []Sidecar {
+	sidecarsEndpoint := fmt.Sprintf("/v3/apps/%s/sidecars", appGuid)
+	session := cf.Cf("curl", sidecarsEndpoint)
+	bytes := session.Wait().Out.Contents()
+
+	var sidecars SidecarList
+	err := json.Unmarshal(bytes, &sidecars)
+	Expect(err).NotTo(HaveOccurred())
+
+	return sidecars.Sidecars
+}
+
+func CreateSidecar(name string, processTypes []string, command string, memoryLimit int, appGuid string) string {
+	sidecarEndpoint := fmt.Sprintf("/v3/apps/%s/sidecars", appGuid)
+	sidecarOneJSON, err := json.Marshal(
+		Sidecar{
+			name,
+			command,
+			processTypes,
+			memoryLimit,
+		},
+	)
+	Expect(err).NotTo(HaveOccurred())
+	session := cf.Cf("curl", "-f", sidecarEndpoint, "-X", "POST", "-d", string(sidecarOneJSON))
+	Eventually(session).Should(Exit(0))
+
+	var sidecarData struct {
+		Guid string `json:"guid"`
+	}
+	err = json.Unmarshal(session.Out.Contents(), &sidecarData)
+	Expect(err).NotTo(HaveOccurred())
+	return sidecarData.Guid
 }
 
 func GetRevisions(appGuid string) []Revision {

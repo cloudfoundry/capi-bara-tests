@@ -443,6 +443,41 @@ var _ = Describe("revisions", func() {
 				Expect(helpers.CurlApp(Config, appName, "/env/foo")).To(Equal("bar"))
 			})
 		})
+
+		FContext("when the app has sidecars", func() {
+			BeforeEach(func() {
+				CreateSidecar("sleepy", []string{"web"}, "sleep infinity", 50, appGUID)
+				Expect(len(GetSidecars(appGUID))).To(Equal(1))
+			})
+
+			It("creates a new revision", func() {
+				zdtRestartAndWait(appGUID)
+
+				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
+				Expect(GetNewestRevision(appGUID).Sidecars[0].Name).To(Equal("sleepy"))
+			})
+
+			Context("when rolling back to before the sidecar existed", func() {
+				It("removes the sidecar", func() {
+					deploymentGUID := RollbackDeployment(appGUID, originalRevisionGUID)
+					Expect(deploymentGUID).ToNot(BeEmpty())
+					WaitUntilDeploymentReachesState(deploymentGUID, "DEPLOYED")
+					Expect(GetSidecars(appGUID)).To(BeEmpty())
+					Expect(GetNewestRevision(appGUID).Sidecars).To(BeEmpty())
+				})
+			})
+
+			//Context("when rolling back to a revision that has a sidecar", func() {
+			//	BeforeEach(func() {
+			//		RestartApp(appGUID)
+			//		// remove sidecar "sleepy"
+			//		RestartApp(appGUID)
+			//	})
+			//	It("restores that sidecar", func() {
+			//
+			//	})
+			//})
+		})
 	})
 })
 

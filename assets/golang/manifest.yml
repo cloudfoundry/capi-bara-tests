@@ -1,4 +1,7 @@
 ---
 applications:
-- env:
-    GOPACKAGENAME: go-online
+- name: sidecar-test
+  sidecars:
+  - name: sleepy
+    command: sleep infinity
+    process_types: ["web"]

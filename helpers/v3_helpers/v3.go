@@ -20,32 +20,6 @@ const (
 	V3_JAVA_MEMORY_LIMIT    = "1024"
 )
 
-func CreateSidecar(name string, processTypes []string, command string, memoryLimit int, appGuid string) string {
-	sidecarEndpoint := fmt.Sprintf("/v3/apps/%s/sidecars", appGuid)
-	sidecarOneJSON, err := json.Marshal(
-		struct {
-			Name         string   `json:"name"`
-			Command      string   `json:"command"`
-			ProcessTypes []string `json:"process_types"`
-			Memory       int      `json:"memory_in_mb"`
-		}{
-			name,
-			command,
-			processTypes,
-			memoryLimit,
-		},
-	)
-	Expect(err).NotTo(HaveOccurred())
-	session := cf.Cf("curl", "-f", sidecarEndpoint, "-X", "POST", "-d", string(sidecarOneJSON))
-	Eventually(session).Should(Exit(0))
-
-	var sidecarData struct {
-		Guid string `json:"guid"`
-	}
-	err = json.Unmarshal(session.Out.Contents(), &sidecarData)
-	Expect(err).NotTo(HaveOccurred())
-	return sidecarData.Guid
-}
 
 func UpdateEnvironmentVariables(appGUID, envVars string) {
 	appUpdatePath := fmt.Sprintf("/v3/apps/%s/environment_variables", appGUID)
