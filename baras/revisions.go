@@ -158,7 +158,7 @@ var _ = Describe("revisions", func() {
 
 		Context("when a sidecar has been added", func() {
 			BeforeEach(func() {
-				CreateSidecar("sleepy", []string{"web"}, "sleep infinity", 50, appGUID)
+				CreateSidecar(appGUID, Sidecar{"sleepy", []string{"web"}, "sleep infinity", 50})
 			})
 
 			It("creates a new revision", func() {
@@ -445,14 +445,25 @@ var _ = Describe("revisions", func() {
 		})
 
 		FContext("when the app has sidecars", func() {
+			var (
+				sidecarGUID string
+				sidecar     Sidecar
+			)
+
 			BeforeEach(func() {
-				CreateSidecar("sleepy", []string{"web"}, "sleep infinity", 50, appGUID)
+				sidecar = Sidecar{
+					Name:         "sleepy",
+					Command:      "sleep infinity",
+					ProcessTypes: []string{"web"},
+					MemoryInMb:   50,
+				}
+				sidecarGUID = CreateSidecar(appGUID, sidecar)
 				Expect(len(GetSidecars(appGUID))).To(Equal(1))
+
+				zdtRestartAndWait(appGUID)
 			})
 
 			It("creates a new revision", func() {
-				zdtRestartAndWait(appGUID)
-
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
 				Expect(GetNewestRevision(appGUID).Sidecars[0].Name).To(Equal("sleepy"))
 			})
@@ -467,16 +478,19 @@ var _ = Describe("revisions", func() {
 				})
 			})
 
-			//Context("when rolling back to a revision that has a sidecar", func() {
-			//	BeforeEach(func() {
-			//		RestartApp(appGUID)
-			//		// remove sidecar "sleepy"
-			//		RestartApp(appGUID)
-			//	})
-			//	It("restores that sidecar", func() {
-			//
-			//	})
-			//})
+			Context("when rolling back to a revision that has a sidecar", func() {
+				It("restores that sidecar", func() {
+					revisionWithSidecar := GetNewestRevision(appGUID)
+					DeleteSidecar(sidecarGUID)
+					RestartApp(appGUID)
+
+					deploymentGUID := RollbackDeployment(appGUID, revisionWithSidecar.Guid)
+					Expect(deploymentGUID).ToNot(BeEmpty())
+					WaitUntilDeploymentReachesState(deploymentGUID, "DEPLOYED")
+					Expect(GetSidecars(appGUID)).To(ConsistOf(sidecar))
+					Expect(GetNewestRevision(appGUID).Sidecars).To(ConsistOf(sidecar))
+				})
+			})
 		})
 	})
 })

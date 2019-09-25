@@ -47,8 +47,8 @@ var _ = Describe("sidecars", func() {
 
 	Context("when the app has a sidecar associated with its web process", func() {
 		BeforeEach(func() {
-			CreateSidecar("my_sidecar1", []string{"web"}, fmt.Sprintf("WHAT_AM_I=LEFT_SIDECAR bundle exec rackup config.ru -p %d", 8081), 50, appGUID)
-			CreateSidecar("my_sidecar2", []string{"web"}, fmt.Sprintf("WHAT_AM_I=RIGHT_SIDECAR bundle exec rackup config.ru -p %d", 8082), 100, appGUID)
+			CreateSidecar(appGUID, Sidecar{"my_sidecar1", []string{"web"}, "WHAT_AM_I=LEFT_SIDECAR bundle exec rackup config.ru -p 8081", 50})
+			CreateSidecar(appGUID, Sidecar{"my_sidecar2", []string{"web"}, "WHAT_AM_I=RIGHT_SIDECAR bundle exec rackup config.ru -p 8082", 100})
 
 			appEndpoint := fmt.Sprintf("/v2/apps/%s", appGUID)
 			extraPortsJSON, err := json.Marshal(
@@ -106,7 +106,7 @@ var _ = Describe("sidecars", func() {
 
 		Context("when the app has a sidecar that just sleeps", func() {
 			BeforeEach(func() {
-				sidecarGUID = CreateSidecar("my_sidecar", []string{"web"}, "sleep 100000", 50, appGUID)
+				sidecarGUID = CreateSidecar(appGUID, Sidecar{"my_sidecar", []string{"web"}, "sleep 100000", 50})
 			})
 
 			It("stops responding only after an app restart", func() {

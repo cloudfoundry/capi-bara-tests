@@ -443,7 +443,7 @@ applications:
 				})
 				Context("and there are dependent sidecars and the process memory in the update is less than or equal to sidecar memory", func() {
 					BeforeEach(func() {
-						CreateSidecar("my_sidecar1", []string{"web"}, "while true; do echo helloworld; sleep 2; done", 100, apps[0].guid)
+						CreateSidecar(apps[0].guid, Sidecar{"my_sidecar1", []string{"web"}, "while true; do echo helloworld; sleep 2; done", 100})
 						manifestToApply = fmt.Sprintf(`
 applications:
 - name: "%s"

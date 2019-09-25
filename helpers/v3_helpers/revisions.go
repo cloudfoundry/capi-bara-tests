@@ -19,8 +19,8 @@ type SidecarList struct {
 
 type Sidecar struct {
 	Name         string   `json:"name"`
-	Command      string   `json:"command"`
 	ProcessTypes []string `json:"process_types"`
+	Command      string   `json:"command"`
 	MemoryInMb   int      `json:"memory_in_mb"`
 }
 
@@ -59,19 +59,14 @@ func GetSidecars(appGuid string) []Sidecar {
 	err := json.Unmarshal(bytes, &sidecars)
 	Expect(err).NotTo(HaveOccurred())
 
+	fmt.Printf("!!!! %s\n\n", string(bytes))
+	fmt.Printf("!!!! %#v\n\n", sidecars.Sidecars[0])
 	return sidecars.Sidecars
 }
 
-func CreateSidecar(name string, processTypes []string, command string, memoryLimit int, appGuid string) string {
+func CreateSidecar(appGuid string, sidecar Sidecar) string {
 	sidecarEndpoint := fmt.Sprintf("/v3/apps/%s/sidecars", appGuid)
-	sidecarOneJSON, err := json.Marshal(
-		Sidecar{
-			name,
-			command,
-			processTypes,
-			memoryLimit,
-		},
-	)
+	sidecarOneJSON, err := json.Marshal(sidecar)
 	Expect(err).NotTo(HaveOccurred())
 	session := cf.Cf("curl", "-f", sidecarEndpoint, "-X", "POST", "-d", string(sidecarOneJSON))
 	Eventually(session).Should(Exit(0))
@@ -82,6 +77,12 @@ func CreateSidecar(name string, processTypes []string, command string, memoryLim
 	err = json.Unmarshal(session.Out.Contents(), &sidecarData)
 	Expect(err).NotTo(HaveOccurred())
 	return sidecarData.Guid
+}
+
+func DeleteSidecar(sidecarGuid string) {
+	sidecarEndpoint := fmt.Sprintf("/v3/sidecars/%s", sidecarGuid)
+	session := cf.Cf("curl", "-f", sidecarEndpoint, "-X", "DELETE")
+	Eventually(session).Should(Exit(0))
 }
 
 func GetRevisions(appGuid string) []Revision {
