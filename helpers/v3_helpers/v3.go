@@ -23,12 +23,7 @@ const (
 func CreateSidecar(name string, processTypes []string, command string, memoryLimit int, appGuid string) string {
 	sidecarEndpoint := fmt.Sprintf("/v3/apps/%s/sidecars", appGuid)
 	sidecarOneJSON, err := json.Marshal(
-		struct {
-			Name         string   `json:"name"`
-			Command      string   `json:"command"`
-			ProcessTypes []string `json:"process_types"`
-			Memory       int      `json:"memory_in_mb"`
-		}{
+		Sidecar{
 			name,
 			command,
 			processTypes,
@@ -45,6 +40,22 @@ func CreateSidecar(name string, processTypes []string, command string, memoryLim
 	err = json.Unmarshal(session.Out.Contents(), &sidecarData)
 	Expect(err).NotTo(HaveOccurred())
 	return sidecarData.Guid
+}
+
+func GetAppSidecars(appGuid string) []Sidecar {
+	sidecarEndpoint := fmt.Sprintf("/v3/apps/%s/sidecars", appGuid)
+
+	session := cf.Cf("curl", "-f", sidecarEndpoint)
+	Eventually(session).Should(Exit(0))
+
+	type sidecarListResponse struct {
+		Resources []Sidecar `json:"resources"`
+	}
+	sidecarList := sidecarListResponse{}
+	err := json.Unmarshal(session.Out.Contents(), &sidecarList)
+	Expect(err).NotTo(HaveOccurred())
+
+	return sidecarList.Resources
 }
 
 func UpdateEnvironmentVariables(appGUID, envVars string) {

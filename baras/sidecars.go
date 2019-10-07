@@ -6,6 +6,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
+	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
@@ -209,5 +210,69 @@ var _ = Describe("sidecars", func() {
 				}, Config.DefaultTimeoutDuration()).Should(Say("RIGHT_SIDECAR"))
 			})
 		})
+	})
+
+	Context("when the app uses multiple buildpacks, one of which supplies a sidecar", func() {
+		var buildpackName string
+
+		BeforeEach(func() {
+			buildpackName = random_name.BARARandomName("sleepy-sidecar-buildpack")
+			workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
+				Expect(cf.Cf("create-buildpack", buildpackName, assets.NewAssets().SleepySidecarBuildpack, "99").Wait()).To(Exit(0))
+			})
+
+		})
+
+		AfterEach(func() {
+			cf.Cf("delete-buildpack", buildpackName)
+		})
+
+		Context("using cf push", func() {
+			JustBeforeEach(func() {
+				session := cf.Cf("push", appName,
+					"-p", assets.NewAssets().Binary,
+					"-b", buildpackName,
+					"-b", Config.GetBinaryBuildpackName())
+				Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+			})
+
+			It("runs the sidecar process", func() {
+				By("verifying the sidecar is on the app")
+				sidecars := GetAppSidecars(appGUID)
+				Expect(sidecars).To(HaveLen(1))
+				Expect(sidecars[0].Name).To(Equal("sleepy"))
+				Expect(sidecars[0].Command).To(Equal("sleep infinity"))
+				Expect(sidecars[0].ProcessTypes).To(Equal([]string{"web"}))
+
+				By("verify the sidecar is running")
+				session := cf.Cf("ssh", appName, "-c", "ps aux | grep sleep | grep -v grep")
+				Eventually(session).Should(Exit(0))
+			})
+
+		})
+
+		Context("using v3 endpoints", func() {
+			JustBeforeEach(func() {
+				session := cf.Cf("v3-push", appName,
+					"-p", assets.NewAssets().Binary,
+					"-b", buildpackName,
+					"-b", Config.GetBinaryBuildpackName())
+				Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+			})
+
+			It("runs the sidecar process", func() {
+				By("verifying the sidecar is on the app")
+				sidecars := GetAppSidecars(appGUID)
+				Expect(sidecars).To(HaveLen(1))
+				Expect(sidecars[0].Name).To(Equal("sleepy"))
+				Expect(sidecars[0].Command).To(Equal("sleep infinity"))
+				Expect(sidecars[0].ProcessTypes).To(Equal([]string{"web"}))
+
+				By("verify the sidecar is running")
+				session := cf.Cf("ssh", appName, "-c", "ps aux | grep sleep | grep -v grep")
+				Eventually(session).Should(Exit(0))
+			})
+		})
+
 	})
 })
