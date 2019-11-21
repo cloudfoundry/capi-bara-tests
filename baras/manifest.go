@@ -303,7 +303,7 @@ applications:
 					Expect(target).To(Exit(0), "failed targeting")
 
 					session = cf.Cf("app", apps[0].name).Wait()
-					Eventually(session).Should(Say("routes:\\s+%s-\\w+-\\w+.%s", apps[0].name, Config.GetAppsDomain()))
+					Eventually(session).Should(Say("routes:\\s+%s-\\w+-\\w+-\\w+.%s", apps[0].name, Config.GetAppsDomain()))
 				})
 			})
 		})
