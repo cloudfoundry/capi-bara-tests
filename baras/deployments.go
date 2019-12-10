@@ -161,8 +161,8 @@ var _ = Describe("deployments", func() {
 			json.Unmarshal(session.Out.Contents(), &deploymentJson)
 
 			Expect(deploymentJson.State).To(Equal("DEPLOYING"))
-			Expect(deploymentJson.Status.Value).To(Equal("DEPLOYING"))
-			Expect(deploymentJson.Status.Reason).To(Equal(""))
+			Expect(deploymentJson.Status.Value).To(Equal("ACTIVE"))
+			Expect(deploymentJson.Status.Reason).To(Equal("DEPLOYING"))
 			Expect(deploymentJson.Status.HealthCheckTime).To(Equal(""))
 		})
 	})
