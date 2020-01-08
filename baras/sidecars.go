@@ -17,7 +17,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("sidecars", func() {
+var _ = FDescribe("sidecars", func() {
 	var (
 		appName             string
 		appGUID             string
@@ -242,6 +242,7 @@ var _ = Describe("sidecars", func() {
 				Expect(sidecars).To(HaveLen(1))
 				Expect(sidecars[0].Name).To(Equal("sleepy"))
 				Expect(sidecars[0].Command).To(Equal("sleep infinity"))
+				Expect(sidecars[0].MemoryInMb).To(Equal("1000"))
 				Expect(sidecars[0].ProcessTypes).To(Equal([]string{"web"}))
 
 				By("verify the sidecar is running")
