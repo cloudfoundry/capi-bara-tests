@@ -218,7 +218,7 @@ var _ = Describe("sidecars", func() {
 		BeforeEach(func() {
 			buildpackName = random_name.BARARandomName("sleepy-sidecar-buildpack")
 			workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
-				Expect(cf.Cf("create-buildpack", buildpackName, assets.NewAssets().SleepySidecarBuildpack, "99").Wait()).To(Exit(0))
+				Expect(cf.Cf("create-buildpack", buildpackName, assets.NewAssets().SleepySidecarBuildpackZip, "99").Wait()).To(Exit(0))
 			})
 
 		})
@@ -242,6 +242,7 @@ var _ = Describe("sidecars", func() {
 				Expect(sidecars).To(HaveLen(1))
 				Expect(sidecars[0].Name).To(Equal("sleepy"))
 				Expect(sidecars[0].Command).To(Equal("sleep infinity"))
+				Expect(sidecars[0].MemoryInMb).To(Equal(10))
 				Expect(sidecars[0].ProcessTypes).To(Equal([]string{"web"}))
 
 				By("verify the sidecar is running")

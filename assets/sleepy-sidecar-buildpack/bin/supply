@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euo pipefail
+
+BUILD_DIR=$1
+CACHE_DIR=$2
+DEPS_DIR=$3
+DEPS_IDX=$4
+
+cat << EOF > "${3}/${4}/launch.yml"
+---
+processes:
+- type: sleepy
+  command: sleep infinity
+  limits:
+    memory: 10
+  platforms:
+    cloudfoundry:
+      sidecar_for: ["web"]
+EOF

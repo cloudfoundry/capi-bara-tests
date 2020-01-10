@@ -77,6 +77,7 @@ func TestBARA(t *testing.T) {
 		ZipAsset(assetPaths.Dora, assetPaths.DoraZip)
 		ZipAsset(assetPaths.BadDora, assetPaths.BadDoraZip)
 		ZipAsset(assetPaths.Staticfile, assetPaths.StaticfileZip)
+		ZipAsset(assetPaths.SleepySidecarBuildpack, assetPaths.SleepySidecarBuildpackZip)
 
 		return []byte{}
 	}, func([]byte) {
@@ -95,6 +96,7 @@ func TestBARA(t *testing.T) {
 		os.Remove(assets.NewAssets().DoraZip)
 		os.Remove(assets.NewAssets().BadDoraZip)
 		os.Remove(assets.NewAssets().StaticfileZip)
+		os.Remove(assets.NewAssets().SleepySidecarBuildpackZip)
 	})
 
 	rs := []Reporter{}

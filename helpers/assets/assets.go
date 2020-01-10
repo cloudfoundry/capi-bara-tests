@@ -35,6 +35,7 @@ type Assets struct {
 	SecurityGroupBuildpack     string
 	ServiceBroker              string
 	SleepySidecarBuildpack     string
+	SleepySidecarBuildpackZip  string
 	SidecarDependent           string
 	SpringSleuthZip            string
 	Staticfile                 string
@@ -83,7 +84,8 @@ func NewAssets() Assets {
 		SecurityGroupBuildpack:     "assets/security_group_buildpack.zip",
 		ServiceBroker:              "assets/service_broker",
 		SidecarDependent:           "assets/sidecar-dependent",
-		SleepySidecarBuildpack:     "assets/sleepy-sidecar_buildpack-cflinuxfs3-v0.1.zip",
+		SleepySidecarBuildpack:     "assets/sleepy-sidecar-buildpack",
+		SleepySidecarBuildpackZip:  "assets/sleepy-sidecar-buildpack.zip",
 		SpringSleuthZip:            "assets/spring-sleuth/spring-sleuth.jar",
 		Staticfile:                 "assets/staticfile",
 		StaticfileZip:              "assets/staticfile.zip",
