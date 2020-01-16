@@ -121,12 +121,12 @@ applications:
 				target := cf.Cf("target", "-o", apps[0].orgName, "-s", spaceName).Wait()
 				Expect(target).To(Exit(0))
 
-				session = cf.Cf("env", apps[0].name).Wait()
-				Eventually(session).Should(Say("foo:\\s+app0"))
+				session = cf.Cf("v3-env", apps[0].name).Wait()
+				Eventually(session).Should(Say("foo:\\s+\"app0\""))
 				Eventually(session).Should(Exit(0))
 
-				session = cf.Cf("env", apps[1].name).Wait()
-				Eventually(session).Should(Say("foo:\\s+app1"))
+				session = cf.Cf("v3-env", apps[1].name).Wait()
+				Eventually(session).Should(Say("foo:\\s+\"app1\""))
 				Eventually(session).Should(Exit(0))
 
 				By("setting the routes for both apps", func() {

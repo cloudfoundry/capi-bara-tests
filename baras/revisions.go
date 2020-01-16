@@ -460,9 +460,6 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 		session = cf.Cf("app", appName, "--guid")
 		Expect(session.Wait()).To(Exit(0))
 		appGUID = strings.TrimSpace(string(session.Out.Contents()))
-		session = cf.Cf("curl", "-X", "PATCH", fmt.Sprintf("/v3/apps/%s/features/revisions", appGUID), "-d",
-			`{"enabled" : true }`)
-		Expect(session.Wait()).To(Exit(0))
 	})
 
 	AfterEach(func() {
@@ -492,9 +489,9 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 			err := json.Unmarshal(revstr, &revs)
 			Expect(err).NotTo(HaveOccurred())
 
-			// Since we enable revisions after the first push, one "Initial revision" is created at the
-			// beginning of the second push and a second revision is created after staging
-			Expect(revs.Pagination.TotalResults).To(Equal(2))
+			// Since we enable revisions by default, one "Initial revision" is created at the
+			// first push, one for the second push, and a third revision is created after staging
+			Expect(revs.Pagination.TotalResults).To(Equal(3))
 		})
 	})
 
@@ -515,8 +512,7 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 			revs := revisionsType{}
 			err := json.Unmarshal(revstr, &revs)
 			Expect(err).NotTo(HaveOccurred())
-
-			Expect(revs.Pagination.TotalResults).To(Equal(1))
+			Expect(revs.Pagination.TotalResults).To(Equal(2))
 		})
 	})
 
@@ -545,7 +541,7 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 			err := json.Unmarshal(revstr, &revs)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(revs.Pagination.TotalResults).To(Equal(1))
+			Expect(revs.Pagination.TotalResults).To(Equal(2))
 		})
 	})
 })
