@@ -489,9 +489,7 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 			err := json.Unmarshal(revstr, &revs)
 			Expect(err).NotTo(HaveOccurred())
 
-			// Since we enable revisions by default, one "Initial revision" is created at the
-			// first push, one for the second push, and a third revision is created after staging
-			Expect(revs.Pagination.TotalResults).To(Equal(3))
+			Expect(revs.Pagination.TotalResults).To(Equal(2))
 		})
 	})
 
