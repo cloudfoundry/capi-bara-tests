@@ -45,6 +45,19 @@ func StageDockerPackage(packageGUID string) string {
 	return build.GUID
 }
 
+func StageKpackPackage(packageGUID string) string {
+	stageBody := fmt.Sprintf(`{"lifecycle": { "type" : "docker", "data": {} }, "package": { "guid" : "%s"}}`, packageGUID)
+	stageURL := "/v3/builds"
+	session := cf.Cf("curl", "-f", stageURL, "-X", "POST", "-d", stageBody)
+	bytes := session.Wait().Out.Contents()
+	var build struct {
+		GUID string `json:"guid"`
+	}
+	err := json.Unmarshal(bytes, &build)
+	Expect(err).NotTo(HaveOccurred())
+	return build.GUID
+}
+
 func WaitForBuildToStage(buildGUID string) {
 	buildPath := fmt.Sprintf("/v3/builds/%s", buildGUID)
 	Eventually(func() *Session {
