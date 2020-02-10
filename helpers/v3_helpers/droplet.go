@@ -55,6 +55,26 @@ func GetDropletFromBuild(buildGUID string) string {
 	return build.Droplet.GUID
 }
 
+type Droplet struct {
+	GUID string `json:"guid"`
+	State string `json:"state"`
+	Lifecycle struct {
+		Type string `json:"type"`
+		Data struct {} `json:"data"`
+	} `json:"lifecycle"`
+}
+
+func GetDroplet(dropletGUID string) Droplet {
+	dropletPath := fmt.Sprintf("/v3/droplets/%s", dropletGUID)
+	session := cf.Cf("curl", "-f", dropletPath)
+	bytes := session.Wait().Out.Contents()
+
+	var droplet = Droplet{}
+	err := json.Unmarshal(bytes, &droplet)
+	Expect(err).NotTo(HaveOccurred())
+	return droplet
+}
+
 func WaitForDropletToCopy(dropletGUID string) {
 	dropletPath := fmt.Sprintf("/v3/droplets/%s", dropletGUID)
 	Eventually(func() *Session {

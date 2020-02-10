@@ -5,6 +5,8 @@ type Assets struct {
 	BatchScript                string
 	Binary                     string
 	Catnip                     string
+	CatnipRoot string
+	CatnipZip				   string
 	CredHubEnabledApp          string
 	CredHubServiceBroker       string
 	BadDora                    string
@@ -54,6 +56,8 @@ func NewAssets() Assets {
 		BatchScript:                "assets/batch-script",
 		Binary:                     "assets/binary",
 		Catnip:                     "assets/catnip/bin",
+		CatnipRoot:                 "assets/catnip",
+		CatnipZip:					"assets/catnip.zip",
 		CredHubEnabledApp:          "assets/credhub-enabled-app/credhub-enabled-app.jar",
 		CredHubServiceBroker:       "assets/credhub-service-broker",
 		BadDora:                    "assets/bad-dora",
