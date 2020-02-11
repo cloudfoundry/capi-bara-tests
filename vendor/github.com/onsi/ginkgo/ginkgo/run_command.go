@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -104,20 +105,23 @@ func (r *SpecRunner) RunSpecs(args []string, additionalArgs []string) {
 		runResult, numSuites = r.suiteRunner.RunSuites(randomizedRunners, r.commandFlags.NumCompilers, r.commandFlags.KeepGoing, nil)
 	}
 
+	for _, runner := range runners {
+		runner.CleanUp()
+	}
+
 	if r.isInCoverageMode() {
 		if r.getOutputDir() != "" {
 			// If coverprofile is set, combine coverages
 			if r.getCoverprofile() != "" {
-				r.combineCoverprofiles(runners)
+				if err := r.combineCoverprofiles(runners); err != nil {
+					fmt.Println(err.Error())
+					os.Exit(1)
+				}
 			} else {
 				// Just move them
 				r.moveCoverprofiles(runners)
 			}
 		}
-	}
-
-	for _, runner := range runners {
-		runner.CleanUp()
 	}
 
 	fmt.Printf("\nGinkgo ran %d %s in %s\n", numSuites, pluralizedWord("suite", "suites", numSuites), time.Since(t))
@@ -151,38 +155,51 @@ func (r *SpecRunner) moveCoverprofiles(runners []*testrunner.TestRunner) {
 }
 
 // Combines all generated profiles in the specified directory
-func (r *SpecRunner) combineCoverprofiles(runners []*testrunner.TestRunner) {
+func (r *SpecRunner) combineCoverprofiles(runners []*testrunner.TestRunner) error {
 
 	path, _ := filepath.Abs(r.getOutputDir())
+	if !fileExists(path) {
+		return fmt.Errorf("Unable to create combined profile, outputdir does not exist: %s", r.getOutputDir())
+	}
 
 	fmt.Println("path is " + path)
-	os.MkdirAll(path, os.ModePerm)
 
-	combined, err := os.OpenFile(filepath.Join(path, r.getCoverprofile()),
-		os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
+	combined, err := os.OpenFile(
+		filepath.Join(path, r.getCoverprofile()),
+		os.O_WRONLY|os.O_CREATE,
+		0666,
+	)
 
 	if err != nil {
 		fmt.Printf("Unable to create combined profile, %v\n", err)
-		return
+		return nil // non-fatal error
 	}
 
-	for _, runner := range runners {
+	modeRegex := regexp.MustCompile(`^mode: .*\n`)
+	for index, runner := range runners {
 		contents, err := ioutil.ReadFile(runner.CoverageFile)
+
+		// remove the cover mode line from every file
+		// except the first one
+		if index > 0 {
+			contents = modeRegex.ReplaceAll(contents, []byte{})
+		}
 
 		if err != nil {
 			fmt.Printf("Unable to read coverage file %s to combine, %v\n", runner.CoverageFile, err)
-			return
+			return nil // non-fatal error
 		}
 
 		_, err = combined.Write(contents)
 
 		if err != nil {
 			fmt.Printf("Unable to append to coverprofile, %v\n", err)
-			return
+			return nil // non-fatal error
 		}
 	}
 
 	fmt.Println("All profiles combined")
+	return nil
 }
 
 func (r *SpecRunner) isInCoverageMode() bool {

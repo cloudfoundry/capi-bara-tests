@@ -27,4 +27,4 @@ go build -v -o bin/ginkgo github.com/cloudfoundry/capi-bara-tests/vendor/github.
 export PATH=$PWD/bin:$PATH
 
 echo "Using $(ginkgo version)" > /dev/null
-ginkgo "$@"
+GO111MODULE=on ginkgo -mod=vendor "$@"
