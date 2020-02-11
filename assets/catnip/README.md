@@ -1,5 +1,5 @@
-CATs will build catnip in its SynchronizedBeforeSuite, 
-so if you've run CATs you should have the binary 
+BARAs will build catnip in its SynchronizedBeforeSuite, 
+so if you've run BARAs you should have the binary 
 at `./assets/catnip/bin/catnip`
 
 To build and push `catnip` locally
@@ -10,12 +10,12 @@ cf push catnip -b binary_buildpack -c "./catnip"
 ```
 
 If you get a build error
-you probably have CATs checked out to somewhere
+you probably have BARAs checked out to somewhere
 that isn't on your gopath.
 
-Try `go get github.com/cloudfoundry/cf-acceptance-tests`
-and then `cd $GOPATH/src/github.com/cloudfoundry/cf-acceptance-tests`
-or `cd $HOME/go/src/github.com/cloudfoundry/cf-acceptance-tests`
+Try `go get github.com/cloudfoundry/capi-bara-tests`
+and then `cd $GOPATH/src/github.com/cloudfoundry/capi-bara-tests`
+or `cd $HOME/go/src/github.com/cloudfoundry/capi-bara-tests`
 
 ## Sticky Sessions
 

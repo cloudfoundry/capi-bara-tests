@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/cloudfoundry/cf-acceptance-tests/assets/catnip/env"
+	"github.com/cloudfoundry/capi-bara-tests/assets/catnip/env"
 )
 
 func StickyHandler(res http.ResponseWriter, req *http.Request) {

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/clock/fakeclock"
-	"github.com/cloudfoundry/cf-acceptance-tests/assets/catnip/router"
+	"github.com/cloudfoundry/capi-bara-tests/assets/catnip/router"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
