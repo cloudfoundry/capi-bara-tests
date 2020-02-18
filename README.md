@@ -43,7 +43,7 @@ cat > integration_config.json <<EOF
   "apps_domain": "bosh-lite.com",
   "admin_user": "admin",
   "admin_password": "admin",
-  "skip_ssl_validation": true,
+  "skip_ssl_validation": true
 }
 EOF
 export CONFIG=$PWD/integration_config.json

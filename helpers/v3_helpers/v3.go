@@ -105,6 +105,12 @@ func GetSpaceGuidFromName(name string) string {
 	return GetGuidFromResponse(bytes)
 }
 
+func GetOrgGUIDFromName(name string) string {
+	session := cf.Cf("curl", "-f", fmt.Sprintf("/v3/organizations?names=%s", name))
+	bytes := session.Wait().Out.Contents()
+	return GetGuidFromResponse(bytes)
+}
+
 func GetDomainGUIDFromName(name string) string {
 	session := cf.Cf("curl", "-f", fmt.Sprintf("/v3/domains?names=%s", name))
 	bytes := session.Wait().Out.Contents()
