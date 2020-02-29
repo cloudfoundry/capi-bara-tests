@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("Quotas", func() {
+var _ = XDescribe("Quotas", func() {
 	var (
 		spaceName  string
 		spaceGUID  string
