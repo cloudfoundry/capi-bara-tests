@@ -54,8 +54,7 @@ var _ = Describe("Quotas", func() {
 
 	AfterEach(func() {
 		workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
-			session := cf.Cf("delete-org", TestSetup.RegularUserContext().Org, "-f")
-			Eventually(session).Should(Exit(0))
+			SetDefaultOrgQuota(orgGUID)
 			DeleteOrgQuota(orgQuota.GUID)
 		})
 	})
@@ -70,7 +69,11 @@ var _ = Describe("Quotas", func() {
 			Eventually(session).Should(Exit(1))
 
 			path := fmt.Sprintf("v3/space_quotas/%s/relationships/spaces/%s/", spaceQuota.GUID, spaceGUID)
-			session = cf.Cf("curl", "-X", "DELETE", path)
+			session = cf.Cf("curl", "-X", "DELETE", path, "-f", "-v")
+			Eventually(session).Should(Exit(0))
+
+			path = fmt.Sprintf("v3/space_quotas/%s", spaceQuota.GUID)
+			session = cf.Cf("curl", "-X", "DELETE", path, "-f", "-v")
 			Eventually(session).Should(Exit(0))
 
 			session = cf.Cf("v3-scale", appName, "-i", "2")

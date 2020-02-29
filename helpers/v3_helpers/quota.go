@@ -6,7 +6,6 @@ import (
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
 )
 
@@ -35,7 +34,7 @@ func CreateOrgQuota(name string, orgGUID string, totalInstances int) Quota {
     }
   }
 }`, name, totalInstances, orgGUID)
-	session := cf.Cf("curl", "-X", "POST", requestPath, "-d", requestBody)
+	session := cf.Cf("curl", "-X", "POST", requestPath, "-d", requestBody, "-f")
 
 	var createdOrgQuota Quota
 	response := session.Wait().Out.Contents()
@@ -47,7 +46,7 @@ func CreateOrgQuota(name string, orgGUID string, totalInstances int) Quota {
 
 func CreateSpaceQuota(name string, spaceGUID string, orgGUID string, totalInstances int) Quota {
 	requestPath := fmt.Sprintf("/v3/space_quotas")
-	session := cf.Cf("curl", "-X", "POST", requestPath, "-d", fmt.Sprintf(`{
+	request := fmt.Sprintf(`{
   "name": "%s",
   "apps": {
     "total_instances": %v
@@ -66,7 +65,8 @@ func CreateSpaceQuota(name string, spaceGUID string, orgGUID string, totalInstan
       ]
     }
   }
-}`, name, totalInstances, orgGUID, spaceGUID))
+}`, name, totalInstances, orgGUID, spaceGUID)
+	session := cf.Cf("curl", "-X", "POST", requestPath, "-d", request, "-f")
 
 	var createdSpaceQuota Quota
 	response := session.Wait().Out.Contents()
@@ -77,19 +77,18 @@ func CreateSpaceQuota(name string, spaceGUID string, orgGUID string, totalInstan
 }
 
 func SetDefaultOrgQuota(orgGUID string) {
-	session := cf.Cf("curl", "-f", "/v3/organization_quotas?names=default")
+	session := cf.Cf("curl", "/v3/organization_quotas?names=default", "-f")
 	bytes := session.Wait().Out.Contents()
 	defaultOrgQuotaGUID := GetGuidFromResponse(bytes)
 
 	path := fmt.Sprintf("v3/organization_quotas/%s/relationships/organizations", defaultOrgQuotaGUID)
-	session = cf.Cf("curl", "-X", "POST", path, "-d", fmt.Sprintf(`{"data": [{"guid": "%s"}]}`, orgGUID))
+	session = cf.Cf("curl", "-X", "POST", path, "-d", fmt.Sprintf(`{"data": [{"guid": "%s"}]}`, orgGUID), "-f", "-v")
 
 	Eventually(session).Should(Exit(0))
 }
 
 func DeleteOrgQuota(orgQuotaGUID string) {
 	path := fmt.Sprintf("v3/organization_quotas/%s", orgQuotaGUID)
-	session := cf.Cf("curl", "-X", "DELETE", path, "-v")
-	Eventually(session).Should(Say("HTTP/1.1 202 Accepted"))
+	session := cf.Cf("curl", "-X", "DELETE", path, "-f", "-v")
 	Eventually(session).Should(Exit(0))
 }
