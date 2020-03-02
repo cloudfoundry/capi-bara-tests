@@ -2,6 +2,7 @@ package baras
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
@@ -16,12 +17,13 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = XDescribe("Quotas", func() {
+var _ = Describe("Quotas", func() {
 	var (
 		spaceName  string
 		spaceGUID  string
 		orgGUID    string
 		appName    string
+		appGUID    string
 		spaceQuota Quota
 		orgQuota   Quota
 	)
@@ -48,12 +50,18 @@ var _ = XDescribe("Quotas", func() {
 				"-b", "staticfile_buildpack",
 				"-p", assets.NewAssets().Staticfile,
 			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+
+			session = cf.Cf("app", appName, "--guid")
+			Expect(session.Wait()).To(Exit(0))
+			appGUID = strings.TrimSpace(string(session.Out.Contents()))
+
 			Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 		})
 	})
 
 	AfterEach(func() {
 		workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
+			DeleteApp(appGUID)
 			SetDefaultOrgQuota(orgGUID)
 			DeleteOrgQuota(orgQuota.GUID)
 		})

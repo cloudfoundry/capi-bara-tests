@@ -24,7 +24,6 @@ var _ = Describe("Kpack lifecycle", func() {
 		droplet	Droplet
 	)
 
-
 	BeforeEach(func() {
 		appName = random_name.BARARandomName("APP")
 		spaceName := TestSetup.RegularUserContext().Space
@@ -34,12 +33,13 @@ var _ = Describe("Kpack lifecycle", func() {
 		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
 		CreateAndMapRoute(appGUID, spaceGUID, domainGUID, appName)
-
 	})
 
+	AfterEach(func() {
+		DeleteApp(appGUID)
+	})
 
 	Context("When creating a build with the kpack lifecycle", func() {
-
 		It("stages and starts the app successfully", func() {
 			Skip("Kpack is not turned on")
 			By("Creating an App and package")
@@ -71,5 +71,4 @@ var _ = Describe("Kpack lifecycle", func() {
 			Eventually(helpers.CurlAppRoot(Config, appName)).Should(Equal("Catnip?"))
 		})
 	})
-
 })

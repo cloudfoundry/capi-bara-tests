@@ -74,7 +74,6 @@ var _ = Describe("destinations", func() {
 			})
 
 			It("inserts both destinations with the appropriate process types", func() {
-
 				var responseDestinations struct {
 					Destinations []Destination `json:"destinations"`
 				}
@@ -110,7 +109,6 @@ var _ = Describe("destinations", func() {
 			})
 
 			It("inserts both destinations with the appropriate ports", func() {
-
 				var responseDestinations struct {
 					Destinations []Destination `json:"destinations"`
 				}

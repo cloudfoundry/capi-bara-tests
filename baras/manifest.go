@@ -81,7 +81,9 @@ var _ = Describe("apply_manifest", func() {
 
 	AfterEach(func() {
 		FetchRecentLogs(apps[0].guid, token, Config)
-		DeleteApp(apps[0].guid)
+		for _, app := range apps {
+			DeleteApp(app.guid)
+		}
 	})
 
 	Describe("Applying a manifest to a space (multiple apps)", func() {
@@ -103,10 +105,6 @@ applications:
 				apps[0].name, apps[0].route,
 				apps[1].name, apps[1].route,
 			)
-		})
-
-		AfterEach(func() {
-			DeleteApp(apps[1].guid)
 		})
 
 		It("successfully updates both apps", func() {
@@ -696,7 +694,6 @@ applications:
 					Eventually(session).Should(Exit(0))
 				})
 			})
-
 		})
 	})
 })
@@ -750,5 +747,7 @@ applications:
 
 		session = cf.Cf("app", appName).Wait()
 		Eventually(session).Should(Say(`type:\s+logs\s+instances:\s+1/1`))
+
+		DeleteApp(appGUID)
 	})
 })

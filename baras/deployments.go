@@ -178,6 +178,5 @@ var _ = Describe("deployments", func() {
 			Expect(deploymentGUID).ToNot(BeEmpty())
 			WaitUntilDeploymentReachesState(deploymentGUID, "DEPLOYED")
 		})
-
 	})
 })
