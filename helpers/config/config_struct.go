@@ -48,6 +48,8 @@ type config struct {
 	PrivateDockerRegistryUsername *string `json:"private_docker_registry_username"`
 	PrivateDockerRegistryPassword *string `json:"private_docker_registry_password"`
 
+	IncludeKpack *bool `json:"include_kpack"`
+
 	NamePrefix *string `json:"name_prefix"`
 
 	ReporterConfig *reporterConfig `json:"reporter_config"`
@@ -104,6 +106,8 @@ func getDefaults() config {
 	defaults.PrivateDockerRegistryImage = ptrToString("")
 	defaults.PrivateDockerRegistryUsername = ptrToString("")
 	defaults.PrivateDockerRegistryPassword = ptrToString("")
+
+	defaults.IncludeKpack = ptrToBool(false)
 
 	defaults.ArtifactsDirectory = ptrToString(filepath.Join("..", "results"))
 
@@ -410,6 +414,10 @@ func (c *config) GetStaticFileBuildpackName() string {
 
 func (c *config) GetIncludePrivateDockerRegistry() bool {
 	return *c.IncludePrivateDockerRegistry
+}
+
+func (c *config) GetIncludeKpack() bool {
+	return *c.IncludeKpack
 }
 
 func (c *config) GetPrivateDockerRegistryImage() string {

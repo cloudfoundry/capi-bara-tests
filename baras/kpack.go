@@ -3,6 +3,8 @@ package baras
 import (
 	"fmt"
 
+	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
+
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
@@ -11,20 +13,24 @@ import (
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 )
 
 var _ = Describe("Kpack lifecycle", func() {
 	var (
-
-		appName        string
-		appGUID        string
-		token          string
-		dropletGUID    string
-		droplet	Droplet
+		appName     string
+		appGUID     string
+		token       string
+		dropletGUID string
+		droplet     Droplet
 	)
 
 	BeforeEach(func() {
+		if !Config.GetIncludeKpack() {
+			Skip(skip_messages.SkipKpackMessage)
+		}
+
 		appName = random_name.BARARandomName("APP")
 		spaceName := TestSetup.RegularUserContext().Space
 		spaceGUID := GetSpaceGuidFromName(spaceName)
@@ -41,7 +47,6 @@ var _ = Describe("Kpack lifecycle", func() {
 
 	Context("When creating a build with the kpack lifecycle", func() {
 		It("stages and starts the app successfully", func() {
-			Skip("Kpack is not turned on")
 			By("Creating an App and package")
 
 			packageGUID := CreatePackage(appGUID)
@@ -68,7 +73,11 @@ var _ = Describe("Kpack lifecycle", func() {
 			session := cf.Cf("start", appName)
 
 			Eventually(session).Should(gexec.Exit(0))
-			Eventually(helpers.CurlAppRoot(Config, appName)).Should(Equal("Catnip?"))
+			// Note: we'd like to use the CurlAppRoot helper but cf4k8s does not yet support https traffic to apps
+			// https://github.com/cloudfoundry/cf-for-k8s/issues/46
+			curl := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
+			Eventually(curl).Should(gexec.Exit(0))
+			Eventually(curl).Should(gbytes.Say("Catnip?"))
 		})
 	})
 })

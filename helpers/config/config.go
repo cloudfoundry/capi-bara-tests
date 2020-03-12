@@ -39,6 +39,8 @@ type BaraConfig interface {
 
 	GetReporterConfig() reporterConfig
 
+	GetIncludeKpack() bool
+
 	// Unused?
 	GetConfigurableTestPassword() string
 	GetExistingOrganization() string
