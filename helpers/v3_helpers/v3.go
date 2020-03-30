@@ -117,6 +117,12 @@ func GetDomainGUIDFromName(name string) string {
 	return GetGuidFromResponse(bytes)
 }
 
+func GetRouteGUIDFromAppGuid(appGuid string) string {
+	session := cf.Cf("curl", "-f", fmt.Sprintf("/v3/apps/%s/routes", appGuid))
+	bytes := session.Wait().Out.Contents()
+	return GetGuidFromResponse(bytes)
+}
+
 //private
 
 func getHttpLoggregatorEndpoint() string {
