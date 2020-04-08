@@ -5,6 +5,7 @@ import (
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/app_helpers"
@@ -18,6 +19,12 @@ var _ = Describe("mixed v2 and v3 rolling deploys", func() {
 	var (
 		appName string
 	)
+
+	BeforeEach(func() {
+		if !Config.GetIncludeKpack() {
+			Skip(skip_messages.SkipKpackMessage)
+		}
+	})
 
 	AfterEach(func() {
 		appGuid := GetAppGuid(appName)
