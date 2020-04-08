@@ -458,6 +458,10 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 	)
 
 	BeforeEach(func() {
+		if Config.GetIncludeKpack() {
+			Skip(skip_messages.SkipKpackMessage)
+		}
+
 		appName = random_name.BARARandomName("APP")
 		session := cf.Cf("push", appName, "-p", assets.NewAssets().Dora, "--health-check-type", "http")
 		Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))

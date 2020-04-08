@@ -704,6 +704,11 @@ applications:
 })
 
 var _ = Describe("Applying a manifest before pushing the app", func() {
+	BeforeEach(func() {
+		if Config.GetIncludeKpack() {
+			Skip(skip_messages.SkipKpackMessage)
+		}
+	})
 	It("pushes an app with multiple process types defined in the manifest", func() {
 		appName := random_name.BARARandomName("APP")
 		session := cf.Cf("v3-create-app", appName)
