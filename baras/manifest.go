@@ -72,7 +72,7 @@ var _ = Describe("apply_manifest", func() {
 	)
 
 	BeforeEach(func() {
-		if !Config.GetIncludeKpack() {
+		if Config.GetIncludeKpack() {
 			Skip(skip_messages.SkipKpackMessage)
 		}
 

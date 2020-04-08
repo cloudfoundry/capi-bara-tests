@@ -30,7 +30,7 @@ var _ = Describe("Quotas", func() {
 	)
 
 	BeforeEach(func() {
-		if !Config.GetIncludeKpack() {
+		if Config.GetIncludeKpack() {
 			Skip(skip_messages.SkipKpackMessage)
 		}
 

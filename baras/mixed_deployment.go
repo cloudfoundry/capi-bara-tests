@@ -21,7 +21,7 @@ var _ = Describe("mixed v2 and v3 rolling deploys", func() {
 	)
 
 	BeforeEach(func() {
-		if !Config.GetIncludeKpack() {
+		if Config.GetIncludeKpack() {
 			Skip(skip_messages.SkipKpackMessage)
 		}
 	})
