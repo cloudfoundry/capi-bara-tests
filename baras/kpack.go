@@ -1,6 +1,7 @@
 package baras
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
@@ -78,6 +79,61 @@ var _ = Describe("Kpack lifecycle", func() {
 			curl := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
 			Eventually(curl).Should(gexec.Exit(0))
 			Eventually(curl).Should(gbytes.Say("Catnip?"))
+		})
+	})
+
+	Context("When diego_docker is disabled", func() {
+		var response map[string]interface{}
+
+		BeforeEach(func() {
+			response = make(map[string]interface{})
+			Eventually(cf.Cf("disable-feature-flag", "diego_docker")).Should(gexec.Exit(0))
+		})
+
+		FDescribe("v3/apps/:guid/start", func() {
+			It("succeeds", func() {
+				By("Creating an App and package")
+
+				packageGUID := CreatePackage(appGUID)
+
+				uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
+				token = GetAuthToken()
+				By("Uploading a Package")
+				UploadPackage(uploadURL, assets.NewAssets().CatnipZip, token)
+
+				WaitForPackageToBeReady(packageGUID)
+
+				By("Creating a Build")
+				buildGUID := StageKpackPackage(packageGUID)
+				WaitForBuildToStage(buildGUID)
+
+				dropletGUID = GetDropletFromBuild(buildGUID)
+
+				droplet = GetDroplet(dropletGUID)
+				Expect(droplet.State).To(Equal("STAGED"))
+				Expect(droplet.Lifecycle.Type).To(Equal("docker"))
+				Expect(droplet.Image).ToNot(BeEmpty())
+
+				AssignDropletToApp(appGUID, dropletGUID)
+				session := cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/start", appGUID))
+				Eventually(session).Should(gexec.Exit(0))
+
+				Expect(json.Unmarshal(session.Out.Contents(), &response)).To(Succeed())
+				_, errorPresent := response["errors"]
+				Expect(errorPresent).ToNot(BeTrue())
+
+				// Note: we'd like to use the CurlAppRoot helper but cf4k8s does not yet support https traffic to apps
+				// https://github.com/cloudfoundry/cf-for-k8s/issues/46
+				curl := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
+				Eventually(curl).Should(gexec.Exit(0))
+				Eventually(curl).Should(gbytes.Say("Catnip?"))
+
+			})
+		})
+		Describe("v3/apps/:guid/restart", func() {
+			It("succeeds", func() {
+
+			})
 		})
 	})
 })
