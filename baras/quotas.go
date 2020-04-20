@@ -50,7 +50,7 @@ var _ = Describe("Quotas", func() {
 			Eventually(session).Should(Exit(0))
 
 			appName = random_name.BARARandomName("APP")
-			Expect(cf.Cf("v3-push",
+			Expect(cf.Cf("push",
 				appName,
 				"-b", "staticfile_buildpack",
 				"-p", assets.NewAssets().Staticfile,
@@ -77,7 +77,7 @@ var _ = Describe("Quotas", func() {
 			session := cf.Cf("target", "-o", TestSetup.RegularUserContext().Org, "-s", spaceName)
 			Eventually(session).Should(Exit(0))
 
-			session = cf.Cf("v3-scale", appName, "-i", "2")
+			session = cf.Cf("scale", appName, "-i", "2")
 			Eventually(session.Err).Should(Say("app_instance_limit space_app_instance_limit_exceeded"))
 			Eventually(session).Should(Exit(1))
 
@@ -89,16 +89,16 @@ var _ = Describe("Quotas", func() {
 			session = cf.Cf("curl", "-X", "DELETE", path, "-f", "-v")
 			Eventually(session).Should(Exit(0))
 
-			session = cf.Cf("v3-scale", appName, "-i", "2")
+			session = cf.Cf("scale", appName, "-i", "2")
 			Eventually(session).Should(Exit(0))
 
-			session = cf.Cf("v3-scale", appName, "-i", "3")
+			session = cf.Cf("scale", appName, "-i", "3")
 			Eventually(session.Err).Should(Say("app_instance_limit app_instance_limit_exceeded"))
 			Eventually(session).Should(Exit(1))
 
 			SetDefaultOrgQuota(orgGUID)
 
-			session = cf.Cf("v3-scale", appName, "-i", "3")
+			session = cf.Cf("scale", appName, "-i", "3")
 			Eventually(session).Should(Exit(0))
 		})
 	})

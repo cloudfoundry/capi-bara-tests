@@ -463,7 +463,7 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 		}
 
 		appName = random_name.BARARandomName("APP")
-		session := cf.Cf("push", appName, "-p", assets.NewAssets().Dora, "--health-check-type", "http")
+		session := cf.Cf("push", appName, "-p", assets.NewAssets().Dora)
 		Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 		session = cf.Cf("app", appName, "--guid")
@@ -478,13 +478,14 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 
 	Describe("cf push", func() {
 		It("runs the latest droplet and adds a revision", func() {
-			Expect(cf.Cf("push",
+			session := cf.Cf("push",
 				appName,
 				"-b", "staticfile_buildpack",
-				"-p", assets.NewAssets().Staticfile,
-			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+				"-p", assets.NewAssets().Staticfile)
+
+			Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 			Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
-			session := cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/revisions", appGUID))
+			session = cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/revisions", appGUID))
 			Expect(session.Wait()).To(Exit(0))
 			revstr := session.Out.Contents()
 

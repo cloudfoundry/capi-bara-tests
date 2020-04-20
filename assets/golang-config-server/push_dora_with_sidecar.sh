@@ -15,9 +15,9 @@ function build_config_server() {
 
 function push_dora_with_sidecars() {
     pushd ${DORA_PATH} > /dev/null
-      cf v3-create-app dora
-      cf v3-apply-manifest -f ${DORA_MANIFEST_PATH}
-      cf v3-push dora
+      cf create-app dora
+      cf apply-manifest -f ${DORA_MANIFEST_PATH}
+      cf push dora
     popd > /dev/null
 }
 
