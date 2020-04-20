@@ -124,11 +124,11 @@ applications:
 				target := cf.Cf("target", "-o", apps[0].orgName, "-s", spaceName).Wait()
 				Expect(target).To(Exit(0))
 
-				session = cf.Cf("v3-env", apps[0].name).Wait()
+				session = cf.Cf("env", apps[0].name).Wait()
 				Eventually(session).Should(Say("foo:\\s+\"app0\""))
 				Eventually(session).Should(Exit(0))
 
-				session = cf.Cf("v3-env", apps[1].name).Wait()
+				session = cf.Cf("env", apps[1].name).Wait()
 				Eventually(session).Should(Say("foo:\\s+\"app1\""))
 				Eventually(session).Should(Exit(0))
 
@@ -513,7 +513,7 @@ applications:
 						potatoProcess := GetProcessByGuid(potatoProcessWithCommandRedacted.Guid)
 						Expect(potatoProcess.Command).To(Equal("new-command"))
 
-						session = cf.Cf("v3-get-health-check", apps[0].name).Wait()
+						session = cf.Cf("get-health-check", apps[0].name).Wait()
 						Eventually(session).Should(Say("potato\\s+http\\s+/env"))
 						Eventually(session).Should(Exit(0))
 					})
@@ -711,7 +711,7 @@ var _ = Describe("Applying a manifest before pushing the app", func() {
 	})
 	It("pushes an app with multiple process types defined in the manifest", func() {
 		appName := random_name.BARARandomName("APP")
-		session := cf.Cf("v3-create-app", appName)
+		session := cf.Cf("create-app", appName)
 		Expect(session.Wait()).To(Exit(0))
 
 		session = cf.Cf("app", appName, "--guid")
@@ -750,7 +750,7 @@ applications:
 
 		PollJob(GetJobPath(response))
 
-		session = cf.Cf("v3-push", appName, "-p", assets.NewAssets().Dora)
+		session = cf.Cf("push", appName, "-p", assets.NewAssets().Dora)
 		Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 
 		waitForAllInstancesToStart(appGUID, 1)

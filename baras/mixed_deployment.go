@@ -39,8 +39,8 @@ var _ = Describe("mixed v2 and v3 rolling deploys", func() {
 		pushRubyApp(appName)
 		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 
-		By("cf v3-zdt-push my-app the running app gets new code")
-		zdtPushStaticApp(appName)
+		By("cf push --strategy rolling my-app the running app gets new code")
+		rollingPushStaticApp(appName)
 		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 
 		By("cf push my-app the running app gets new code again")
@@ -51,8 +51,8 @@ var _ = Describe("mixed v2 and v3 rolling deploys", func() {
 		restartApp(appName)
 		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 
-		By("cf v3-zdt-push my-app the running app gets new code a third time")
-		zdtPushStaticApp(appName)
+		By("cf push --strategy rolling my-app the running app gets new code a third time")
+		rollingPushStaticApp(appName)
 		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 
 		By("cf restart my-app the running app does not change")
@@ -68,12 +68,12 @@ func restartApp(appName string) {
 	).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 }
 
-func zdtPushStaticApp(appName string) {
-	Expect(cf.Cf("v3-zdt-push",
+func rollingPushStaticApp(appName string) {
+	Expect(cf.Cf("push",
 		appName,
 		"-b", "staticfile_buildpack",
 		"-p", assets.NewAssets().Staticfile,
-		"--wait-for-deploy-complete",
+		"--strategy", "rolling",
 	).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 }
 

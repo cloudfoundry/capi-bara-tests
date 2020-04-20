@@ -20,9 +20,9 @@ function push_dora_with_sidecars() {
     pushd ${DORA_PATH} > /dev/null
         ./gradlew build
         zip "${JAVA_DORA_JAR}" -u "${JAVA_CONFIG_JAR}"
-        cf v3-create-app java-dora
-        cf v3-apply-manifest -f "${DORA_MANIFEST_PATH}"
-        cf v3-push java-dora -p build/libs/java-dora-0.0.1-SNAPSHOT.jar
+        cf create-app java-dora
+        cf apply-manifest -f "${DORA_MANIFEST_PATH}"
+        cf push java-dora -p build/libs/java-dora-0.0.1-SNAPSHOT.jar
     popd > /dev/null
 }
 

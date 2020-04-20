@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -x
-guid=$(cf v3-create-package $1 | grep "package guid" | awk '{print $NF}')
+guid=$(cf create-package $1 | grep "package guid" | awk '{print $NF}')
 echo "created package"
 echo $guid
 

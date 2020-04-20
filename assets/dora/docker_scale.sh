@@ -5,7 +5,7 @@ function deploy_doras() {
 for i in {1..32}
 do  
     echo "Kicking off dora ${i}"
-    (cf v3-zdt-push dora-alpine-${i} -o cfcapidocker/dora:alpine &)
+    (cf push dora-alpine-${i} -o cfcapidocker/dora:alpine --strategy rolling &)
 done
 }
 
@@ -13,7 +13,7 @@ function scale_doras() {
     for i in {1..32}
     do  
         echo "Scale doras ${i}"
-        (cf v3-scale dora-alpine-${i} -i 2 -f &)
+        (cf scale dora-alpine-${i} -i 2 -f &)
     done
 }
 

@@ -259,7 +259,7 @@ var _ = Describe("sidecars", func() {
 
 		Context("using v3 endpoints", func() {
 			JustBeforeEach(func() {
-				session := cf.Cf("v3-push", appName,
+				session := cf.Cf("push", appName,
 					"-p", assets.NewAssets().Binary,
 					"-b", buildpackName,
 					"-b", Config.GetBinaryBuildpackName())
