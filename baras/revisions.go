@@ -463,7 +463,7 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 		}
 
 		appName = random_name.BARARandomName("APP")
-		session := cf.Cf("push", appName, "-p", assets.NewAssets().Dora, "--health-check-type", "http")
+		session := cf.Cf("push", appName, "-p", assets.NewAssets().Dora, "--health-check-type", "http", "--endpoint", "/health")
 		Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 		session = cf.Cf("app", appName, "--guid")

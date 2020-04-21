@@ -125,11 +125,11 @@ applications:
 				Expect(target).To(Exit(0))
 
 				session = cf.Cf("env", apps[0].name).Wait()
-				Eventually(session).Should(Say("foo:\\s+\"app0\""))
+				Eventually(session).Should(Say("foo:\\s+app0"))
 				Eventually(session).Should(Exit(0))
 
 				session = cf.Cf("env", apps[1].name).Wait()
-				Eventually(session).Should(Say("foo:\\s+\"app1\""))
+				Eventually(session).Should(Say("foo:\\s+app1"))
 				Eventually(session).Should(Exit(0))
 
 				By("setting the routes for both apps", func() {
@@ -237,8 +237,9 @@ applications:
 					Eventually(session).Should(Exit(0))
 
 					session = cf.Cf("get-health-check", apps[0].name).Wait()
-					Eventually(session).Should(Say("health check type:\\s+http"))
-					Eventually(session).Should(Say("endpoint \\(for http type\\):\\s+/env"))
+					Eventually(session).Should(Say("process   health check   endpoint (for http)   invocation timeout"))
+					Eventually(session).Should(Say("web       http           /env                  1"))
+					Eventually(session).Should(Say(" worker    process                              1"))
 					Eventually(session).Should(Exit(0))
 
 					session = cf.Cf("curl", "-i", getManifestEndpoint)
@@ -439,8 +440,9 @@ applications:
 						Expect(webProcess.Command).To(Equal("new-command"))
 
 						session = cf.Cf("get-health-check", apps[0].name).Wait()
-						Eventually(session).Should(Say("health check type:\\s+http"))
-						Eventually(session).Should(Say("endpoint \\(for http type\\):\\s+/env"))
+						Eventually(session).Should(Say("process   health check   endpoint (for http)   invocation timeout"))
+						Eventually(session).Should(Say("web       http           /env                  1"))
+						Eventually(session).Should(Say(" worker    process                              1"))
 						Eventually(session).Should(Exit(0))
 					})
 				})
@@ -756,7 +758,9 @@ applications:
 		waitForAllInstancesToStart(appGUID, 1)
 
 		session = cf.Cf("app", appName).Wait()
-		Eventually(session).Should(Say(`type:\s+logs\s+instances:\s+1/1`))
+		Eventually(session).Should(Say(`type:\s+logs`))
+		Eventually(session).Should(Say(`sidecars:`))
+		Eventually(session).Should(Say(`instances:\s+1/1`))
 
 		DeleteApp(appGUID)
 	})

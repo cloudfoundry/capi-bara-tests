@@ -56,12 +56,12 @@ func GetDropletFromBuild(buildGUID string) string {
 }
 
 type Droplet struct {
-	GUID string `json:"guid"`
-	State string `json:"state"`
-	Image string `json:"image"`
+	GUID      string `json:"guid"`
+	State     string `json:"state"`
+	Image     string `json:"image"`
 	Lifecycle struct {
-		Type string `json:"type"`
-		Data struct {} `json:"data"`
+		Type string   `json:"type"`
+		Data struct{} `json:"data"`
 	} `json:"lifecycle"`
 }
 
