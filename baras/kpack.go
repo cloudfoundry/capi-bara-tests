@@ -87,7 +87,9 @@ var _ = Describe("Kpack lifecycle", func() {
 
 		BeforeEach(func() {
 			response = make(map[string]interface{})
+			TestSetup.AdminUserContext().Login()
 			Eventually(cf.Cf("disable-feature-flag", "diego_docker")).Should(gexec.Exit(0))
+			TestSetup.RegularUserContext().Login()
 		})
 
 		FDescribe("v3/apps/:guid/start", func() {
@@ -115,12 +117,12 @@ var _ = Describe("Kpack lifecycle", func() {
 				Expect(droplet.Image).ToNot(BeEmpty())
 
 				AssignDropletToApp(appGUID, dropletGUID)
-				session := cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/start", appGUID))
+				session := cf.Cf("curl",  "-X", "POST", fmt.Sprintf("/v3/apps/%s/actions/start", appGUID))
 				Eventually(session).Should(gexec.Exit(0))
 
 				Expect(json.Unmarshal(session.Out.Contents(), &response)).To(Succeed())
-				_, errorPresent := response["errors"]
-				Expect(errorPresent).ToNot(BeTrue())
+				errors, errorPresent := response["errors"]
+				Expect(errorPresent).ToNot(BeTrue(),fmt.Sprintf("%v", errors))
 
 				// Note: we'd like to use the CurlAppRoot helper but cf4k8s does not yet support https traffic to apps
 				// https://github.com/cloudfoundry/cf-for-k8s/issues/46
