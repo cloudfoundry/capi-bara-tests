@@ -124,12 +124,11 @@ var _ = Describe("Kpack lifecycle", func() {
 				errors, errorPresent := response["errors"]
 				Expect(errorPresent).ToNot(BeTrue(),fmt.Sprintf("%v", errors))
 
-				// Note: we'd like to use the CurlAppRoot helper but cf4k8s does not yet support https traffic to apps
-				// https://github.com/cloudfoundry/cf-for-k8s/issues/46
-				curl := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
-				Eventually(curl).Should(gexec.Exit(0))
-				Eventually(curl).Should(gbytes.Say("Catnip?"))
-
+				Eventually(func() string {
+					session := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
+					Eventually(session).Should(gexec.Exit(0))
+					return string(session.Out.Contents())
+				}, 60 * time.Second, 10 * time.Second).Should(Equal("Catnip?"))
 			})
 		})
 		Describe("v3/apps/:guid/restart", func() {
