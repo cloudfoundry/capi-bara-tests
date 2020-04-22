@@ -3,19 +3,18 @@ package baras
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
-
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	"time"
 )
 
 var _ = Describe("Kpack lifecycle", func() {
@@ -92,10 +91,8 @@ var _ = Describe("Kpack lifecycle", func() {
 			TestSetup.RegularUserContext().Login()
 		})
 
-		FDescribe("v3/apps/:guid/start", func() {
-			It("succeeds", func() {
+			It("starts and restarts the app successfully", func() {
 				By("Creating an App and package")
-
 				packageGUID := CreatePackage(appGUID)
 
 				uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
@@ -117,6 +114,8 @@ var _ = Describe("Kpack lifecycle", func() {
 				Expect(droplet.Image).ToNot(BeEmpty())
 
 				AssignDropletToApp(appGUID, dropletGUID)
+
+				By("Starting the app")
 				session := cf.Cf("curl",  "-X", "POST", fmt.Sprintf("/v3/apps/%s/actions/start", appGUID))
 				Eventually(session).Should(gexec.Exit(0))
 
@@ -124,18 +123,31 @@ var _ = Describe("Kpack lifecycle", func() {
 				errors, errorPresent := response["errors"]
 				Expect(errorPresent).ToNot(BeTrue(),fmt.Sprintf("%v", errors))
 
-				// Note: we'd like to use the CurlAppRoot helper but cf4k8s does not yet support https traffic to apps
-				// https://github.com/cloudfoundry/cf-for-k8s/issues/46
+				Eventually(func() string {
+					// Poll until "No healthy upstream" initial response from istio is resolved
+					session := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
+					Eventually(session).Should(gexec.Exit(0))
+					return string(session.Out.Contents())
+				}, 60 * time.Second, 10 * time.Second).Should(Equal("Catnip?"))
+
+				By("Restarting the app")
+				StopApp(appGUID)
 				curl := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
 				Eventually(curl).Should(gexec.Exit(0))
-				Eventually(curl).Should(gbytes.Say("Catnip?"))
+				Eventually(curl).Should(gbytes.Say("no healthy upstream"))
 
-			})
-		})
-		Describe("v3/apps/:guid/restart", func() {
-			It("succeeds", func() {
+				session = cf.Cf("curl",  "-X", "POST", fmt.Sprintf("/v3/apps/%s/actions/restart", appGUID))
+				Eventually(session).Should(gexec.Exit(0))
 
+				Expect(json.Unmarshal(session.Out.Contents(), &response)).To(Succeed())
+				errors, errorPresent = response["errors"]
+				Expect(errorPresent).ToNot(BeTrue(),fmt.Sprintf("%v", errors))
+
+				Eventually(func() string {
+					session := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
+					Eventually(session).Should(gexec.Exit(0))
+					return string(session.Out.Contents())
+				}, 60 * time.Second, 10 * time.Second).Should(Equal("Catnip?"))
 			})
-		})
 	})
 })
