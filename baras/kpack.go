@@ -139,15 +139,12 @@ var _ = Describe("Kpack lifecycle", func() {
 				session = cf.Cf("curl",  "-X", "POST", fmt.Sprintf("/v3/apps/%s/actions/restart", appGUID))
 				Eventually(session).Should(gexec.Exit(0))
 
-				Expect(json.Unmarshal(session.Out.Contents(), &response)).To(Succeed())
-				errors, errorPresent = response["errors"]
-				Expect(errorPresent).ToNot(BeTrue(),fmt.Sprintf("%v", errors))
-
 				Eventually(func() string {
+					// Poll until "No healthy upstream" initial response from istio is resolved
 					session := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
 					Eventually(session).Should(gexec.Exit(0))
 					return string(session.Out.Contents())
 				}, 60 * time.Second, 10 * time.Second).Should(Equal("Catnip?"))
 			})
-	})
+		})
 })
