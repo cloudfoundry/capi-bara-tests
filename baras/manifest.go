@@ -237,9 +237,9 @@ applications:
 					Eventually(session).Should(Exit(0))
 
 					session = cf.Cf("get-health-check", apps[0].name).Wait()
-					Eventually(session).Should(Say("process   health check   endpoint (for http)   invocation timeout"))
-					Eventually(session).Should(Say("web       http           /env                  1"))
-					Eventually(session).Should(Say(" worker    process                              1"))
+					Eventually(session).Should(Say(`process\s+health check\s+endpoint\s+\(for http\)\s+invocation timeout`))
+					Eventually(session).Should(Say(`web\s+http\s+\/env\s+1`))
+					Eventually(session).Should(Say(`worker\s+process\s+1`))
 					Eventually(session).Should(Exit(0))
 
 					session = cf.Cf("curl", "-i", getManifestEndpoint)
@@ -440,12 +440,14 @@ applications:
 						Expect(webProcess.Command).To(Equal("new-command"))
 
 						session = cf.Cf("get-health-check", apps[0].name).Wait()
-						Eventually(session).Should(Say("process   health check   endpoint (for http)   invocation timeout"))
-						Eventually(session).Should(Say("web       http           /env                  1"))
-						Eventually(session).Should(Say(" worker    process                              1"))
+						Eventually(session).Should(Say(fmt.Sprintf("Getting health check type for app %s in org %s / space %s as admin...", apps[0].name, apps[0].orgName, spaceName)))
+						Eventually(session).Should(Say(`process\s+health check\s+endpoint\s+\(for http\)\s+invocation timeout`))
+						Eventually(session).Should(Say(`web\s+http\s+\/env\s+1`))
+						Eventually(session).Should(Say(`worker\s+process\s+1`))
 						Eventually(session).Should(Exit(0))
 					})
 				})
+
 				Context("and there are dependent sidecars and the process memory in the update is less than or equal to sidecar memory", func() {
 					BeforeEach(func() {
 						CreateSidecar("my_sidecar1", []string{"web"}, "while true; do echo helloworld; sleep 2; done", 100, apps[0].guid)
