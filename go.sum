@@ -2,7 +2,6 @@ cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.38.0 h1:ROfEUZz+Gh5pa62DJWXSaonyu3StP6EA6lPEXPI6mCo=
 cloud.google.com/go v0.38.0/go.mod h1:990N+gfupTy94rShfmMCWGDn0LpTmnzTp2qbd1dvSRU=
-code.cloudfoundry.org/cf-k8s-networking v0.0.0-20200402182325-93aa9d58f2cf h1:vYWrw81A6czpGktGwVqZIwzrR4SVCu76l+c9oepDzfw=
 code.cloudfoundry.org/cf-k8s-networking/routecontroller v0.0.0-20200402182325-93aa9d58f2cf h1:7/Mscj/P1GeuwFTekFWuk8d3M3tGq/TrIGLLARuHGxI=
 code.cloudfoundry.org/cf-k8s-networking/routecontroller v0.0.0-20200402182325-93aa9d58f2cf/go.mod h1:uGduNDv81nLJeWuNirtvIxQOwfmFlVBD6eVboZCGbvs=
 code.cloudfoundry.org/credhub-cli v0.0.0-20200325195429-1faf152db5a4 h1:68T3oNan2GxuXOb7kQQJbGlrLBO9+zyHvIdnEVEbYQM=
@@ -131,8 +130,6 @@ github.com/go-openapi/swag v0.18.0/go.mod h1:AByQ+nYG6gQg71GINrmuDXCPWdL640yX49/
 github.com/go-openapi/swag v0.19.2/go.mod h1:POnQmlKehdgb5mhVOsnJFsivZCEZ/vjK9gh66Z9tfKk=
 github.com/go-openapi/validate v0.18.0/go.mod h1:Uh4HdOzKt19xGIGm1qHf/ofbX1YQ4Y+MYsct2VUrAJ4=
 github.com/go-openapi/validate v0.19.2/go.mod h1:1tRCw7m3jtI8eNWEEliiAqUIcBztB2KDnRCRMUi7GTA=
-github.com/gogo/protobuf v0.0.0-20160511093445-c18eea6ad611 h1:RvV4jVG53uOX6KxdsiPdUowJsZq6k4yKUYTTF1OZRbk=
-github.com/gogo/protobuf v0.0.0-20160511093445-c18eea6ad611/go.mod h1:r8qH/GZQm5c6nD/R0oafs1akxWv10x8SbQlK7atdtwQ=
 github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d h1:3PaI8p3seN09VjbTYC/QWlUZdZ1qS1zGjy7LH2Wt07I=
 github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d/go.mod h1:SlYgWuQ5SjCEi6WLHjHCa1yvBfUnHcTbrrZtXPKa29o=
 github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b/go.mod h1:SBH7ygxi8pfUlaOkMMuAQtPIUF8ecWP5IEl/CR7VP2Q=
