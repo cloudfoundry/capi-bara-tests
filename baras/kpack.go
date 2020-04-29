@@ -81,7 +81,7 @@ var _ = Describe("Kpack lifecycle", func() {
 		})
 	})
 
-	Context("When diego_docker is disabled", func() {
+	FContext("When diego_docker is disabled", func() {
 		var response map[string]interface{}
 
 		BeforeEach(func() {
@@ -132,9 +132,13 @@ var _ = Describe("Kpack lifecycle", func() {
 
 				By("Restarting the app")
 				StopApp(appGUID)
-				curl := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
-				Eventually(curl).Should(gexec.Exit(0))
-				Eventually(curl).Should(gbytes.Say("no healthy upstream"))
+
+				Eventually(func() string {
+					// Poll until "No healthy upstream" initial response from istio is resolved
+					session := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
+					Eventually(session).Should(gexec.Exit(0))
+					return string(session.Out.Contents())
+				}, 60 * time.Second, 10 * time.Second).Should(Equal("no healthy upstream?"))
 
 				session = cf.Cf("curl",  "-X", "POST", fmt.Sprintf("/v3/apps/%s/actions/restart", appGUID))
 				Eventually(session).Should(gexec.Exit(0))
