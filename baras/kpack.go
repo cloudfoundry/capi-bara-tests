@@ -138,7 +138,7 @@ var _ = Describe("Kpack lifecycle", func() {
 					session := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
 					Eventually(session).Should(gexec.Exit(0))
 					return string(session.Out.Contents())
-				}, 60 * time.Second, 10 * time.Second).Should(Equal("no healthy upstream?"))
+				}, 60 * time.Second, 10 * time.Second).Should(Equal("no healthy upstream"))
 
 				session = cf.Cf("curl",  "-X", "POST", fmt.Sprintf("/v3/apps/%s/actions/restart", appGUID))
 				Eventually(session).Should(gexec.Exit(0))
