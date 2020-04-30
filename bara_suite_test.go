@@ -87,6 +87,10 @@ func TestBARA(t *testing.T) {
 
 		TestSetup = workflowhelpers.NewTestSuiteSetup(Config)
 		TestSetup.Setup()
+
+		if (config.gcloudProjectName) {
+			exec.Command("gcloud", "--project=", config.gcloudProjectName, "container", "clusters", "get-credentials", "--zone", config.clusterZone, config.clusterName)
+		}
 	})
 
 	SynchronizedAfterSuite(func() {

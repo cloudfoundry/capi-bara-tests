@@ -50,6 +50,10 @@ type config struct {
 
 	IncludeKpack *bool `json:"include_kpack"`
 
+	GcloudProjectName  *string `json:"gcloud_project_name""`
+	ClusterZone  *string `json:"cluster_zone"`
+	ClusterName  *string `json:"cluster_name"`
+
 	NamePrefix *string `json:"name_prefix"`
 
 	ReporterConfig *reporterConfig `json:"reporter_config"`
@@ -108,6 +112,10 @@ func getDefaults() config {
 	defaults.PrivateDockerRegistryPassword = ptrToString("")
 
 	defaults.IncludeKpack = ptrToBool(false)
+
+	defaults.GcloudProjectName = ptrToString("")
+	defaults.ClusterZone = ptrToString("")
+	defaults.ClusterName = ptrToString("")
 
 	defaults.ArtifactsDirectory = ptrToString(filepath.Join("..", "results"))
 
@@ -418,6 +426,18 @@ func (c *config) GetIncludePrivateDockerRegistry() bool {
 
 func (c *config) GetIncludeKpack() bool {
 	return *c.IncludeKpack
+}
+
+func (c *config) GetGcloudProjectName() string {
+	return *c.GcloudProjectName
+}
+
+func (c *config) GetClusterZone() string {
+	return *c.ClusterZone
+}
+
+func (c *config) GetClusterName() string {
+	return *c.ClusterName
 }
 
 func (c *config) GetPrivateDockerRegistryImage() string {
