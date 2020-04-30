@@ -81,7 +81,7 @@ var _ = Describe("Kpack lifecycle", func() {
 		})
 	})
 
-	FContext("When diego_docker is disabled", func() {
+	Context("When diego_docker is disabled", func() {
 		var response map[string]interface{}
 
 		BeforeEach(func() {
