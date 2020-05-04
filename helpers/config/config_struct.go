@@ -50,9 +50,9 @@ type config struct {
 
 	IncludeKpack *bool `json:"include_kpack"`
 
-	GcloudProjectName  *string `json:"gcloud_project_name""`
-	ClusterZone  *string `json:"cluster_zone"`
-	ClusterName  *string `json:"cluster_name"`
+	GcloudProjectName *string `json:"gcloud_project_name""`
+	ClusterZone       *string `json:"cluster_zone"`
+	ClusterName       *string `json:"cluster_name"`
 
 	NamePrefix *string `json:"name_prefix"`
 

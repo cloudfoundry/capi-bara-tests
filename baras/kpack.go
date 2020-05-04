@@ -91,64 +91,64 @@ var _ = Describe("Kpack lifecycle", func() {
 			TestSetup.RegularUserContext().Login()
 		})
 
-			It("starts and restarts the app successfully", func() {
-				By("Creating an App and package")
-				packageGUID := CreatePackage(appGUID)
+		It("starts and restarts the app successfully", func() {
+			By("Creating an App and package")
+			packageGUID := CreatePackage(appGUID)
 
-				uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
-				token = GetAuthToken()
-				By("Uploading a Package")
-				UploadPackage(uploadURL, assets.NewAssets().CatnipZip, token)
+			uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
+			token = GetAuthToken()
+			By("Uploading a Package")
+			UploadPackage(uploadURL, assets.NewAssets().CatnipZip, token)
 
-				WaitForPackageToBeReady(packageGUID)
+			WaitForPackageToBeReady(packageGUID)
 
-				By("Creating a Build")
-				buildGUID := StageKpackPackage(packageGUID)
-				WaitForBuildToStage(buildGUID)
+			By("Creating a Build")
+			buildGUID := StageKpackPackage(packageGUID)
+			WaitForBuildToStage(buildGUID)
 
-				dropletGUID = GetDropletFromBuild(buildGUID)
+			dropletGUID = GetDropletFromBuild(buildGUID)
 
-				droplet = GetDroplet(dropletGUID)
-				Expect(droplet.State).To(Equal("STAGED"))
-				Expect(droplet.Lifecycle.Type).To(Equal("docker"))
-				Expect(droplet.Image).ToNot(BeEmpty())
+			droplet = GetDroplet(dropletGUID)
+			Expect(droplet.State).To(Equal("STAGED"))
+			Expect(droplet.Lifecycle.Type).To(Equal("docker"))
+			Expect(droplet.Image).ToNot(BeEmpty())
 
-				AssignDropletToApp(appGUID, dropletGUID)
+			AssignDropletToApp(appGUID, dropletGUID)
 
-				By("Starting the app")
-				session := cf.Cf("curl",  "-X", "POST", fmt.Sprintf("/v3/apps/%s/actions/start", appGUID))
+			By("Starting the app")
+			session := cf.Cf("curl", "-X", "POST", fmt.Sprintf("/v3/apps/%s/actions/start", appGUID))
+			Eventually(session).Should(gexec.Exit(0))
+
+			Expect(json.Unmarshal(session.Out.Contents(), &response)).To(Succeed())
+			errors, errorPresent := response["errors"]
+			Expect(errorPresent).ToNot(BeTrue(), fmt.Sprintf("%v", errors))
+
+			Eventually(func() string {
+				// Poll until "No healthy upstream" initial response from istio is resolved
+				session := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
 				Eventually(session).Should(gexec.Exit(0))
+				return string(session.Out.Contents())
+			}, 60*time.Second, 10*time.Second).Should(Equal("Catnip?"))
 
-				Expect(json.Unmarshal(session.Out.Contents(), &response)).To(Succeed())
-				errors, errorPresent := response["errors"]
-				Expect(errorPresent).ToNot(BeTrue(),fmt.Sprintf("%v", errors))
+			By("Restarting the app")
+			StopApp(appGUID)
 
-				Eventually(func() string {
-					// Poll until "No healthy upstream" initial response from istio is resolved
-					session := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
-					Eventually(session).Should(gexec.Exit(0))
-					return string(session.Out.Contents())
-				}, 60 * time.Second, 10 * time.Second).Should(Equal("Catnip?"))
-
-				By("Restarting the app")
-				StopApp(appGUID)
-
-				Eventually(func() string {
-					// Poll until "No healthy upstream" initial response from istio is resolved
-					session := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
-					Eventually(session).Should(gexec.Exit(0))
-					return string(session.Out.Contents())
-				}, 60 * time.Second, 10 * time.Second).Should(Equal("no healthy upstream"))
-
-				session = cf.Cf("curl",  "-X", "POST", fmt.Sprintf("/v3/apps/%s/actions/restart", appGUID))
+			Eventually(func() string {
+				// Poll until "No healthy upstream" initial response from istio is resolved
+				session := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
 				Eventually(session).Should(gexec.Exit(0))
+				return string(session.Out.Contents())
+			}, 60*time.Second, 10*time.Second).Should(Equal("no healthy upstream"))
 
-				Eventually(func() string {
-					// Poll until "No healthy upstream" initial response from istio is resolved
-					session := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
-					Eventually(session).Should(gexec.Exit(0))
-					return string(session.Out.Contents())
-				}, 60 * time.Second, 10 * time.Second).Should(Equal("Catnip?"))
-			})
+			session = cf.Cf("curl", "-X", "POST", fmt.Sprintf("/v3/apps/%s/actions/restart", appGUID))
+			Eventually(session).Should(gexec.Exit(0))
+
+			Eventually(func() string {
+				// Poll until "No healthy upstream" initial response from istio is resolved
+				session := helpers.Curl(Config, "-s", fmt.Sprintf("http://%s.%s", appName, Config.GetAppsDomain())).Wait()
+				Eventually(session).Should(gexec.Exit(0))
+				return string(session.Out.Contents())
+			}, 60*time.Second, 10*time.Second).Should(Equal("Catnip?"))
 		})
+	})
 })

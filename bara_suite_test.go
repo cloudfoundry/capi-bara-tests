@@ -80,6 +80,13 @@ func TestBARA(t *testing.T) {
 		ZipAsset(assetPaths.CatnipRoot, assetPaths.CatnipZip)
 		ZipAsset(assetPaths.SleepySidecarBuildpack, assetPaths.SleepySidecarBuildpackZip)
 
+		if Config.GetGcloudProjectName() != "" {
+			gcloudCommand := exec.Command("gcloud",  "container", "clusters", "get-credentials", Config.GetClusterName(), "--project", Config.GetGcloudProjectName(), "--zone", Config.GetClusterZone())
+			session, err = gexec.Start(gcloudCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
+		}
+
 		return []byte{}
 	}, func([]byte) {
 		SetDefaultEventuallyTimeout(Config.DefaultTimeoutDuration())
@@ -87,10 +94,6 @@ func TestBARA(t *testing.T) {
 
 		TestSetup = workflowhelpers.NewTestSuiteSetup(Config)
 		TestSetup.Setup()
-
-		if Config.GetGcloudProjectName()!="" {
-			exec.Command("gcloud", "--project=", Config.GetGcloudProjectName(), "container", "clusters", "get-credentials", "--zone", Config.GetClusterZone(), Config.GetClusterName())
-		}
 	})
 
 	SynchronizedAfterSuite(func() {
