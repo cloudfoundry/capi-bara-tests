@@ -3,15 +3,12 @@ package baras
 import (
 	"encoding/json"
 	"fmt"
-	"os/exec"
-	"strings"
-
+	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
+	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-
-	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
-	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
+	"os/exec"
 
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/app_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
@@ -48,13 +45,20 @@ var _ = Describe("RouteCRDs", func() {
 			It("creates a Route custom resource in Kubernetes", func() {
 				appGuid := GetAppGuid(appName)
 				routeGuid := GetRouteGUIDFromAppGuid(appGuid)
-
+				By("Creating the route")
 				routeCR, err := kubectlGetRoute("cf-workloads", routeGuid)
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(routeCR.ObjectMeta.Name).To(Equal(routeGuid))
 				Expect(routeCR.Spec.Destinations[0].App.Guid).To(Equal(appGuid))
 				Expect(routeCR.Spec.Url).To(Equal(fmt.Sprintf("bar.%s/foo", Config.GetAppsDomain())))
+
+				By("Deleting the route")
+				session := cf.Cf("delete-route", Config.GetAppsDomain(), "--hostname", "bar", "--path", "foo", "-f")
+				Expect(session.Wait("3m")).To(gexec.Exit(0))
+				output, err := kubectl("get", "route", routeGuid, "-n", "cf-workloads", "-o", "json")
+				Expect(err).To(HaveOccurred(), "Route CR was not deleted")
+				Expect(output).To(ContainSubstring("Error from server (NotFound)"))
 			})
 		})
 
@@ -76,6 +80,7 @@ var _ = Describe("RouteCRDs", func() {
 			})
 
 			It("creates a Route custom resource in Kubernetes", func() {
+				By("Creating the route")
 				routeGuid := GetRouteGUIDFromAppGuid(appGuid)
 
 				routeCR, err := kubectlGetRoute("cf-workloads", routeGuid)
@@ -84,6 +89,13 @@ var _ = Describe("RouteCRDs", func() {
 				Expect(routeCR.ObjectMeta.Name).To(Equal(routeGuid))
 				Expect(routeCR.Spec.Destinations[0].App.Guid).To(Equal(appGuid))
 				Expect(routeCR.Spec.Url).To(Equal(fmt.Sprintf("%s.%s/foo", appName, Config.GetAppsDomain())))
+
+				By("Deleting the route")
+				session := cf.Cf("delete-route", Config.GetAppsDomain(), "--hostname", appName, "--path", "foo", "-f")
+				Expect(session.Wait("3m")).To(gexec.Exit(0))
+				output, err := kubectl("get", "route", routeGuid, "-n", "cf-workloads", "-o", "json")
+				Expect(err).To(HaveOccurred(), "Route CR was not deleted")
+				Expect(output).To(ContainSubstring("Error from server (NotFound)"))
 			})
 		})
 	})
@@ -91,10 +103,8 @@ var _ = Describe("RouteCRDs", func() {
 
 func kubectl(args ...string) ([]byte, error) {
 	cmd := exec.Command("kubectl", args...)
-	cmd.Stderr = GinkgoWriter
 
-	fmt.Fprintf(GinkgoWriter, "+ kubectl %s\n", strings.Join(args, " "))
-	output, err := cmd.Output()
+	output, err := cmd.CombinedOutput()
 	return output, err
 }
 
