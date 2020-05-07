@@ -48,13 +48,20 @@ var _ = Describe("RouteCRDs", func() {
 			It("creates a Route custom resource in Kubernetes", func() {
 				appGuid := GetAppGuid(appName)
 				routeGuid := GetRouteGUIDFromAppGuid(appGuid)
-
+				By("Creating the route")
 				routeCR, err := kubectlGetRoute("cf-workloads", routeGuid)
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(routeCR.ObjectMeta.Name).To(Equal(routeGuid))
 				Expect(routeCR.Spec.Destinations[0].App.Guid).To(Equal(appGuid))
 				Expect(routeCR.Spec.Url).To(Equal(fmt.Sprintf("bar.%s/foo", Config.GetAppsDomain())))
+
+				By("Deleting the route")
+				session := cf.Cf("delete-route", Config.GetAppsDomain(), "--hostname", "bar", "--path", "foo", "-f")
+				Expect(session.Wait("3m")).To(gexec.Exit(0))
+				_, err = kubectl("get", "route", routeGuid, "-n", "cf-workloads", "-o", "json")
+				Expect(err).To(HaveOccurred(), "Route CR was not deleted")
+				Expect(output.Out.Contents()).To(ContainSubstring("Error from server (NotFound)"))
 			})
 		})
 
@@ -76,6 +83,7 @@ var _ = Describe("RouteCRDs", func() {
 			})
 
 			It("creates a Route custom resource in Kubernetes", func() {
+				By("Creating the route")
 				routeGuid := GetRouteGUIDFromAppGuid(appGuid)
 
 				routeCR, err := kubectlGetRoute("cf-workloads", routeGuid)
@@ -84,6 +92,13 @@ var _ = Describe("RouteCRDs", func() {
 				Expect(routeCR.ObjectMeta.Name).To(Equal(routeGuid))
 				Expect(routeCR.Spec.Destinations[0].App.Guid).To(Equal(appGuid))
 				Expect(routeCR.Spec.Url).To(Equal(fmt.Sprintf("%s.%s/foo", appName, Config.GetAppsDomain())))
+
+				By("Deleting the route")
+				session := cf.Cf("delete-route", Config.GetAppsDomain(), "--hostname", appName, "--path", "foo", "-f")
+				Expect(session.Wait("3m")).To(gexec.Exit(0))
+				output, err = kubectl("get", "route", routeGuid, "-n", "cf-workloads", "-o", "json")
+				Expect(err).To(HaveOccurred(), "Route CR was not deleted")
+				Expect(output.Out.Contents()).To(ContainSubstring("Error from server (NotFound)"))
 			})
 		})
 	})
