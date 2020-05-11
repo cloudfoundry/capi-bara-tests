@@ -33,6 +33,10 @@ var _ = Describe("RouteCRDs", func() {
 		}
 
 		appName = random_name.BARARandomName("APP")
+		session := cf.Cf("target",
+			"-o", TestSetup.RegularUserContext().Org,
+			"-s", TestSetup.RegularUserContext().Space)
+		Eventually(session).Should(gexec.Exit(0))
 	})
 
 	Describe("When mapping a route to an app", func() {
