@@ -3,6 +3,8 @@ package baras
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
@@ -14,7 +16,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
-	"time"
 )
 
 var _ = Describe("Kpack lifecycle", func() {
@@ -39,6 +40,11 @@ var _ = Describe("Kpack lifecycle", func() {
 		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
 		CreateAndMapRoute(appGUID, spaceGUID, domainGUID, appName)
+
+		session := cf.Cf("target",
+			"-o", TestSetup.RegularUserContext().Org,
+			"-s", TestSetup.RegularUserContext().Space)
+		Eventually(session).Should(gexec.Exit(0))
 	})
 
 	AfterEach(func() {
