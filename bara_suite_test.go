@@ -77,7 +77,7 @@ func TestBARA(t *testing.T) {
 		ZipAsset(assetPaths.Dora, assetPaths.DoraZip)
 		ZipAsset(assetPaths.BadDora, assetPaths.BadDoraZip)
 		ZipAsset(assetPaths.Staticfile, assetPaths.StaticfileZip)
-		ZipAsset(assetPaths.CatnipRoot, assetPaths.CatnipZip)
+		ZipAsset(assetPaths.Catnip, assetPaths.CatnipZip)
 		ZipAsset(assetPaths.SleepySidecarBuildpack, assetPaths.SleepySidecarBuildpackZip)
 
 		if Config.GetGcloudProjectName() != "" {
