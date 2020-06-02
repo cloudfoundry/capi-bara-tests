@@ -3,6 +3,7 @@ package baras
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/logs"
 	"strings"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
@@ -31,7 +32,7 @@ func makeApp(token string, spaceGUID string) app {
 
 	uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), newApp.packageGUID)
 
-	UploadPackage(uploadURL, assets.NewAssets().DoraZip, token)
+	UploadPackage(uploadURL, assets.NewAssets().CatnipZip, token)
 	WaitForPackageToBeReady(newApp.packageGUID)
 
 	buildGUID := StageBuildpackPackage(newApp.packageGUID, Config.GetRubyBuildpackName())
@@ -708,12 +709,7 @@ applications:
 })
 
 var _ = Describe("Applying a manifest before pushing the app", func() {
-	BeforeEach(func() {
-		if Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
-	})
-	It("pushes an app with multiple process types defined in the manifest", func() {
+	FIt("pushes an app with multiple process types defined in the manifest", func() {
 		appName := random_name.BARARandomName("APP")
 		session := cf.Cf("create-app", appName)
 		Expect(session.Wait()).To(Exit(0))
@@ -726,10 +722,7 @@ var _ = Describe("Applying a manifest before pushing the app", func() {
 		manifestToApply := fmt.Sprintf(`
 ---
 applications:
-- buildpacks:
-  - ruby_buildpack
-  name: %s
-  stack: cflinuxfs3
+- name: %s
   processes:
   - type: web
     instances: 1
@@ -752,6 +745,8 @@ applications:
 		response := session.Out.Contents()
 		Expect(string(response)).To(ContainSubstring("202 Accepted"))
 
+		tailSession := logs.Tail(true, appName)
+		Eventually(tailSession).Should(Say("Added process:"))
 		PollJob(GetJobPath(response))
 
 		session = cf.Cf("push", appName, "-p", assets.NewAssets().Dora)
