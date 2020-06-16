@@ -5,7 +5,6 @@ type Assets struct {
 	BatchScript                string
 	Binary                     string
 	Catnip                     string
-	CatnipRoot                 string
 	CatnipZip                  string
 	CredHubEnabledApp          string
 	CredHubServiceBroker       string

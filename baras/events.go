@@ -36,11 +36,33 @@ var _ = Describe("events", func() {
 
 	Describe("when we stop an app", func() {
 		It("we can see an app stop event in the log stream", func() {
-			session := cf.Cf("curl", "-X", "POST", fmt.Sprintf("/v3/apps/%s/actions/stop", appGuid))
+			tailSession := logs.TailFollow(true, appName)
+			stopSession := cf.Cf("curl", "-X", "POST", fmt.Sprintf("/v3/apps/%s/actions/stop", appGuid))
+			Eventually(stopSession).Should(Exit(0))
+			Eventually(tailSession).Should(gbytes.Say("Stopping app with guid"))
+		})
+	})
+
+	Describe("when we apply a manifest", func() {
+		It("we can see the manifest application in the log stream", func() {
+			manifestToApply := fmt.Sprintf(`
+---
+applications:
+- name: %s
+  processes:
+  - type: web
+    instances: 1
+    memory: 4096M
+    disk_quota: 1024M
+    health-check-type: http
+    health-check-http-endpoint: '/'
+`, appName)
+			applyEndpoint := fmt.Sprintf("/v3/spaces/%s/actions/apply_manifest", GetSpaceGuidFromName(TestSetup.RegularUserContext().Space))
+
+			tailSession := logs.TailFollow(true, appName)
+			session := cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
 			Eventually(session).Should(Exit(0))
-			session = logs.Tail(true, appName)
-			Eventually(session).Should(Exit(0))
-			Eventually(session).Should(gbytes.Say("Stopping app with guid"))
+			Eventually(tailSession).Should(gbytes.Say("Applied manifest to app"))
 		})
 	})
 })
