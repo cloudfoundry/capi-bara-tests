@@ -3,7 +3,6 @@ package baras
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/logs"
 	"strings"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
@@ -709,7 +708,7 @@ applications:
 })
 
 var _ = Describe("Applying a manifest before pushing the app", func() {
-	FIt("pushes an app with multiple process types defined in the manifest", func() {
+	It("pushes an app with multiple process types defined in the manifest", func() {
 		appName := random_name.BARARandomName("APP")
 		session := cf.Cf("create-app", appName)
 		Expect(session.Wait()).To(Exit(0))
@@ -745,8 +744,6 @@ applications:
 		response := session.Out.Contents()
 		Expect(string(response)).To(ContainSubstring("202 Accepted"))
 
-		tailSession := logs.Tail(true, appName)
-		Eventually(tailSession).Should(Say("Added process:"))
 		PollJob(GetJobPath(response))
 
 		session = cf.Cf("push", appName, "-p", assets.NewAssets().Dora)
