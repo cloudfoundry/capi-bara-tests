@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("events", func() {
+var _ = PDescribe("events", func() {
 	var (
 		appName        string
 		appGuid string
