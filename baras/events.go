@@ -7,18 +7,18 @@ import (
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/app_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/logs"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
+	"github.com/onsi/gomega/gexec"
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = PDescribe("events", func() {
+var _ = FDescribe("events", func() {
 	var (
-		appName        string
+		appName string
 		appGuid string
 	)
 
@@ -33,17 +33,22 @@ var _ = PDescribe("events", func() {
 		DeleteApp(appGuid)
 	})
 
-
-	Describe("when we stop an app", func() {
-		It("we can see an app stop event in the log stream", func() {
-			tailSession := logs.TailFollow(true, appName)
+	Context("when we stop an app", func() {
+		BeforeEach(func() {
 			stopSession := cf.Cf("curl", "-X", "POST", fmt.Sprintf("/v3/apps/%s/actions/stop", appGuid))
 			Eventually(stopSession).Should(Exit(0))
-			Eventually(tailSession).Should(gbytes.Say("Stopping app with guid"))
+		})
+
+		It("we can see an app stop event in the log stream", func() {
+			Eventually(func() *gexec.Session {
+				session := cf.Cf("tail", appName, "-n", "500")
+				Eventually(session).Should(Exit(0))
+				return session
+			}).Should(gbytes.Say("Stopping app with guid"))
 		})
 	})
 
-	Describe("when we apply a manifest", func() {
+	Context("when we apply a manifest", func() {
 		It("we can see the manifest application in the log stream", func() {
 			manifestToApply := fmt.Sprintf(`
 ---
@@ -59,10 +64,14 @@ applications:
 `, appName)
 			applyEndpoint := fmt.Sprintf("/v3/spaces/%s/actions/apply_manifest", GetSpaceGuidFromName(TestSetup.RegularUserContext().Space))
 
-			tailSession := logs.TailFollow(true, appName)
 			session := cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
 			Eventually(session).Should(Exit(0))
-			Eventually(tailSession).Should(gbytes.Say("Applied manifest to app"))
+
+			Eventually(func() *gexec.Session {
+				session = cf.Cf("tail", appName, "-n", "500")
+				Eventually(session).Should(Exit(0))
+				return session
+			}).Should(gbytes.Say("Applied manifest to app"))
 		})
 	})
 })
