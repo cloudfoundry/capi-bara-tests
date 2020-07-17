@@ -24,7 +24,12 @@ var _ = Describe("events", func() {
 
 	BeforeEach(func() {
 		appName = random_name.BARARandomName("APP")
-		session := cf.Cf("push", appName, "-p", assets.NewAssets().Catnip)
+		session := cf.Cf("target",
+			"-o", TestSetup.RegularUserContext().Org,
+			"-s", TestSetup.RegularUserContext().Space)
+		Eventually(session).Should(gexec.Exit(0))
+
+		session = cf.Cf("push", appName, "-p", assets.NewAssets().Catnip)
 		Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 		appGuid = GetAppGuid(appName)
 	})
