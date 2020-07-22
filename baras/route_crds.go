@@ -39,7 +39,7 @@ var _ = Describe("RouteCRDs", func() {
 	Describe("When mapping a route to an app", func() {
 		Context("using v2 endpoints", func() {
 			BeforeEach(func() {
-				session := cf.Cf("push", appName, "--no-route", "-p", assets.NewAssets().Catnip)
+				session := cf.Cf("push", appName, "--no-route", "-p", assets.NewAssets().Catnip, "-b", Config.GetGoBuildpackName())
 				Expect(session.Wait("3m")).To(gexec.Exit(0))
 
 				session = cf.Cf("map-route", appName, Config.GetAppsDomain(), "--hostname", "bar", "--path", "foo")
@@ -70,7 +70,7 @@ var _ = Describe("RouteCRDs", func() {
 			var appGuid string
 
 			BeforeEach(func() {
-				session := cf.Cf("push", appName, "--no-route", "-p", assets.NewAssets().Catnip)
+				session := cf.Cf("push", appName, "--no-route", "-p", assets.NewAssets().Catnip, "-b", Config.GetGoBuildpackName())
 				Expect(session.Wait("3m")).To(gexec.Exit(0))
 
 				appGuid = GetAppGuid(appName)

@@ -29,7 +29,7 @@ var _ = Describe("events", func() {
 			"-s", TestSetup.RegularUserContext().Space)
 		Eventually(session).Should(gexec.Exit(0))
 
-		session = cf.Cf("push", appName, "-p", assets.NewAssets().Catnip)
+		session = cf.Cf("push", appName, "-p", assets.NewAssets().Catnip, "-b", Config.GetGoBuildpackName())
 		Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 		appGuid = GetAppGuid(appName)
 	})
