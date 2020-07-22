@@ -22,7 +22,7 @@ func AssignDropletToApp(appGUID, dropletGUID string) {
 	}
 }
 
-func AssociateNewDroplet(appGUID, assetPath string) string {
+func CreateAndAssociateNewDroplet(appGUID, assetPath string, buildpacks ...string) string {
 	By("Creating a Package")
 	packageGUID := CreatePackage(appGUID)
 	uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
@@ -32,7 +32,7 @@ func AssociateNewDroplet(appGUID, assetPath string) string {
 	WaitForPackageToBeReady(packageGUID)
 
 	By("Creating a Build")
-	buildGUID := StageBuildpackPackage(packageGUID)
+	buildGUID := StageBuildpackPackage(packageGUID, buildpacks...)
 	WaitForBuildToStage(buildGUID)
 	dropletGUID := GetDropletFromBuild(buildGUID)
 

@@ -37,7 +37,7 @@ var _ = Describe("setting_process_commands", func() {
 		spaceGUID = GetSpaceGuidFromName(spaceName)
 		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
-		dropletGUID = AssociateNewDroplet(appGUID, assets.NewAssets().DoraZip)
+		dropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().DoraZip, Config.GetRubyBuildpackName())
 		applyEndpoint = fmt.Sprintf("/v3/apps/%s/actions/apply_manifest", appGUID)
 	})
 

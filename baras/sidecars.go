@@ -43,7 +43,7 @@ var _ = Describe("sidecars", func() {
 
 		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"WHAT_AM_I":"MOTORCYCLE"}`)
-		_ = AssociateNewDroplet(appGUID, assets.NewAssets().DoraZip)
+		_ = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().DoraZip, Config.GetRubyBuildpackName())
 	})
 
 	AfterEach(func() {

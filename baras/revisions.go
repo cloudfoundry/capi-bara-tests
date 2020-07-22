@@ -48,7 +48,7 @@ var _ = Describe("revisions", func() {
 		By("Enabling Revisions")
 		EnableRevisions(appGUID)
 
-		dropletGUID = AssociateNewDroplet(appGUID, assets.NewAssets().DoraZip)
+		dropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().DoraZip, Config.GetRubyBuildpackName())
 
 		CreateAndMapRoute(appGUID, spaceGUID, domainGUID, appName)
 		ScaleApp(appGUID, instances)
@@ -142,7 +142,7 @@ var _ = Describe("revisions", func() {
 			var newDropletGUID string
 
 			BeforeEach(func() {
-				newDropletGUID = AssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip)
+				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
 			})
 
 			It("creates a new revision", func() {
@@ -242,7 +242,7 @@ var _ = Describe("revisions", func() {
 			var newDropletGUID string
 
 			BeforeEach(func() {
-				newDropletGUID = AssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip)
+				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
 			})
 
 			It("creates a new revision", func() {
@@ -263,7 +263,7 @@ var _ = Describe("revisions", func() {
 	Describe("starting a started app", func() {
 		Context("when there is a new droplet", func() {
 			BeforeEach(func() {
-				AssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip)
+				CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
 			})
 
 			It("does not create a new revision", func() {
@@ -364,7 +364,7 @@ var _ = Describe("revisions", func() {
 			var newDropletGUID string
 
 			BeforeEach(func() {
-				newDropletGUID = AssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip)
+				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
 			})
 
 			It("creates a new revision", func() {
@@ -386,7 +386,7 @@ var _ = Describe("revisions", func() {
 			)
 
 			BeforeEach(func() {
-				AssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip)
+				CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
 				UpdateEnvironmentVariables(appGUID, `{"foo":"deffo-not-bar"}`)
 				newCommand = "TEST_VAR=real /home/vcap/app/boot.sh"
 				SetCommandOnProcess(appGUID, "web", newCommand)
