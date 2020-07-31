@@ -55,6 +55,17 @@ func GetDropletFromBuild(buildGUID string) string {
 	return build.Droplet.GUID
 }
 
+func GetDropletFromApp(appGUID string) string {
+	session := cf.Cf("curl", "-f", fmt.Sprintf("/v3/apps/%s/droplets/current", appGUID)).Wait()
+	var droplet struct {
+		GUID string `json:"guid"`
+	}
+	bytes := session.Wait().Out.Contents()
+	err := json.Unmarshal(bytes, &droplet)
+	Expect(err).NotTo(HaveOccurred())
+	return droplet.GUID
+}
+
 type Droplet struct {
 	GUID      string `json:"guid"`
 	State     string `json:"state"`

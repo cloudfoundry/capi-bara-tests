@@ -3,6 +3,7 @@ package v3_helpers
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
@@ -34,6 +35,12 @@ func CreateApp(appName, spaceGUID, environmentVariables string) string {
 	err := json.Unmarshal(bytes, &app)
 	Expect(err).NotTo(HaveOccurred())
 	return app.GUID
+}
+
+func GetAppGUID(appName string) string {
+	session := cf.Cf("app", appName, "--guid")
+	Expect(session.Wait()).To(Exit(0))
+	return strings.TrimSpace(string(session.Out.Contents()))
 }
 
 func CreateDockerApp(appName, spaceGUID, environmentVariables string) string {

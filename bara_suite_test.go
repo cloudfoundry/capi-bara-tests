@@ -130,6 +130,7 @@ func TestBARA(t *testing.T) {
 			"env_api": Config.GetApiEndpoint(),
 		}
 
+
 		honeyCombReporter := honeycomb.New(honeyCombClient)
 		honeyCombReporter.SetGlobalTags(globalTags)
 		honeyCombReporter.SetCustomTags(reporterConfig.CustomTags)
