@@ -18,7 +18,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("Kpack lifecycle", func() {
+var _ = Describe("Kpack lifecycle decomposed", func() {
 	var (
 		appName     string
 		appGUID     string
