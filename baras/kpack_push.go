@@ -47,7 +47,7 @@ var _ = Describe("kpack push", func() {
 		session := cf.Cf("push", appName, "-p", assets.NewAssets().CatnipZip, "-b", "paketo-buildpacks/dotnet-core")
 		Eventually(session, Config.CfPushTimeoutDuration()).Should(gexec.Exit(1))
 		Eventually(func() *gexec.Session {
-			session := cf.Cf("logs", appName, "--recent")
+			session := cf.Cf("tail", appName, "-n", "500")
 			Eventually(session).Should(gexec.Exit(0))
 			return session
 		}).Should(gbytes.Say("No buildpack groups passed detection"))
