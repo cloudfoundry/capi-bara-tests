@@ -2,6 +2,7 @@ package stack_test
 
 import (
 	"fmt"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	"os"
 	"os/exec"
 	"testing"
@@ -38,6 +39,10 @@ func TestStack(t *testing.T) {
 	}
 
 	var _ = SynchronizedBeforeSuite(func() []byte {
+		if !Config.GetIncludeKpack() {
+			Skip(skip_messages.SkipKpackMessage)
+		}
+		
 		installedVersion, err := GetInstalledCliVersionString()
 
 		Expect(err).ToNot(HaveOccurred(), "Error trying to determine CF CLI version")
