@@ -2,7 +2,6 @@ package stack_test
 
 import (
 	"fmt"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	"os"
 	"os/exec"
 	"testing"
@@ -39,10 +38,6 @@ func TestStack(t *testing.T) {
 	}
 
 	var _ = SynchronizedBeforeSuite(func() []byte {
-		if !Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
-		
 		installedVersion, err := GetInstalledCliVersionString()
 
 		Expect(err).ToNot(HaveOccurred(), "Error trying to determine CF CLI version")
@@ -51,7 +46,7 @@ func TestStack(t *testing.T) {
 		Expect(ParseRawCliVersionString(installedVersion).AtLeast(ParseRawCliVersionString(minCliVersion))).To(BeTrue(), "CLI version "+minCliVersion+" is required")
 
 		if Config.GetGcloudProjectName() != "" {
-			gcloudCommand := exec.Command("gcloud",  "container", "clusters", "get-credentials", Config.GetClusterName(), "--project", Config.GetGcloudProjectName(), "--zone", Config.GetClusterZone())
+			gcloudCommand := exec.Command("gcloud", "container", "clusters", "get-credentials", Config.GetClusterName(), "--project", Config.GetGcloudProjectName(), "--zone", Config.GetClusterZone())
 			session, err := gexec.Start(gcloudCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
@@ -93,7 +88,6 @@ func TestStack(t *testing.T) {
 			"run_id":  os.Getenv("RUN_ID"),
 			"env_api": Config.GetApiEndpoint(),
 		}
-
 
 		honeyCombReporter := honeycomb.New(honeyCombClient)
 		honeyCombReporter.SetGlobalTags(globalTags)
