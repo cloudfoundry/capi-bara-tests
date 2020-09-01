@@ -73,10 +73,10 @@ func HandleAsyncRequest(path string, method string) {
 	PollJob(jobPath)
 }
 
-func FetchRecentLogs(appGuid, oauthToken string, config config.BaraConfig) *Session {
+func FetchRecentLogs(appGuid string, config config.BaraConfig) *Session {
 	loggregatorEndpoint := getHttpLoggregatorEndpoint()
 	logURL := fmt.Sprintf("%s/apps/%s/recentlogs", loggregatorEndpoint, appGuid)
-	session := helpers.Curl(Config, logURL, "-H", fmt.Sprintf("Authorization: %s", oauthToken))
+	session := helpers.Curl(Config, logURL, "-H", fmt.Sprintf("Authorization: %s", GetAuthToken()))
 	Expect(session.Wait()).To(Exit(0))
 	return session
 }

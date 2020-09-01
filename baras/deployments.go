@@ -3,18 +3,16 @@ package baras
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
+
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
 )
 
@@ -42,17 +40,13 @@ var _ = Describe("deployments", func() {
 		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
 		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
+		By("Creating a Package")
+		packageGUID = CreatePackage(appGUID)
+		uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
 
-		By("Creating a New Package")
-		session := cf.Cf("create-package", appName, "-p", assets.NewAssets().DoraZip)
-		Eventually(session).Should(gbytes.Say("guid"))
-
-		r, err := regexp.Compile(`\'([^)]+)\'`)
-		Expect(err).NotTo(HaveOccurred())
-
-		packageGUID = r.FindString(string(session.Out.Contents()))
-		Expect(packageGUID).NotTo(BeEmpty())
-		packageGUID = strings.Trim(packageGUID, "'")
+		By("Uploading a Package")
+		UploadPackage(uploadURL, assets.NewAssets().DoraZip)
+		WaitForPackageToBeReady(packageGUID)
 
 		By("Creating a Build")
 		buildGUID := StagePackage(packageGUID, "kpack", Config.GetRubyBuildpackName())
@@ -77,7 +71,7 @@ var _ = Describe("deployments", func() {
 	})
 
 	AfterEach(func() {
-		FetchRecentLogs(appGUID, GetAuthToken(), Config)
+		FetchRecentLogs(appGUID, Config)
 		DeleteApp(appGUID)
 	})
 

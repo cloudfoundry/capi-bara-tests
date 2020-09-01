@@ -26,7 +26,7 @@ func CreatePackage(appGUID string) string {
 
 func UploadPackage(uploadURL, packageZipPath string) {
 	bits := fmt.Sprintf(`bits=@%s`, packageZipPath)
-	curl := helpers.Curl(Config, "-v", "-s", "-f", "--show-error", uploadURL, "-F", bits, "-H", GetAuthToken()).
+	curl := helpers.Curl(Config, "-v", "-s", "-f", "--show-error", uploadURL, "-F", bits, "-H", fmt.Sprintf("Authorization: %s", GetAuthToken())).
 		Wait(Config.CfPushTimeoutDuration())
 	Expect(curl).To(Exit(0))
 }

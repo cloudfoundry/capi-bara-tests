@@ -20,7 +20,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-func makeApp(token string, spaceGUID string) app {
+func makeApp(spaceGUID string) app {
 	var newApp app
 	newApp.name = random_name.BARARandomName("APP")
 	newApp.orgName = TestSetup.RegularUserContext().Org
@@ -59,7 +59,6 @@ var _ = Describe("apply_manifest", func() {
 		apps             []app
 		broker           ServiceBroker
 		serviceInstance  string
-		token            string
 		spaceName        string
 		spaceGUID        string
 		domainGUID       string
@@ -75,16 +74,15 @@ var _ = Describe("apply_manifest", func() {
 		//	Skip(skip_messages.SkipKpackMessage)
 		//}
 
-		token = GetAuthToken()
 		spaceName = TestSetup.RegularUserContext().Space
 		spaceGUID = GetSpaceGuidFromName(spaceName)
 		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
-		apps = []app{makeApp(token, spaceGUID)}
+		apps = []app{makeApp(spaceGUID)}
 
 	})
 
 	AfterEach(func() {
-		FetchRecentLogs(apps[0].guid, token, Config)
+		FetchRecentLogs(apps[0].guid, Config)
 		for _, app := range apps {
 			DeleteApp(app.guid)
 		}
@@ -92,7 +90,7 @@ var _ = Describe("apply_manifest", func() {
 
 	Describe("Applying a manifest to a space (multiple apps)", func() {
 		BeforeEach(func() {
-			apps = append(apps, makeApp(token, spaceGUID))
+			apps = append(apps, makeApp(spaceGUID))
 
 			applyEndpoint = fmt.Sprintf("/v3/spaces/%s/actions/apply_manifest", spaceGUID)
 			manifestToApply = fmt.Sprintf(`---
@@ -648,7 +646,7 @@ applications:
 
 		Describe("services", func() {
 			BeforeEach(func() {
-				apps = append(apps, makeApp(token, spaceGUID))
+				apps = append(apps, makeApp(spaceGUID))
 
 				By("Registering a Service Broker")
 				broker = NewServiceBroker(

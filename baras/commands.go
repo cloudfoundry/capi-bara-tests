@@ -40,7 +40,7 @@ var _ = Describe("setting_process_commands", func() {
 	})
 
 	AfterEach(func() {
-		FetchRecentLogs(appGUID, GetAuthToken(), Config)
+		FetchRecentLogs(appGUID, Config)
 		DeleteApp(appGUID)
 	})
 

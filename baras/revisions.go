@@ -66,7 +66,7 @@ var _ = Describe("revisions", func() {
 	})
 
 	AfterEach(func() {
-		FetchRecentLogs(appGUID, GetAuthToken(), Config)
+		FetchRecentLogs(appGUID, Config)
 		DeleteApp(appGUID)
 	})
 
@@ -471,7 +471,7 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 	})
 
 	AfterEach(func() {
-		FetchRecentLogs(appGUID, GetAuthToken(), Config)
+		FetchRecentLogs(appGUID, Config)
 		DeleteApp(appGUID)
 	})
 
