@@ -47,7 +47,7 @@ var _ = Describe("sidecars", func() {
 	})
 
 	AfterEach(func() {
-		FetchRecentLogs(appGUID, GetAuthToken(), Config)
+		FetchRecentLogs(appGUID, Config)
 		DeleteApp(appGUID)
 	})
 

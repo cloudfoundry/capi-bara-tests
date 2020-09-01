@@ -77,7 +77,7 @@ var _ = Describe("Private Docker Registry Application Lifecycle", func() {
 
 	AfterEach(func() {
 		appGuid := GetAppGuid(appName)
-		FetchRecentLogs(appGuid, GetAuthToken(), Config)
+		FetchRecentLogs(appGuid, Config)
 		DeleteApp(appGuid)
 	})
 

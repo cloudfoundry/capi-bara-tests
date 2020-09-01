@@ -26,7 +26,6 @@ var _ = Describe("deployments", func() {
 		newPackageGUID string
 		spaceGUID      string
 		spaceName      string
-		token          string
 		dropletGuid    string
 		newDropletGuid string
 	)
@@ -44,11 +43,10 @@ var _ = Describe("deployments", func() {
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
 		By("Creating a Package")
 		packageGUID = CreatePackage(appGUID)
-		token = GetAuthToken()
 		uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
 
 		By("Uploading a Package")
-		UploadPackage(uploadURL, assets.NewAssets().DoraZip, token)
+		UploadPackage(uploadURL, assets.NewAssets().DoraZip)
 		WaitForPackageToBeReady(packageGUID)
 
 		By("Creating a Build")
@@ -74,7 +72,7 @@ var _ = Describe("deployments", func() {
 	})
 
 	AfterEach(func() {
-		FetchRecentLogs(appGUID, token, Config)
+		FetchRecentLogs(appGUID, Config)
 		DeleteApp(appGUID)
 	})
 
@@ -126,11 +124,10 @@ var _ = Describe("deployments", func() {
 		It("does not update the last_successful_healthcheck field", func() {
 			By("Creating a New Package")
 			newPackageGUID = CreatePackage(appGUID)
-			token = GetAuthToken()
 			uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), newPackageGUID)
 
 			By("Upload Bad Dora the Package")
-			UploadPackage(uploadURL, assets.NewAssets().BadDoraZip, token)
+			UploadPackage(uploadURL, assets.NewAssets().BadDoraZip)
 			WaitForPackageToBeReady(newPackageGUID)
 
 			By("Creating a Build")

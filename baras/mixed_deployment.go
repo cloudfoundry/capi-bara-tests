@@ -28,7 +28,7 @@ var _ = Describe("mixed v2 and v3 rolling deploys", func() {
 
 	AfterEach(func() {
 		appGuid := GetAppGuid(appName)
-		FetchRecentLogs(appGuid, GetAuthToken(), Config)
+		FetchRecentLogs(appGuid, Config)
 		DeleteApp(appGuid)
 	})
 
