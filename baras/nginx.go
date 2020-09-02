@@ -44,4 +44,11 @@ var _ = Describe("nginx config logic", func() {
 			Eventually(session).Should(Say("422 Unprocessable Entity"))
 		})
 	})
+
+	Describe("publicly hitting /internal/v4/ endpoints", func() {
+		It("returns 403 Forbidden", func() {
+			session := cf.Cf("curl", "/internal/v4/", "-i")
+			Eventually(session).Should(Say("403 Forbidden"))
+		})
+	})
 })
