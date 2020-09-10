@@ -46,34 +46,34 @@ var _ = Describe("Stack", func() {
 
 		By("Pushing an app")
 		session = cf.Cf("push", appName, "-p", "../" + assets.NewAssets().Catnip)
-		Expect(session.Wait("3m")).To(gexec.Exit(0))
+		Expect(session.Wait(Config.CfPushTimeoutDuration())).To(gexec.Exit(0))
 		appGUID = GetAppGUID(appName)
 		dropletGUID = GetDropletFromApp(appGUID)
 		dropletImage = GetDroplet(dropletGUID).Image
 
 		By("Updating the stack")
-		bytes, err := Kubectl("get", "stack/cflinuxfs3-stack", "-o", "json")
+		bytes, err := Kubectl("get", "clusterstack/cflinuxfs3-stack", "-o", "json")
 		Expect(err).ToNot(HaveOccurred())
 		var originalStack Stack
 		json.Unmarshal(bytes, &originalStack)
 		originalStackImage = originalStack.Spec.RunImage.Image
-		output, err := Kubectl("patch", "stack/cflinuxfs3-stack", "--type=merge", "-p", `{"spec":{"runImage":{"image":"gcr.io/paketo-buildpacks/run:0.0.50-full-cnb-cf"}}}`)
+		output, err := Kubectl("patch", "clusterstack/cflinuxfs3-stack", "--type=merge", "-p", `{"spec":{"runImage":{"image":"gcr.io/paketo-buildpacks/run:0.0.50-full-cnb-cf"}}}`)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(output).To(ContainSubstring("stack.experimental.kpack.pivotal.io/cflinuxfs3-stack patched"))
+		Expect(output).To(ContainSubstring("clusterstack.kpack.io/cflinuxfs3-stack patched"))
 	})
 
 	AfterEach(func() {
 		DeleteApp(appGUID)
-		output, err := Kubectl("patch", "stack/cflinuxfs3-stack", "--type=merge", "-p", fmt.Sprintf(`{"spec":{"runImage":{"image":"%s"}}}`, originalStackImage))
+		output, err := Kubectl("patch", "clusterstack/cflinuxfs3-stack", "--type=merge", "-p", fmt.Sprintf(`{"spec":{"runImage":{"image":"%s"}}}`, originalStackImage))
 		Expect(err).ToNot(HaveOccurred())
-		Expect(output).To(ContainSubstring("stack.experimental.kpack.pivotal.io/cflinuxfs3-stack patched"))
+		Expect(output).To(ContainSubstring("clusterstack.kpack.io/cflinuxfs3-stack patched"))
 	})
 
 	Context("When restarting an app with an updated stack", func() {
 		It("starts the app successfully and the droplet contains the rebased image reference", func() {
 			Eventually(func() string {
 				return GetDroplet(dropletGUID).Image
-			}, "15s", "1s").ShouldNot(Equal(dropletImage))
+			}, Config.DefaultTimeoutDuration(), "1s").ShouldNot(Equal(dropletImage))
 
 			By("Restarting the app")
 			Expect(cf.Cf("restart", appName).Wait(Config.CfPushTimeoutDuration())).To(gexec.Exit(0))
