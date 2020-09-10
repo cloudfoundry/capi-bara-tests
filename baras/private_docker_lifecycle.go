@@ -39,9 +39,9 @@ var _ = Describe("Private Docker Registry Application Lifecycle", func() {
 	}
 
 	BeforeEach(func() {
-		if !Config.GetIncludePrivateDockerRegistry() {
-			Skip(skip_messages.SkipPrivateDockerRegistryMessage)
-		}
+		//if !Config.GetIncludePrivateDockerRegistry() {
+		//	Skip(skip_messages.SkipPrivateDockerRegistryMessage)
+		//}
 	})
 
 	JustBeforeEach(func() {
