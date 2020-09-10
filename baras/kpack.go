@@ -9,7 +9,6 @@ import (
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -26,9 +25,9 @@ var _ = Describe("Kpack lifecycle decomposed", func() {
 	)
 
 	BeforeEach(func() {
-		if !Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
+		//if !Config.GetIncludeKpack() {
+		//	Skip(skip_messages.SkipKpackMessage)
+		//}
 
 		appName = random_name.BARARandomName("APP")
 		spaceName := TestSetup.RegularUserContext().Space
@@ -63,7 +62,7 @@ var _ = Describe("Kpack lifecycle decomposed", func() {
 			WaitForPackageToBeReady(packageGUID)
 
 			By("Creating a Build")
-			buildGUID := StageKpackPackage(packageGUID)
+			buildGUID := StagePackage(packageGUID, "kpack")
 			WaitForBuildToStage(buildGUID)
 
 			dropletGUID = GetDropletFromBuild(buildGUID)
@@ -103,7 +102,7 @@ var _ = Describe("Kpack lifecycle decomposed", func() {
 			WaitForPackageToBeReady(packageGUID)
 
 			By("Creating a Build")
-			buildGUID := StageKpackPackage(packageGUID)
+			buildGUID := StagePackage(packageGUID, "kpack")
 			WaitForBuildToStage(buildGUID)
 
 			dropletGUID = GetDropletFromBuild(buildGUID)

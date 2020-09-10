@@ -10,7 +10,6 @@ import (
 	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/services"
@@ -34,7 +33,7 @@ func makeApp(token string, spaceGUID string) app {
 	UploadPackage(uploadURL, assets.NewAssets().DoraZip, token)
 	WaitForPackageToBeReady(newApp.packageGUID)
 
-	buildGUID := StageBuildpackPackage(newApp.packageGUID, Config.GetRubyBuildpackName())
+	buildGUID := StagePackage(newApp.packageGUID, "kpack", Config.GetRubyBuildpackName())
 	WaitForBuildToStage(buildGUID)
 	newApp.dropletGUID = GetDropletFromBuild(buildGUID)
 	AssignDropletToApp(newApp.guid, newApp.dropletGUID)
@@ -72,9 +71,9 @@ var _ = Describe("apply_manifest", func() {
 	)
 
 	BeforeEach(func() {
-		if Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
+		//if Config.GetIncludeKpack() {
+		//	Skip(skip_messages.SkipKpackMessage)
+		//}
 
 		token = GetAuthToken()
 		spaceName = TestSetup.RegularUserContext().Space

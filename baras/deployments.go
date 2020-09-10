@@ -3,17 +3,18 @@ package baras
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
+	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
-
-	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
 )
 
@@ -26,15 +27,14 @@ var _ = Describe("deployments", func() {
 		newPackageGUID string
 		spaceGUID      string
 		spaceName      string
-		token          string
 		dropletGuid    string
 		newDropletGuid string
 	)
 
 	BeforeEach(func() {
-		if Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
+		//if Config.GetIncludeKpack() {
+		//	Skip(skip_messages.SkipKpackMessage)
+		//}
 
 		appName = random_name.BARARandomName("APP")
 		spaceName = TestSetup.RegularUserContext().Space
@@ -42,17 +42,20 @@ var _ = Describe("deployments", func() {
 		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
 		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
-		By("Creating a Package")
-		packageGUID = CreatePackage(appGUID)
-		token = GetAuthToken()
-		uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
 
-		By("Uploading a Package")
-		UploadPackage(uploadURL, assets.NewAssets().DoraZip, token)
-		WaitForPackageToBeReady(packageGUID)
+		By("Creating a New Package")
+		session := cf.Cf("create-package", appName, "-p", assets.NewAssets().DoraZip)
+		Eventually(session).Should(gbytes.Say("guid"))
+
+		r, err := regexp.Compile(`\'([^)]+)\'`)
+		Expect(err).NotTo(HaveOccurred())
+
+		packageGUID = r.FindString(string(session.Out.Contents()))
+		Expect(packageGUID).NotTo(BeEmpty())
+		packageGUID = strings.Trim(packageGUID, "'")
 
 		By("Creating a Build")
-		buildGUID := StageBuildpackPackage(packageGUID, Config.GetRubyBuildpackName())
+		buildGUID := StagePackage(packageGUID, "kpack", Config.GetRubyBuildpackName())
 		WaitForBuildToStage(buildGUID)
 		dropletGuid = GetDropletFromBuild(buildGUID)
 
@@ -74,7 +77,7 @@ var _ = Describe("deployments", func() {
 	})
 
 	AfterEach(func() {
-		FetchRecentLogs(appGUID, token, Config)
+		FetchRecentLogs(appGUID, GetAuthToken(), Config)
 		DeleteApp(appGUID)
 	})
 
@@ -122,19 +125,20 @@ var _ = Describe("deployments", func() {
 		})
 	})
 
-	Describe("Deploy a bad droplet on the same app", func() {
+	FDescribe("Deploy a bad droplet on the same app", func() {
 		It("does not update the last_successful_healthcheck field", func() {
 			By("Creating a New Package")
-			newPackageGUID = CreatePackage(appGUID)
-			token = GetAuthToken()
-			uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), newPackageGUID)
+			session := cf.Cf("create-package", appName, "-p", assets.NewAssets().BadDoraZip)
+			Eventually(session).Should(gbytes.Say("guid"))
+			r, err := regexp.Compile(`\'([^)]+)\'`)
+			Expect(err).NotTo(HaveOccurred())
 
-			By("Upload Bad Dora the Package")
-			UploadPackage(uploadURL, assets.NewAssets().BadDoraZip, token)
-			WaitForPackageToBeReady(newPackageGUID)
+			newPackageGUID = r.FindString(string(session.Out.Contents()))
+			Expect(packageGUID).NotTo(BeEmpty())
+			newPackageGUID = strings.Trim(packageGUID, "'")
 
 			By("Creating a Build")
-			newBuildGUID := StageBuildpackPackage(newPackageGUID, Config.GetRubyBuildpackName())
+			newBuildGUID := StagePackage(newPackageGUID, "kpack", Config.GetRubyBuildpackName())
 			WaitForBuildToStage(newBuildGUID)
 
 			By("Get the New Droplet GUID")
@@ -144,7 +148,7 @@ var _ = Describe("deployments", func() {
 			AssignDropletToApp(appGUID, newDropletGuid)
 
 			By("Create a new Deployment")
-			deploymentGuid := CreateDeployment(appGUID)
+			deploymentGuid := CreateDeploymentForDroplet(appGUID, newDropletGuid)
 			Expect(deploymentGuid).ToNot(BeEmpty())
 
 			time.Sleep(60 * time.Second)
@@ -161,7 +165,7 @@ var _ = Describe("deployments", func() {
 				Status deploymentStatus `json:"status"`
 			}{}
 
-			session := cf.Cf("curl", "-f", deploymentPath).Wait()
+			session = cf.Cf("curl", "-f", deploymentPath).Wait()
 			Expect(session.Wait()).To(Exit(0))
 			json.Unmarshal(session.Out.Contents(), &deploymentJson)
 

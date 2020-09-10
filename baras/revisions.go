@@ -32,9 +32,9 @@ var _ = Describe("revisions", func() {
 	)
 
 	BeforeEach(func() {
-		if Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
+		//if Config.GetIncludeKpack() {
+		//	Skip(skip_messages.SkipKpackMessage)
+		//}
 
 		appName = random_name.BARARandomName("APP")
 		spaceName = TestSetup.RegularUserContext().Space

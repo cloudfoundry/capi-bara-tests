@@ -2,9 +2,6 @@ package baras
 
 import (
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
-
-	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -12,9 +9,9 @@ import (
 
 var _ = Describe("nginx config logic", func() {
 	BeforeEach(func() {
-		if Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
+		//if Config.GetIncludeKpack() {
+		//	Skip(skip_messages.SkipKpackMessage)
+		//}
 	})
 
 	Describe("hitting /v3/packages/:guid/upload with invalid parameters", func() {
