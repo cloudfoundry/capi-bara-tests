@@ -73,7 +73,7 @@ var _ = Describe("Stack", func() {
 		It("starts the app successfully and the droplet contains the rebased image reference", func() {
 			Eventually(func() string {
 				return GetDroplet(dropletGUID).Image
-			}, "15s", "1s").ShouldNot(Equal(dropletImage))
+			}, "20s", "1s").ShouldNot(Equal(dropletImage))
 
 			By("Restarting the app")
 			Expect(cf.Cf("restart", appName).Wait(Config.CfPushTimeoutDuration())).To(gexec.Exit(0))
