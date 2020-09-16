@@ -30,7 +30,7 @@ func makeApp(token string, spaceGUID string) app {
 
 	uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), newApp.packageGUID)
 
-	UploadPackage(uploadURL, assets.NewAssets().DoraZip, token)
+	UploadPackage(uploadURL, assets.NewAssets().DoraZip)
 	WaitForPackageToBeReady(newApp.packageGUID)
 
 	buildGUID := StagePackage(newApp.packageGUID, "kpack", Config.GetRubyBuildpackName())

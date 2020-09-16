@@ -28,7 +28,7 @@ func CreateAndAssociateNewDroplet(appGUID, assetPath string, buildpacks ...strin
 	uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
 
 	By("Uploading a Package")
-	UploadPackage(uploadURL, assetPath, GetAuthToken())
+	UploadPackage(uploadURL, assetPath)
 	WaitForPackageToBeReady(packageGUID)
 
 	By("Creating a Build")

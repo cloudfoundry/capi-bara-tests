@@ -19,7 +19,6 @@ var _ = Describe("Kpack lifecycle decomposed", func() {
 	var (
 		appName     string
 		appGUID     string
-		token       string
 		dropletGUID string
 		droplet     Droplet
 	)
@@ -49,15 +48,14 @@ var _ = Describe("Kpack lifecycle decomposed", func() {
 	})
 
 	Context("When creating a build with the kpack lifecycle", func() {
-		It("stages and starts the app successfully", func() {
+		FIt("stages and starts the app successfully", func() {
 			By("Creating an App and package")
 
 			packageGUID := CreatePackage(appGUID)
 
 			uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
-			token = GetAuthToken()
 			By("Uploading a Package")
-			UploadPackage(uploadURL, assets.NewAssets().CatnipZip, token)
+			UploadPackage(uploadURL, assets.NewAssets().CatnipZip)
 
 			WaitForPackageToBeReady(packageGUID)
 
@@ -95,9 +93,8 @@ var _ = Describe("Kpack lifecycle decomposed", func() {
 			packageGUID := CreatePackage(appGUID)
 
 			uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
-			token = GetAuthToken()
 			By("Uploading a Package")
-			UploadPackage(uploadURL, assets.NewAssets().CatnipZip, token)
+			UploadPackage(uploadURL, assets.NewAssets().CatnipZip)
 
 			WaitForPackageToBeReady(packageGUID)
 

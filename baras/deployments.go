@@ -125,17 +125,15 @@ var _ = Describe("deployments", func() {
 		})
 	})
 
-	FDescribe("Deploy a bad droplet on the same app", func() {
+	Describe("Deploy a bad droplet on the same app", func() {
 		It("does not update the last_successful_healthcheck field", func() {
 			By("Creating a New Package")
-			session := cf.Cf("create-package", appName, "-p", assets.NewAssets().BadDoraZip)
-			Eventually(session).Should(gbytes.Say("guid"))
-			r, err := regexp.Compile(`\'([^)]+)\'`)
-			Expect(err).NotTo(HaveOccurred())
+			newPackageGUID = CreatePackage(appGUID)
+			uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), newPackageGUID)
 
-			newPackageGUID = r.FindString(string(session.Out.Contents()))
-			Expect(packageGUID).NotTo(BeEmpty())
-			newPackageGUID = strings.Trim(packageGUID, "'")
+			By("Upload Bad Dora the Package")
+			UploadPackage(uploadURL, assets.NewAssets().BadDoraZip)
+			WaitForPackageToBeReady(newPackageGUID)
 
 			By("Creating a Build")
 			newBuildGUID := StagePackage(newPackageGUID, "kpack", Config.GetRubyBuildpackName())
@@ -165,7 +163,7 @@ var _ = Describe("deployments", func() {
 				Status deploymentStatus `json:"status"`
 			}{}
 
-			session = cf.Cf("curl", "-f", deploymentPath).Wait()
+			session := cf.Cf("curl", "-f", deploymentPath).Wait()
 			Expect(session.Wait()).To(Exit(0))
 			json.Unmarshal(session.Out.Contents(), &deploymentJson)
 

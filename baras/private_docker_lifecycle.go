@@ -2,6 +2,7 @@ package baras
 
 import (
 	"encoding/json"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	"os/exec"
 	"strings"
 	"time"
@@ -38,9 +39,9 @@ var _ = Describe("Private Docker Registry Application Lifecycle", func() {
 	}
 
 	BeforeEach(func() {
-		//if !Config.GetIncludePrivateDockerRegistry() {
-		//	Skip(skip_messages.SkipPrivateDockerRegistryMessage)
-		//}
+		if !Config.GetIncludePrivateDockerRegistry() {
+			Skip(skip_messages.SkipPrivateDockerRegistryMessage)
+		}
 	})
 
 	JustBeforeEach(func() {
