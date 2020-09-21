@@ -38,8 +38,8 @@ var _ = Describe("mixed v2 and v3 rolling deploys", func() {
 		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 
 		By("cf push --strategy rolling my-app the running app gets new code")
-		rollingPushStaticApp(appName)
-		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
+		rollingPushBinaryApp(appName)
+		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a binary"))
 
 		By("cf push my-app the running app gets new code again")
 		pushRubyApp(appName)
@@ -50,12 +50,12 @@ var _ = Describe("mixed v2 and v3 rolling deploys", func() {
 		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 
 		By("cf push --strategy rolling my-app the running app gets new code a third time")
-		rollingPushStaticApp(appName)
-		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
+		rollingPushBinaryApp(appName)
+		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a binary"))
 
 		By("cf restart my-app the running app does not change")
 		restartApp(appName)
-		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
+		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a binary"))
 	})
 
 })
@@ -66,11 +66,12 @@ func restartApp(appName string) {
 	).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 }
 
-func rollingPushStaticApp(appName string) {
+func rollingPushBinaryApp(appName string) {
 	Expect(cf.Cf("push",
 		appName,
-		"-b", "staticfile_buildpack",
-		"-p", assets.NewAssets().Staticfile,
+		"-b", Config.GetBinaryBuildpackName(),
+		"-p", assets.NewAssets().Binary,
+		"-m", "128MB",
 		"--strategy", "rolling",
 	).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 }
@@ -78,7 +79,7 @@ func rollingPushStaticApp(appName string) {
 func pushRubyApp(appName string) {
 	Expect(cf.Cf("push",
 		appName,
-		"-b", "ruby_buildpack",
+		"-b", Config.GetRubyBuildpackName(),
 		"-m", "128MB",
 		"-i", "2",
 		"-p", assets.NewAssets().Dora,

@@ -155,7 +155,7 @@ applications:
 - name: "%s"
   instances: 2
   memory: 300M
-  buildpack: ruby_buildpack
+  buildpack: ` + Config.GetRubyBuildpackName() + `
   disk_quota: 1024M
   stack: cflinuxfs3
   routes:
@@ -177,7 +177,7 @@ applications:
 - name: %s
   stack: cflinuxfs3
   buildpacks:
-  - ruby_buildpack
+  - %s
   env:
     foo: qux
     snack: walnuts
@@ -203,7 +203,7 @@ applications:
     instances: 0
     memory: 256M
     type: worker
-`, apps[0].name, apps[0].route)
+`, apps[0].name, Config.GetRubyBuildpackName(), apps[0].route)
 			})
 
 			It("successfully completes the job", func() {
@@ -581,9 +581,9 @@ applications:
 applications:
 - name: "%s" 
   buildpacks:
-  - staticfile_buildpack
-  - ruby_buildpack
-`, apps[0].name)
+  - %s
+  - %s
+`, apps[0].name, Config.GetBinaryBuildpackName(), Config.GetRubyBuildpackName())
 				})
 
 				It("successfully adds the buildpacks", func() {
@@ -601,7 +601,7 @@ applications:
 						session = cf.Cf("curl", fmt.Sprintf("v3/apps/%s", apps[0].guid)).Wait()
 						err := json.Unmarshal(session.Out.Contents(), &app)
 						Expect(err).ToNot(HaveOccurred())
-						Eventually(app.Lifecycle.Data.Buildpacks).Should(Equal([]string{"staticfile_buildpack", "ruby_buildpack"}))
+						Eventually(app.Lifecycle.Data.Buildpacks).Should(Equal([]string{Config.GetBinaryBuildpackName(), Config.GetRubyBuildpackName()}))
 						Eventually(session).Should(Exit(0))
 					})
 				})
@@ -636,7 +636,7 @@ applications:
 							err := json.Unmarshal(session.Out.Contents(), &currentDrop)
 							Expect(err).ToNot(HaveOccurred())
 							Expect(currentDrop.Buildpacks).To(HaveLen(1))
-							Expect(currentDrop.Buildpacks[0]["name"]).To(Equal("ruby_buildpack"))
+							Expect(currentDrop.Buildpacks[0]["name"]).To(Equal(Config.GetRubyBuildpackName()))
 							Expect(currentDrop.Buildpacks[0]["detect_output"]).To(Equal("ruby"))
 						})
 					})
@@ -717,7 +717,7 @@ applications:
 ---
 applications:
 - buildpacks:
-  - ruby_buildpack
+  - %s
   name: %s
   stack: cflinuxfs3
   processes:
@@ -735,7 +735,7 @@ applications:
     health-check-type: http
     health-check-http-endpoint: '/'
   
-`, appName)
+`, Config.GetRubyBuildpackName(), appName)
 
 		session = cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
 		Expect(session.Wait()).To(Exit(0))

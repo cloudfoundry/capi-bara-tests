@@ -48,7 +48,7 @@ var _ = Describe("Kpack lifecycle decomposed", func() {
 	})
 
 	Context("When creating a build with the kpack lifecycle", func() {
-		FIt("stages and starts the app successfully", func() {
+		It("stages and starts the app successfully", func() {
 			By("Creating an App and package")
 
 			packageGUID := CreatePackage(appGUID)
