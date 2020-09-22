@@ -3,6 +3,7 @@ package baras
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	"strings"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
@@ -131,11 +132,11 @@ applications:
 
 				By("setting the routes for both apps", func() {
 					Eventually(func() *Session {
-						return helpers.Curl(Config, apps[0].route).Wait()
+						return helpers.Curl(Config, Config.Protocol() + apps[0].route).Wait()
 					}).Should(Say("Hi, I'm Dora!"))
 
 					Eventually(func() *Session {
-						return helpers.Curl(Config, apps[1].route).Wait()
+						return helpers.Curl(Config, Config.Protocol() + apps[1].route).Wait()
 					}).Should(Say("Hi, I'm Dora!"))
 				})
 			})
@@ -144,6 +145,12 @@ applications:
 
 	Describe("Applying a manifest to a single existing app", func() {
 		BeforeEach(func() {
+			// this requires v3 stacks
+			// https://www.pivotaltracker.com/story/show/174589493
+			if Config.GetIncludeKpack() {
+				Skip(skip_messages.SkipKpackMessage)
+			}
+
 			applyEndpoint = fmt.Sprintf("/v3/apps/%s/actions/apply_manifest", apps[0].guid)
 			getManifestEndpoint = fmt.Sprintf("/v3/apps/%s/manifest", apps[0].guid)
 		})
@@ -155,7 +162,7 @@ applications:
 - name: "%s"
   instances: 2
   memory: 300M
-  buildpack: ` + Config.GetRubyBuildpackName() + `
+  buildpack: %s
   disk_quota: 1024M
   stack: cflinuxfs3
   routes:
@@ -171,7 +178,7 @@ applications:
     annotations:
       contact: "jack@example.com diane@example.org"
       cougar: mellencamp
-`, apps[0].name, apps[0].route)
+`, apps[0].name, Config.GetRubyBuildpackName(), apps[0].route)
 				expectedManifest = fmt.Sprintf(`
 applications:
 - name: %s
@@ -209,9 +216,9 @@ applications:
 			It("successfully completes the job", func() {
 				session := cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
 				Expect(session.Wait()).To(Exit(0))
-				response := session.Out.Contents()
-				Expect(string(response)).To(ContainSubstring("202 Accepted"))
+				Expect(session).To(Say("202 Accepted"))
 
+				response := session.Out.Contents()
 				PollJob(GetJobPath(response))
 
 				session = cf.Cf("restage", apps[0].name).Wait(Config.CfPushTimeoutDuration())
