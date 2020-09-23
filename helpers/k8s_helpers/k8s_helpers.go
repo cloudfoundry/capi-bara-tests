@@ -1,13 +1,14 @@
 package k8s_helpers
 
 import (
-	"os/exec"
 	"encoding/json"
+	"os/exec"
 
 	route_crds "code.cloudfoundry.org/cf-k8s-networking/routecontroller/api/v1alpha1"
 )
 
 func Kubectl(args ...string) ([]byte, error) {
+	// TODO: use `gexec`?
 	cmd := exec.Command("kubectl", args...)
 
 	output, err := cmd.CombinedOutput()
