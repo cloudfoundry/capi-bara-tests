@@ -145,18 +145,18 @@ applications:
 
 	Describe("Applying a manifest to a single existing app", func() {
 		BeforeEach(func() {
-			// this requires v3 stacks
-			// https://www.pivotaltracker.com/story/show/174589493
-			if Config.GetIncludeKpack() {
-				Skip(skip_messages.SkipKpackMessage)
-			}
-
 			applyEndpoint = fmt.Sprintf("/v3/apps/%s/actions/apply_manifest", apps[0].guid)
 			getManifestEndpoint = fmt.Sprintf("/v3/apps/%s/manifest", apps[0].guid)
 		})
 
 		Context("when routes are specified", func() {
 			BeforeEach(func() {
+				// this requires v3 stacks
+				// https://www.pivotaltracker.com/story/show/174589493
+				if Config.GetIncludeKpack() {
+					Skip(skip_messages.SkipKpackMessage)
+				}
+
 				manifestToApply = fmt.Sprintf(`
 applications:
 - name: "%s"
@@ -318,6 +318,11 @@ applications:
 
 		Describe("sidecars", func() {
 			BeforeEach(func() {
+				// sidecars don't work on cf-for-k8s, and aren't expected to work
+				if Config.GetIncludeKpack() {
+					Skip(skip_messages.SkipKpackMessage)
+				}
+
 				manifestToApply = fmt.Sprintf(`
 applications:
 - name: "%s"
@@ -376,28 +381,30 @@ applications:
 						Eventually(session).Should(Exit(0))
 
 						Eventually(func() *Session {
-							return helpers.Curl(Config, fmt.Sprintf("%s.%s", appRoutePrefix, Config.GetAppsDomain()), "-f").Wait()
+							return helpers.Curl(Config, fmt.Sprintf("%s%s.%s", Config.Protocol(), appRoutePrefix, Config.GetAppsDomain()), "-f").Wait()
 						}).Should(Exit(0))
 
 						Eventually(func() *Session {
-							return helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix1, Config.GetAppsDomain()), "-f").Wait()
-						}).Should(Exit(0))
+							return helpers.Curl(Config, fmt.Sprintf("%s%s.%s/env/WHAT_AM_I", Config.Protocol(), sidecarRoutePrefix1, Config.GetAppsDomain()), "-f").Wait()
+						}).Should(Say("lupus"))
 
 						Eventually(func() *Session {
-							return helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix2, Config.GetAppsDomain()), "-f").Wait()
+							return helpers.Curl(Config, fmt.Sprintf("%s%s.%s/env/WHAT_AM_I", Config.Protocol(), sidecarRoutePrefix2, Config.GetAppsDomain()), "-f").Wait()
 						}).Should(Exit(0))
 
-						session = helpers.Curl(Config, fmt.Sprintf("%s.%s", appRoutePrefix, Config.GetAppsDomain()))
+						session = helpers.Curl(Config, fmt.Sprintf("%s%s.%s", Config.Protocol(), appRoutePrefix, Config.GetAppsDomain()))
 						Eventually(session).Should(Say("Hi, I'm Dora!"))
 
-						session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", appRoutePrefix, Config.GetAppsDomain()))
+						session = helpers.Curl(Config, fmt.Sprintf("%s%s.%s/env/WHAT_AM_I", Config.Protocol(), appRoutePrefix, Config.GetAppsDomain()))
 						Eventually(session).ShouldNot(Say("MOTORCYCLE"))
+						session = cf.Cf("app", apps[0].name)
+						Eventually(session).Should(Exit(0))
 
-						session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix1, Config.GetAppsDomain()))
-						Eventually(session).Should(Say("LEFT_SIDECAR"))
-
-						session = helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix2, Config.GetAppsDomain()))
+						session = helpers.Curl(Config, fmt.Sprintf("%s%s.%s/env/WHAT_AM_I", Config.Protocol(), sidecarRoutePrefix2, Config.GetAppsDomain()))
 						Eventually(session).Should(Say("RIGHT_SIDECAR"))
+
+						session = helpers.Curl(Config, fmt.Sprintf("%s%s.%s/env/WHAT_AM_I", Config.Protocol(), sidecarRoutePrefix1, Config.GetAppsDomain()))
+						Eventually(session).Should(Say("LEFT_SIDECAR"))
 					})
 
 				})
