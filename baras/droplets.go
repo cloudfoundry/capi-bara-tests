@@ -42,6 +42,27 @@ var _ = Describe("Droplets", func() {
 	})
 
 	Context("When manually performing the droplet workflow", func() {
+		It("Downloading the droplet is successful", func() {
+			appName2 := random_name.BARARandomName("APP2")
+			Expect(cf.Cf("push",
+				appName,
+				"-b", "staticfile_buildpack",
+				"-p", assets.NewAssets().Staticfile,
+			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+
+			Expect(cf.Cf("download-droplet",
+				appName,
+				"--path", "/tmp/app.tgz",
+			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+
+			Expect(cf.Cf("push",
+				appName2,
+				"--droplet", "/tmp/app.tgz",
+			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+
+			Eventually(helpers.CurlAppRoot(Config, appName2)).Should(Equal("Hello from a staticfile"))
+		})
+
 		It("The app successfully runs with a user uploaded droplet", func() {
 			droplet := app_helpers.AppDroplet{
 				AppGUID: appGUID,
