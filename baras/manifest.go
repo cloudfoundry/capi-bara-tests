@@ -225,7 +225,8 @@ applications:
 					Eventually(session).Should(Say("Showing health"))
 					Eventually(session).Should(Say("routes:\\s+(?:%s.%s,\\s+)?%s", apps[0].name, Config.GetAppsDomain(), apps[0].route))
 					Eventually(session).Should(Say("stack:\\s+cflinuxfs3"))
-					Eventually(session).Should(Say("buildpacks:\\s+ruby"))
+					Eventually(session).Should(Say("buildpacks:"))
+					Eventually(session).Should(Say(Config.GetRubyBuildpackName()))
 					Eventually(session).Should(Say("instances:\\s+.*?\\d+/2"))
 					Eventually(session).Should(Exit(0))
 
