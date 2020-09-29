@@ -12,18 +12,6 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-func CreateDockerPackage(appGUID, imagePath string) string {
-	packageCreateURL := fmt.Sprintf("/v3/packages")
-	session := cf.Cf("curl", "-f", packageCreateURL, "-X", "POST", "-d", fmt.Sprintf(`{"relationships":{"app":{"data":{"guid":"%s"}}},"type":"docker", "data": {"image": "%s"}}`, appGUID, imagePath))
-	bytes := session.Wait().Out.Contents()
-	var pac struct {
-		GUID string `json:"guid"`
-	}
-	err := json.Unmarshal(bytes, &pac)
-	Expect(err).NotTo(HaveOccurred())
-	return pac.GUID
-}
-
 func CreatePackage(appGUID string) string {
 	packageCreateURL := fmt.Sprintf("/v3/packages")
 	session := cf.Cf("curl", "-f", packageCreateURL, "-X", "POST", "-d", fmt.Sprintf(`{"relationships":{"app":{"data":{"guid":"%s"}}},"type":"bits"}`, appGUID))
@@ -38,8 +26,7 @@ func CreatePackage(appGUID string) string {
 
 func UploadPackage(uploadURL, packageZipPath string) {
 	bits := fmt.Sprintf(`bits=@%s`, packageZipPath)
-	curl := helpers.Curl(Config, "--http1.1", "-v", "-s", "-f", "--show-error", uploadURL, "-F", bits, "-H", fmt.Sprintf("Authorization: %s", GetAuthToken())).
-		Wait(Config.CfPushTimeoutDuration())
+	curl := helpers.Curl(Config, "--http1.1", "-v", "-s", "-f", "--show-error", uploadURL, "-F", bits, "-H", fmt.Sprintf("Authorization: %s", GetAuthToken())).		Wait(Config.CfPushTimeoutDuration())
 	Expect(curl).To(Exit(0))
 }
 

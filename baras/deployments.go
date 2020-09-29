@@ -3,18 +3,17 @@ package baras
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	"time"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
-
-	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
+	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 )
 
 var _ = Describe("deployments", func() {
@@ -50,7 +49,7 @@ var _ = Describe("deployments", func() {
 		WaitForPackageToBeReady(packageGUID)
 
 		By("Creating a Build")
-		buildGUID := StageBuildpackPackage(packageGUID, Config.GetRubyBuildpackName())
+		buildGUID := StagePackage(packageGUID, Config.Lifecycle(), Config.GetRubyBuildpackName())
 		WaitForBuildToStage(buildGUID)
 		dropletGuid = GetDropletFromBuild(buildGUID)
 
@@ -131,7 +130,7 @@ var _ = Describe("deployments", func() {
 			WaitForPackageToBeReady(newPackageGUID)
 
 			By("Creating a Build")
-			newBuildGUID := StageBuildpackPackage(newPackageGUID, Config.GetRubyBuildpackName())
+			newBuildGUID := StagePackage(newPackageGUID, Config.Lifecycle(), Config.GetRubyBuildpackName())
 			WaitForBuildToStage(newBuildGUID)
 
 			By("Get the New Droplet GUID")
@@ -141,7 +140,7 @@ var _ = Describe("deployments", func() {
 			AssignDropletToApp(appGUID, newDropletGuid)
 
 			By("Create a new Deployment")
-			deploymentGuid := CreateDeployment(appGUID)
+			deploymentGuid := CreateDeploymentForDroplet(appGUID, newDropletGuid)
 			Expect(deploymentGuid).ToNot(BeEmpty())
 
 			time.Sleep(60 * time.Second)

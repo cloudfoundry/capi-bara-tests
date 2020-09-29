@@ -3,8 +3,6 @@ package baras
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
@@ -16,6 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
+	"strings"
 )
 
 var _ = Describe("revisions", func() {
@@ -54,7 +53,9 @@ var _ = Describe("revisions", func() {
 		ScaleApp(appGUID, instances)
 
 		StartApp(appGUID)
-		Expect(string(cf.Cf("apps").Wait().Out.Contents())).To(MatchRegexp(fmt.Sprintf("(v4-)?(%s)*(-web)?(\\s)+(started)", "web")))
+		Expect(
+			string(cf.Cf("apps").Wait().Out.Contents()),
+			).To(MatchRegexp(fmt.Sprintf("(v4-)?(%s)*(-web)?(\\s)+(started)", "web")))
 
 		waitForAllInstancesToStart(appGUID, instances)
 
@@ -530,7 +531,7 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 			Expect(cf.Cf("restart", appName).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 
 			Eventually(func() *Session {
-				session := helpers.Curl(Config, fmt.Sprintf("%s.%s/env/ENV", appName, Config.GetAppsDomain()))
+				session := helpers.Curl(Config, fmt.Sprintf("%s%s.%s/env/ENV", Config.Protocol(), appName, Config.GetAppsDomain()))
 				Eventually(session).Should(Exit(0))
 				return session
 			}, Config.DefaultTimeoutDuration()).Should(Say("bar"))

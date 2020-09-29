@@ -2,6 +2,7 @@ package baras
 
 import (
 	"encoding/json"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	"os/exec"
 	"strings"
 	"time"
@@ -11,7 +12,6 @@ import (
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/app_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

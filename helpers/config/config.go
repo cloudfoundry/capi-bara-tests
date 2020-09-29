@@ -40,6 +40,7 @@ type BaraConfig interface {
 	GetReporterConfig() reporterConfig
 
 	GetIncludeKpack() bool
+	Lifecycle() string
 	GetGcloudProjectName() string
 	GetClusterZone() string
 	GetClusterName() string

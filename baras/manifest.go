@@ -34,7 +34,7 @@ func makeApp(spaceGUID string) app {
 	UploadPackage(uploadURL, assets.NewAssets().DoraZip)
 	WaitForPackageToBeReady(newApp.packageGUID)
 
-	buildGUID := StageBuildpackPackage(newApp.packageGUID, Config.GetRubyBuildpackName())
+	buildGUID := StagePackage(newApp.packageGUID, Config.Lifecycle(), Config.GetRubyBuildpackName())
 	WaitForBuildToStage(buildGUID)
 	newApp.dropletGUID = GetDropletFromBuild(buildGUID)
 	AssignDropletToApp(newApp.guid, newApp.dropletGUID)

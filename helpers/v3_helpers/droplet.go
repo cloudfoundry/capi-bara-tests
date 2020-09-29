@@ -32,7 +32,7 @@ func CreateAndAssociateNewDroplet(appGUID, assetPath string, buildpacks ...strin
 	WaitForPackageToBeReady(packageGUID)
 
 	By("Creating a Build")
-	buildGUID := StageBuildpackPackage(packageGUID, buildpacks...)
+	buildGUID := StagePackage(packageGUID, Config.Lifecycle(), buildpacks...)
 	WaitForBuildToStage(buildGUID)
 	dropletGUID := GetDropletFromBuild(buildGUID)
 

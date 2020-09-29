@@ -3,6 +3,7 @@ package baras
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
@@ -10,7 +11,6 @@ import (
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -34,6 +34,7 @@ var _ = Describe("sidecars", func() {
 	BeforeEach(func() {
 		if Config.GetIncludeKpack() {
 			Skip(skip_messages.SkipKpackMessage)
+			//sidecars feature does not work on cf-for-k8s
 		}
 
 		appName = random_name.BARARandomName("APP")
@@ -53,6 +54,11 @@ var _ = Describe("sidecars", func() {
 
 	Context("when the app has a sidecar associated with its web process", func() {
 		BeforeEach(func() {
+			if Config.GetIncludeKpack() {
+				Skip(skip_messages.SkipKpackMessage)
+				//sidecars feature does not work on cf-for-k8s
+			}
+
 			CreateSidecar("my_sidecar1", []string{"web"}, fmt.Sprintf("WHAT_AM_I=LEFT_SIDECAR bundle exec rackup config.ru -p %d", 8081), 50, appGUID)
 			CreateSidecar("my_sidecar2", []string{"web"}, fmt.Sprintf("WHAT_AM_I=RIGHT_SIDECAR bundle exec rackup config.ru -p %d", 8082), 100, appGUID)
 

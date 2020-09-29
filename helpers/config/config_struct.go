@@ -428,6 +428,14 @@ func (c *config) GetIncludeKpack() bool {
 	return *c.IncludeKpack
 }
 
+func (c *config) Lifecycle() string {
+	if c.GetIncludeKpack() {
+		return "kpack"
+	} else {
+		return "buildpack"
+	}
+}
+
 func (c *config) GetGcloudProjectName() string {
 	return *c.GcloudProjectName
 }
