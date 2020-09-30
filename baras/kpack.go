@@ -3,7 +3,6 @@ package baras
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
@@ -17,6 +16,7 @@ import (
 )
 
 var _ = Describe("Kpack lifecycle decomposed", func() {
+	SkipOnVMs("no kpack on vms")
 	var (
 		appName     string
 		appGUID     string
@@ -25,10 +25,6 @@ var _ = Describe("Kpack lifecycle decomposed", func() {
 	)
 
 	BeforeEach(func() {
-		if !Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
-
 		appName = random_name.BARARandomName("APP")
 		spaceName := TestSetup.RegularUserContext().Space
 		spaceGUID := GetSpaceGuidFromName(spaceName)

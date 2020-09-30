@@ -48,7 +48,7 @@ type config struct {
 	PrivateDockerRegistryUsername *string `json:"private_docker_registry_username"`
 	PrivateDockerRegistryPassword *string `json:"private_docker_registry_password"`
 
-	IncludeKpack *bool `json:"include_kpack"`
+	Infrastructure *string `json:"infrastructure"`
 
 	GcloudProjectName *string `json:"gcloud_project_name""`
 	ClusterZone       *string `json:"cluster_zone"`
@@ -111,7 +111,7 @@ func getDefaults() config {
 	defaults.PrivateDockerRegistryUsername = ptrToString("")
 	defaults.PrivateDockerRegistryPassword = ptrToString("")
 
-	defaults.IncludeKpack = ptrToBool(false)
+	defaults.Infrastructure = ptrToString("vms")
 
 	defaults.GcloudProjectName = ptrToString("")
 	defaults.ClusterZone = ptrToString("")
@@ -424,12 +424,8 @@ func (c *config) GetIncludePrivateDockerRegistry() bool {
 	return *c.IncludePrivateDockerRegistry
 }
 
-func (c *config) GetIncludeKpack() bool {
-	return *c.IncludeKpack
-}
-
 func (c *config) Lifecycle() string {
-	if c.GetIncludeKpack() {
+	if c.RunningOnK8s() {
 		return "kpack"
 	} else {
 		return "buildpack"
@@ -470,7 +466,11 @@ func (c *config) GetReporterConfig() reporterConfig {
 	return reporterConfig{}
 }
 
-// Unused?
+func (c *config) RunningOnK8s() bool {
+	return *c.Infrastructure == "kubernetes"
+}
+
+// Used only by TestConfig?
 func (c *config) GetConfigurableTestPassword() string { return "" }
 func (c *config) GetExistingOrganization() string     { return "" }
 func (c *config) GetExistingSpace() string            { return "" }

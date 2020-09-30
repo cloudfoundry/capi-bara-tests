@@ -10,7 +10,6 @@ import (
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/k8s_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,6 +17,7 @@ import (
 )
 
 var _ = Describe("Stack", func() {
+	SkipOnVMs("on VMs, this is orchestrated with BOSH magic")
 	const (
 		defaultStack = "clusterstacks/cflinuxfs3-stack"
 	)
@@ -38,10 +38,6 @@ var _ = Describe("Stack", func() {
 		Spec Spec `json:"spec"`
 	}
 	BeforeEach(func() {
-		if !Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
-
 		appName = random_name.BARARandomName("APP")
 		session := cf.Cf("target",
 			"-o", TestSetup.RegularUserContext().Org,

@@ -7,7 +7,6 @@ import (
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/app_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,15 +14,11 @@ import (
 )
 
 var _ = Describe("deploying a v3 app over a v2 app", func() {
+	SkipOnK8s("ignoring v2 on k8s")
+
 	var (
 		appName string
 	)
-
-	BeforeEach(func() {
-		if Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
-	})
 
 	AfterEach(func() {
 		appGuid := GetAppGuid(appName)

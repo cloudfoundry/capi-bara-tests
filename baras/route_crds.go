@@ -13,7 +13,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/app_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/k8s_helpers"
@@ -22,15 +21,12 @@ import (
 )
 
 var _ = Describe("RouteCRDs", func() {
+	SkipOnVMs("no route CRDs on VMs")
 	var (
 		appName string
 	)
 
 	BeforeEach(func() {
-		if !Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
-
 		appName = random_name.BARARandomName("APP")
 		session := cf.Cf("target",
 			"-o", TestSetup.RegularUserContext().Org,
@@ -202,7 +198,6 @@ spec:
 				var route v1alpha1.Route
 				err = json.Unmarshal(output, &route)
 				Expect(err).ToNot(HaveOccurred())
-
 
 				Expect(route.Spec.Host).To(Equal("hello-baras"))
 				Expect(route.Spec.Path).To(Equal("/foo"))

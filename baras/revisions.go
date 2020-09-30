@@ -3,21 +3,22 @@ package baras
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
-	"strings"
 )
 
 var _ = Describe("revisions", func() {
+	SkipOnK8s("should work on k8s, but tests dont yet")
 	var (
 		appName              string
 		appGUID              string
@@ -31,10 +32,6 @@ var _ = Describe("revisions", func() {
 	)
 
 	BeforeEach(func() {
-		if Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
-
 		appName = random_name.BARARandomName("APP")
 		spaceName = TestSetup.RegularUserContext().Space
 		spaceGUID = GetSpaceGuidFromName(spaceName)
@@ -55,7 +52,7 @@ var _ = Describe("revisions", func() {
 		StartApp(appGUID)
 		Expect(
 			string(cf.Cf("apps").Wait().Out.Contents()),
-			).To(MatchRegexp(fmt.Sprintf("(v4-)?(%s)*(-web)?(\\s)+(started)", "web")))
+		).To(MatchRegexp(fmt.Sprintf("(v4-)?(%s)*(-web)?(\\s)+(started)", "web")))
 
 		waitForAllInstancesToStart(appGUID, instances)
 
@@ -453,16 +450,13 @@ var _ = Describe("revisions", func() {
 })
 
 var _ = Describe("mix v2 apps and v3 revisions", func() {
+	SkipOnK8s("should work on k8s, but tests dont yet")
 	var (
 		appName string
 		appGUID string
 	)
 
 	BeforeEach(func() {
-		if Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
-
 		appName = random_name.BARARandomName("APP")
 		session := cf.Cf("push", appName, "-b", Config.GetRubyBuildpackName(), "-p", assets.NewAssets().Dora)
 		Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
