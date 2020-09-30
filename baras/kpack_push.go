@@ -6,7 +6,6 @@ import (
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -14,15 +13,12 @@ import (
 )
 
 var _ = Describe("kpack push", func() {
+	SkipOnVMs("no kpack on VMs")
 	var (
 		appName string
 	)
 
 	BeforeEach(func() {
-		if !Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
-
 		session := cf.Cf("target",
 			"-o", TestSetup.RegularUserContext().Org,
 			"-s", TestSetup.RegularUserContext().Space)

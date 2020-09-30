@@ -2,10 +2,11 @@ package baras
 
 import (
 	"encoding/json"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/commandreporter"

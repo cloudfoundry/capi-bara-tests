@@ -10,7 +10,6 @@ import (
 	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/services"
@@ -56,6 +55,7 @@ type app struct {
 }
 
 var _ = Describe("apply_manifest", func() {
+	SkipOnK8s("manifests should work on k8s, but tests dont yet")
 	var (
 		apps             []app
 		broker           ServiceBroker
@@ -71,15 +71,10 @@ var _ = Describe("apply_manifest", func() {
 	)
 
 	BeforeEach(func() {
-		if Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
-
 		spaceName = TestSetup.RegularUserContext().Space
 		spaceGUID = GetSpaceGuidFromName(spaceName)
 		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
 		apps = []app{makeApp(spaceGUID)}
-
 	})
 
 	AfterEach(func() {

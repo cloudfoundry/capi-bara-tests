@@ -7,7 +7,6 @@ import (
 	"github.com/cloudfoundry/capi-bara-tests/helpers/app_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
@@ -16,16 +15,13 @@ import (
 )
 
 var _ = Describe("Droplets", func() {
+	SkipOnK8s("test uses staticfile_buildpack")
 	var (
 		appGUID string
 		appName string
 	)
 
 	BeforeEach(func() {
-		if Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
-
 		appName = random_name.BARARandomName("APP")
 		spaceName := TestSetup.RegularUserContext().Space
 		spaceGUID := GetSpaceGuidFromName(spaceName)

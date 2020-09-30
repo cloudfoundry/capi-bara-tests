@@ -2,7 +2,6 @@ package baras
 
 import (
 	"fmt"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	"strings"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
@@ -19,6 +18,7 @@ import (
 )
 
 var _ = Describe("Quotas", func() {
+	SkipOnK8s("uses staticfile_buildpack")
 	var (
 		spaceName  string
 		spaceGUID  string
@@ -30,10 +30,6 @@ var _ = Describe("Quotas", func() {
 	)
 
 	BeforeEach(func() {
-		if Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
-
 		workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
 			orgGUID = GetOrgGUIDFromName(TestSetup.RegularUserContext().Org)
 			orgQuotaName := random_name.BARARandomName("ORG-QUOTA")

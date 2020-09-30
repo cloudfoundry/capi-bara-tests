@@ -3,7 +3,6 @@ package baras
 import (
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -11,11 +10,7 @@ import (
 )
 
 var _ = Describe("cloud native buildpacks", func() {
-	BeforeEach(func() {
-		if !Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
-	})
+	SkipOnVMs("no cnbs on VMs")
 
 	It("displays buildpack information", func() {
 		session := cf.Cf("buildpacks")

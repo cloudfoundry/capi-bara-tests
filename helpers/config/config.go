@@ -39,12 +39,13 @@ type BaraConfig interface {
 
 	GetReporterConfig() reporterConfig
 
-	GetIncludeKpack() bool
 	Lifecycle() string
 	GetGcloudProjectName() string
 	GetClusterZone() string
 	GetClusterName() string
-	// Unused?
+	RunningOnK8s() bool
+
+	// Used only by TestConfig?
 	GetConfigurableTestPassword() string
 	GetExistingOrganization() string
 	GetExistingSpace() string

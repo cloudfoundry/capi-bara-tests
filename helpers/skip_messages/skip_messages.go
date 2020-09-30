@@ -45,4 +45,5 @@ const SkipCapiExperimentalMessage = `Skipping this test because Config.IncludeCa
 const SkipCapiNoBridgeMessage = `Skipping this test because Config.IncludeCapiNoBridge is set to 'false'.`
 const SkipSSHOnWindows2012R2Message = `cf ssh does not work on windows2012R2`
 const SkipWindowsTasksMessage = `Skipping Windows tasks tests (requires diego-release v1.20.0 and above)`
-const SkipKpackMessage = `Skipping kpack tests (requires kpack)`
+const SkipK8sMessage = `Skipping this test because config.Infrastructure is set to 'kubernetes': %s`
+const SkipVMsMessage = `Skipping this test because config.Infrastructure is set to 'vms': %s`

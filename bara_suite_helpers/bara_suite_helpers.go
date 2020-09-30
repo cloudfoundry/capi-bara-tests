@@ -1,6 +1,7 @@
 package bara_suite_helpers
 
 import (
+	"fmt"
 	"io/ioutil"
 	"time"
 
@@ -8,6 +9,8 @@ import (
 	"github.com/mholt/archiver"
 
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/config"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
@@ -35,4 +38,20 @@ func ZipAsset(assetPath, zipPath string) {
 
 	err = archiver.Zip.Make(zipPath, fileNames)
 	Expect(err).NotTo(HaveOccurred())
+}
+
+func SkipOnK8s(reason string) {
+	BeforeEach(func() {
+		if Config.RunningOnK8s() {
+			Skip(fmt.Sprintf(skip_messages.SkipK8sMessage, reason))
+		}
+	})
+}
+
+func SkipOnVMs(reason string) {
+	BeforeEach(func() {
+		if Config.RunningOnK8s() {
+			Skip(fmt.Sprintf(skip_messages.SkipVMsMessage, reason))
+		}
+	})
 }

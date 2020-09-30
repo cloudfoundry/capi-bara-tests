@@ -2,11 +2,10 @@ package baras
 
 import (
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
+	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
-	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 )
 
 var _ = Describe("nginx config logic", func() {
@@ -18,11 +17,7 @@ var _ = Describe("nginx config logic", func() {
 	})
 
 	Describe("/v2 endpoints", func() {
-		BeforeEach(func() {
-			if Config.GetIncludeKpack() {
-				Skip(skip_messages.SkipKpackMessage)
-			}
-		})
+		SkipOnK8s("ignoring v2 on k8s")
 
 		Describe("hitting /v2/apps/:guid/bits with invalid parameters", func() {
 			It("returns 422 Unprocessable Entity", func() {

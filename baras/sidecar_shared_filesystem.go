@@ -2,7 +2,6 @@ package baras
 
 import (
 	"fmt"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	"path/filepath"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
@@ -18,6 +17,7 @@ import (
 )
 
 var _ = Describe("sidecars", func() {
+	SkipOnK8s("no sidecars on k8s yet")
 	var (
 		appName    string
 		appGUID    string
@@ -27,10 +27,6 @@ var _ = Describe("sidecars", func() {
 	)
 
 	BeforeEach(func() {
-		if Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
-
 		appName = random_name.BARARandomName("APP")
 		spaceName = TestSetup.RegularUserContext().Space
 		spaceGUID = GetSpaceGuidFromName(spaceName)

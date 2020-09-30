@@ -2,7 +2,6 @@ package baras
 
 import (
 	"fmt"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
@@ -15,6 +14,7 @@ import (
 )
 
 var _ = Describe("setting_process_commands", func() {
+	SkipOnK8s("422 in CreateAndAssociateNewDroplet")
 	var (
 		appName             string
 		appGUID             string
@@ -27,10 +27,6 @@ var _ = Describe("setting_process_commands", func() {
 	)
 
 	BeforeEach(func() {
-		if Config.GetIncludeKpack() {
-			Skip(skip_messages.SkipKpackMessage)
-		}
-
 		appName = random_name.BARARandomName("APP")
 		spaceName = TestSetup.RegularUserContext().Space
 		spaceGUID = GetSpaceGuidFromName(spaceName)
