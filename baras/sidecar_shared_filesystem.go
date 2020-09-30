@@ -2,6 +2,7 @@ package baras
 
 import (
 	"fmt"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/skip_messages"
 	"path/filepath"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
@@ -26,9 +27,9 @@ var _ = Describe("sidecars", func() {
 	)
 
 	BeforeEach(func() {
-		//if Config.GetIncludeKpack() {
-		//	Skip(skip_messages.SkipKpackMessage)
-		//}
+		if Config.GetIncludeKpack() {
+			Skip(skip_messages.SkipKpackMessage)
+		}
 
 		appName = random_name.BARARandomName("APP")
 		spaceName = TestSetup.RegularUserContext().Space

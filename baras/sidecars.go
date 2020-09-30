@@ -54,11 +54,6 @@ var _ = Describe("sidecars", func() {
 
 	Context("when the app has a sidecar associated with its web process", func() {
 		BeforeEach(func() {
-			if Config.GetIncludeKpack() {
-				Skip(skip_messages.SkipKpackMessage)
-				//sidecars feature does not work on cf-for-k8s
-			}
-
 			CreateSidecar("my_sidecar1", []string{"web"}, fmt.Sprintf("WHAT_AM_I=LEFT_SIDECAR bundle exec rackup config.ru -p %d", 8081), 50, appGUID)
 			CreateSidecar("my_sidecar2", []string{"web"}, fmt.Sprintf("WHAT_AM_I=RIGHT_SIDECAR bundle exec rackup config.ru -p %d", 8082), 100, appGUID)
 
