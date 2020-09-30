@@ -81,7 +81,7 @@ func TestBARA(t *testing.T) {
 		ZipAsset(assetPaths.SleepySidecarBuildpack, assetPaths.SleepySidecarBuildpackZip)
 
 		if Config.GetGcloudProjectName() != "" {
-			gcloudCommand := exec.Command("gcloud",  "container", "clusters", "get-credentials", Config.GetClusterName(), "--project", Config.GetGcloudProjectName(), "--zone", Config.GetClusterZone())
+			gcloudCommand := exec.Command("gcloud", "container", "clusters", "get-credentials", Config.GetClusterName(), "--project", Config.GetGcloudProjectName(), "--zone", Config.GetClusterZone())
 			session, err = gexec.Start(gcloudCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
@@ -129,7 +129,6 @@ func TestBARA(t *testing.T) {
 			"run_id":  os.Getenv("RUN_ID"),
 			"env_api": Config.GetApiEndpoint(),
 		}
-
 
 		honeyCombReporter := honeycomb.New(honeyCombClient)
 		honeyCombReporter.SetGlobalTags(globalTags)
