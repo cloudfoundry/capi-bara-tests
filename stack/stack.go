@@ -52,7 +52,7 @@ var _ = Describe("Stack", func() {
 		dropletImage = GetDroplet(dropletGUID).Image
 
 		By("Updating the stack")
-		bytes, err := Kubectl("get", "stack/cflinuxfs3-stack", "-o", "json")
+		bytes, err := Kubectl("get", "clusterstacks", "-o", "json")
 		Expect(err).ToNot(HaveOccurred())
 		var originalStack Stack
 		json.Unmarshal(bytes, &originalStack)
