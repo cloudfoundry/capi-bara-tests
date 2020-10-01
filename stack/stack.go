@@ -1,6 +1,9 @@
 package stack
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
@@ -12,19 +15,20 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-	"encoding/json"
-	"fmt"
 )
 
 var _ = Describe("Stack", func() {
-	var (
-		appName             string
-		appGUID             string
-		dropletGUID         string
-		dropletImage        string
-		originalStackImage       string
+	const (
+		defaultStack = "clusterstacks/cflinuxfs3-stack"
 	)
-	type RunImage struct{
+	var (
+		appName            string
+		appGUID            string
+		dropletGUID        string
+		dropletImage       string
+		originalStackImage string
+	)
+	type RunImage struct {
 		Image string `json:"image"`
 	}
 	type Spec struct {
@@ -45,35 +49,36 @@ var _ = Describe("Stack", func() {
 		Eventually(session).Should(gexec.Exit(0))
 
 		By("Pushing an app")
-		session = cf.Cf("push", appName, "-p", "../" + assets.NewAssets().Catnip)
+		session = cf.Cf("push", appName, "-p", "../"+assets.NewAssets().Catnip)
 		Expect(session.Wait("3m")).To(gexec.Exit(0))
 		appGUID = GetAppGUID(appName)
 		dropletGUID = GetDropletFromApp(appGUID)
 		dropletImage = GetDroplet(dropletGUID).Image
 
 		By("Updating the stack")
-		bytes, err := Kubectl("get", "clusterstacks", "-o", "json")
-		Expect(err).ToNot(HaveOccurred())
+		bytes, err := Kubectl("get", defaultStack, "-o", "json")
+		Expect(err).ToNot(HaveOccurred(), string(bytes))
 		var originalStack Stack
-		json.Unmarshal(bytes, &originalStack)
+		err = json.Unmarshal(bytes, &originalStack)
+		Expect(err).NotTo(HaveOccurred(), string(bytes))
 		originalStackImage = originalStack.Spec.RunImage.Image
-		output, err := Kubectl("patch", "stack/cflinuxfs3-stack", "--type=merge", "-p", `{"spec":{"runImage":{"image":"gcr.io/paketo-buildpacks/run:0.0.50-full-cnb-cf"}}}`)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(output).To(ContainSubstring("stack.experimental.kpack.pivotal.io/cflinuxfs3-stack patched"))
+		output, err := Kubectl("patch", defaultStack, "--type=merge", "-p", `{"spec":{"runImage":{"image":"gcr.io/paketo-buildpacks/run:0.0.50-full-cnb-cf"}}}`)
+		Expect(err).NotTo(HaveOccurred(), string(output))
+		Expect(output).To(ContainSubstring("clusterstack.kpack.io/cflinuxfs3-stack patched"))
 	})
 
 	AfterEach(func() {
 		DeleteApp(appGUID)
-		output, err := Kubectl("patch", "stack/cflinuxfs3-stack", "--type=merge", "-p", fmt.Sprintf(`{"spec":{"runImage":{"image":"%s"}}}`, originalStackImage))
-		Expect(err).ToNot(HaveOccurred())
-		Expect(output).To(ContainSubstring("stack.experimental.kpack.pivotal.io/cflinuxfs3-stack patched"))
+		output, err := Kubectl("patch", defaultStack, "--type=merge", "-p", fmt.Sprintf(`{"spec":{"runImage":{"image":"%s"}}}`, originalStackImage))
+		Expect(err).NotTo(HaveOccurred(), string(output))
+		Expect(output).To(ContainSubstring("clusterstack.kpack.io/cflinuxfs3-stack patched"))
 	})
 
 	Context("When restarting an app with an updated stack", func() {
 		It("starts the app successfully and the droplet contains the rebased image reference", func() {
 			Eventually(func() string {
 				return GetDroplet(dropletGUID).Image
-			}, "20s", "1s").ShouldNot(Equal(dropletImage))
+			}, "45s", "1s").ShouldNot(Equal(dropletImage))
 
 			By("Restarting the app")
 			Expect(cf.Cf("restart", appName).Wait(Config.CfPushTimeoutDuration())).To(gexec.Exit(0))
