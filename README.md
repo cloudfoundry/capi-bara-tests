@@ -1,16 +1,14 @@
 # CAPI BARAS - Banausic Acceptance & Regression Avoidance Suite
-This suite exercises a [Cloud Foundry](https://github.com/cloudfoundry/cf-deployment)
-deployment using the `cf` CLI and `curl`.
-It is scoped to testing user-facing,
-end-to-end features, 
-focusing on failure paths and edge-cases in the Cloud Controller
+BARAs are a test suite to supplement [CATS](https://github.com/cloudfoundry/cf-acceptance-tests). While CATS focuses on a happy-path tests for major CF features, BARAS are broader.
 
-Any tests with a Cloud Controller focus
-that are being removed from the cf-acceptance-tests repo are
-good candidates for being moved here.
-
-For more info on how to write BARA tests, please see the 
-[CATS README](https://github.com/cloudfoundry/cf-acceptance-tests).
+BARAS is home to tests that couldn't go anywhere else:
+- End-to-end feature interaction tests
+    - e.g. can I configure sidecars in server-side manifests?
+- Bleeding edge CF API features
+    - e.g. I want to test my new API resource, but there's not stable CLI commands yet.
+- Integration-level regression tests
+    - e.g. this bug is impossible to reproduce in unit tests!
+- Integration tests that concern themselves with some specific CF implementations (kubectl, nginx)
 
 ## Test Setup
 ### Prerequisites for running BARAS
