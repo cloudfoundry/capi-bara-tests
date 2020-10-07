@@ -55,7 +55,6 @@ type app struct {
 }
 
 var _ = Describe("apply_manifest", func() {
-	SkipOnK8s("manifests should work on k8s, but tests dont yet")
 	var (
 		apps             []app
 		broker           ServiceBroker
@@ -127,11 +126,11 @@ applications:
 
 				By("setting the routes for both apps", func() {
 					Eventually(func() *Session {
-						return helpers.Curl(Config, apps[0].route).Wait()
+						return helpers.Curl(Config, Config.Protocol()+apps[0].route).Wait()
 					}).Should(Say("Hi, I'm Dora!"))
 
 					Eventually(func() *Session {
-						return helpers.Curl(Config, apps[1].route).Wait()
+						return helpers.Curl(Config, Config.Protocol()+apps[1].route).Wait()
 					}).Should(Say("Hi, I'm Dora!"))
 				})
 			})
@@ -151,9 +150,8 @@ applications:
 - name: "%s"
   instances: 2
   memory: 300M
-  buildpack: ruby_buildpack
+  buildpack: %s
   disk_quota: 1024M
-  stack: cflinuxfs3
   routes:
   - route: %s
   env: { foo: qux, snack: walnuts }
@@ -167,13 +165,12 @@ applications:
     annotations:
       contact: "jack@example.com diane@example.org"
       cougar: mellencamp
-`, apps[0].name, apps[0].route)
+`, apps[0].name, Config.GetRubyBuildpackName(), apps[0].route)
 				expectedManifest = fmt.Sprintf(`
 applications:
 - name: %s
-  stack: cflinuxfs3
   buildpacks:
-  - ruby_buildpack
+  - %s
   env:
     foo: qux
     snack: walnuts
@@ -199,7 +196,7 @@ applications:
     instances: 0
     memory: 256M
     type: worker
-`, apps[0].name, apps[0].route)
+`, apps[0].name, Config.GetRubyBuildpackName(), apps[0].route)
 			})
 
 			It("successfully completes the job", func() {
@@ -219,9 +216,6 @@ applications:
 					session = cf.Cf("app", apps[0].name).Wait()
 					Eventually(session).Should(Say("Showing health"))
 					Eventually(session).Should(Say("routes:\\s+(?:%s.%s,\\s+)?%s", apps[0].name, Config.GetAppsDomain(), apps[0].route))
-					Eventually(session).Should(Say("stack:\\s+cflinuxfs3"))
-					Eventually(session).Should(Say("buildpacks:"))
-					Eventually(session).Should(Say(Config.GetRubyBuildpackName()))
 					Eventually(session).Should(Say("instances:\\s+.*?\\d+/2"))
 					Eventually(session).Should(Exit(0))
 
@@ -307,6 +301,7 @@ applications:
 		})
 
 		Describe("sidecars", func() {
+			SkipOnK8s("no sidecars available on k8s (yet)")
 			BeforeEach(func() {
 				manifestToApply = fmt.Sprintf(`
 applications:
@@ -576,11 +571,11 @@ applications:
 				BeforeEach(func() {
 					manifestToApply = fmt.Sprintf(`
 applications:
-- name: "%s" 
+- name: "%s"
   buildpacks:
-  - staticfile_buildpack
-  - ruby_buildpack
-`, apps[0].name)
+  - %s
+  - %s
+`, apps[0].name, Config.GetGoBuildpackName(), Config.GetRubyBuildpackName())
 				})
 
 				It("successfully adds the buildpacks", func() {
@@ -598,12 +593,13 @@ applications:
 						session = cf.Cf("curl", fmt.Sprintf("v3/apps/%s", apps[0].guid)).Wait()
 						err := json.Unmarshal(session.Out.Contents(), &app)
 						Expect(err).ToNot(HaveOccurred())
-						Eventually(app.Lifecycle.Data.Buildpacks).Should(Equal([]string{"staticfile_buildpack", "ruby_buildpack"}))
+						Eventually(app.Lifecycle.Data.Buildpacks).Should(Equal([]string{Config.GetGoBuildpackName(), Config.GetRubyBuildpackName()}))
 						Eventually(session).Should(Exit(0))
 					})
 				})
 
 				Context("when buildpack autodetection is specified", func() {
+					SkipOnK8s("kpack buildpack autodetection doesn't currently populate docker dropets with lifecycle info")
 					var currentDrop struct {
 						Buildpacks []map[string]string `json:"buildpacks"`
 					}
@@ -633,8 +629,8 @@ applications:
 							err := json.Unmarshal(session.Out.Contents(), &currentDrop)
 							Expect(err).ToNot(HaveOccurred())
 							Expect(currentDrop.Buildpacks).To(HaveLen(1))
-							Expect(currentDrop.Buildpacks[0]["name"]).To(Equal("ruby_buildpack"))
-							Expect(currentDrop.Buildpacks[0]["detect_output"]).To(Equal("ruby"))
+							Expect(currentDrop.Buildpacks[0]["name"]).To(Equal(Config.GetRubyBuildpackName()))
+							Expect(currentDrop.Buildpacks[0]["detect_output"]).To(ContainSubstring("ruby"))
 						})
 					})
 				})
@@ -642,6 +638,7 @@ applications:
 		})
 
 		Describe("services", func() {
+			SkipOnK8s("requires real TLS for broker.Create()")
 			BeforeEach(func() {
 				apps = append(apps, makeApp(spaceGUID))
 
@@ -698,25 +695,25 @@ applications:
 				})
 			})
 		})
-	})
 
-	It("pushes an app with multiple process types defined in the manifest", func() {
-		appName := random_name.BARARandomName("APP")
-		session := cf.Cf("create-app", appName)
-		Expect(session.Wait()).To(Exit(0))
+		Context("with multiple processes and custom commands in the manifest", func() {
+			SkipOnK8s("custom start commands dont get correct environment")
+			It("starts all the processes", func() {
+				appName := random_name.BARARandomName("APP")
+				session := cf.Cf("create-app", appName)
+				Expect(session.Wait()).To(Exit(0))
 
-		session = cf.Cf("app", appName, "--guid")
-		Expect(session.Wait()).To(Exit(0))
-		appGUID := strings.TrimSpace(string(session.Out.Contents()))
+				session = cf.Cf("app", appName, "--guid")
+				Expect(session.Wait()).To(Exit(0))
+				appGUID := strings.TrimSpace(string(session.Out.Contents()))
 
-		applyEndpoint := fmt.Sprintf("/v3/apps/%s/actions/apply_manifest", appGUID)
-		manifestToApply := fmt.Sprintf(`
+				applyEndpoint := fmt.Sprintf("/v3/apps/%s/actions/apply_manifest", appGUID)
+				manifestToApply := fmt.Sprintf(`
 ---
 applications:
-- buildpacks:
-  - ruby_buildpack
-  name: %s
-  stack: cflinuxfs3
+- name: %s
+  buildpacks:
+  - %s
   processes:
   - type: web
     instances: 1
@@ -731,26 +728,27 @@ applications:
     disk_quota: 1024M
     health-check-type: http
     health-check-http-endpoint: '/'
-  
-`, appName)
+`, appName, Config.GetRubyBuildpackName())
 
-		session = cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
-		Expect(session.Wait()).To(Exit(0))
-		response := session.Out.Contents()
-		Expect(string(response)).To(ContainSubstring("202 Accepted"))
+				session = cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
+				Expect(session.Wait()).To(Exit(0))
+				response := session.Out.Contents()
+				Expect(string(response)).To(ContainSubstring("202 Accepted"))
 
-		PollJob(GetJobPath(response))
+				PollJob(GetJobPath(response))
 
-		session = cf.Cf("push", appName, "-p", assets.NewAssets().Dora)
-		Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+				session = cf.Cf("push", appName, "-p", assets.NewAssets().Dora)
+				Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 
-		waitForAllInstancesToStart(appGUID, 1)
+				waitForAllInstancesToStart(appGUID, 1)
 
-		session = cf.Cf("app", appName).Wait()
-		Eventually(session).Should(Say(`type:\s+logs`))
-		Eventually(session).Should(Say(`sidecars:`))
-		Eventually(session).Should(Say(`instances:\s+1/1`))
+				session = cf.Cf("app", appName).Wait()
+				Eventually(session).Should(Say(`type:\s+logs`))
+				Eventually(session).Should(Say(`sidecars:`))
+				Eventually(session).Should(Say(`instances:\s+1/1`))
 
-		DeleteApp(appGUID)
+				DeleteApp(appGUID)
+			})
+		})
 	})
 })
