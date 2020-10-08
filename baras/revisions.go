@@ -18,7 +18,6 @@ import (
 )
 
 var _ = Describe("revisions", func() {
-	SkipOnK8s("should work on k8s, but tests dont yet")
 	var (
 		appName              string
 		appGUID              string
@@ -109,6 +108,7 @@ var _ = Describe("revisions", func() {
 		})
 
 		Context("when the start command has changed on the app's processes", func() {
+			SkipOnK8s("custom start commands dont get correct environment")
 			var (
 				newCommand string
 			)
@@ -140,7 +140,7 @@ var _ = Describe("revisions", func() {
 			var newDropletGUID string
 
 			BeforeEach(func() {
-				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
+				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().CatnipZip, Config.GetGoBuildpackName())
 			})
 
 			It("creates a new revision", func() {
@@ -155,7 +155,7 @@ var _ = Describe("revisions", func() {
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
 				waitForAllInstancesToStart(appGUID, instances)
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 			})
 		})
 
@@ -211,6 +211,7 @@ var _ = Describe("revisions", func() {
 		})
 
 		Context("when the start command has changed on the app's processes", func() {
+			SkipOnK8s("custom start commands dont get correct environment")
 			var (
 				newCommand string
 			)
@@ -240,7 +241,7 @@ var _ = Describe("revisions", func() {
 			var newDropletGUID string
 
 			BeforeEach(func() {
-				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
+				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().CatnipZip, Config.GetGoBuildpackName())
 			})
 
 			It("creates a new revision", func() {
@@ -253,7 +254,7 @@ var _ = Describe("revisions", func() {
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
 				waitForAllInstancesToStart(appGUID, instances)
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 			})
 		})
 	})
@@ -261,7 +262,7 @@ var _ = Describe("revisions", func() {
 	Describe("starting a started app", func() {
 		Context("when there is a new droplet", func() {
 			BeforeEach(func() {
-				CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
+				CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().CatnipZip, Config.GetGoBuildpackName())
 			})
 
 			It("does not create a new revision", func() {
@@ -277,6 +278,7 @@ var _ = Describe("revisions", func() {
 		})
 
 		Context("when there is a new command on a process", func() {
+			SkipOnK8s("custom start commands dont get correct environment")
 			var (
 				newCommand string
 			)
@@ -333,6 +335,7 @@ var _ = Describe("revisions", func() {
 		})
 
 		Context("when the start command has changed on the app's processes", func() {
+			SkipOnK8s("custom start commands dont get correct environment")
 			var (
 				newCommand string
 			)
@@ -362,7 +365,7 @@ var _ = Describe("revisions", func() {
 			var newDropletGUID string
 
 			BeforeEach(func() {
-				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
+				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().CatnipZip, Config.GetGoBuildpackName())
 			})
 
 			It("creates a new revision", func() {
@@ -374,22 +377,23 @@ var _ = Describe("revisions", func() {
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 			})
 		})
 
 		Context("rolling back to detected dora command", func() {
+			SkipOnK8s("custom start commands dont get correct environment")
 			var (
 				newCommand string
 			)
 
 			BeforeEach(func() {
-				CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
+				CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().CatnipZip, Config.GetGoBuildpackName())
 				UpdateEnvironmentVariables(appGUID, `{"foo":"deffo-not-bar"}`)
 				newCommand = "TEST_VAR=real /home/vcap/app/boot.sh"
 				SetCommandOnProcess(appGUID, "web", newCommand)
 				zdtRestartAndWait(appGUID)
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 			})
 
 			It("creates a new revision with the droplet, environment variables, and detected start command from the specified revision", func() {
@@ -414,6 +418,7 @@ var _ = Describe("revisions", func() {
 		})
 
 		Context("rolling back to specified dora command", func() {
+			SkipOnK8s("custom start commands dont get correct environment")
 			var (
 				newCommand string
 			)
@@ -450,7 +455,6 @@ var _ = Describe("revisions", func() {
 })
 
 var _ = Describe("mix v2 apps and v3 revisions", func() {
-	SkipOnK8s("should work on k8s, but tests dont yet")
 	var (
 		appName string
 		appGUID string
@@ -475,11 +479,11 @@ var _ = Describe("mix v2 apps and v3 revisions", func() {
 		It("runs the latest droplet and adds a revision", func() {
 			session := cf.Cf("push",
 				appName,
-				"-b", "staticfile_buildpack",
-				"-p", assets.NewAssets().Staticfile)
+				"-b", Config.GetGoBuildpackName(),
+				"-p", assets.NewAssets().Catnip)
 
 			Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
-			Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
+			Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 			session = cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/revisions", appGUID))
 			Expect(session.Wait()).To(Exit(0))
 			revstr := session.Out.Contents()
