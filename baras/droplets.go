@@ -14,8 +14,8 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("Droplets", func() {
-	SkipOnK8s("test uses staticfile_buildpack")
+var _ = Describe("Droplet upload and download", func() {
+	SkipOnK8s("droplet upload and download is not supported on k8s")
 	var (
 		appGUID string
 		appName string
@@ -42,8 +42,8 @@ var _ = Describe("Droplets", func() {
 			appName2 := random_name.BARARandomName("APP2")
 			Expect(cf.Cf("push",
 				appName,
-				"-b", "staticfile_buildpack",
-				"-p", assets.NewAssets().Staticfile,
+				"-b", Config.GetGoBuildpackName(),
+				"-p", assets.NewAssets().CatnipZip,
 			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 
 			Expect(cf.Cf("download-droplet",
@@ -56,7 +56,7 @@ var _ = Describe("Droplets", func() {
 				"--droplet", "/tmp/app.tgz",
 			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 
-			Eventually(helpers.CurlAppRoot(Config, appName2)).Should(Equal("Hello from a staticfile"))
+			Eventually(helpers.CurlAppRoot(Config, appName2)).Should(Equal("Catnip?"))
 		})
 
 		It("The app successfully runs with a user uploaded droplet", func() {

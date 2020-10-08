@@ -18,7 +18,6 @@ import (
 )
 
 var _ = Describe("Quotas", func() {
-	SkipOnK8s("uses staticfile_buildpack")
 	var (
 		spaceName  string
 		spaceGUID  string
@@ -48,15 +47,15 @@ var _ = Describe("Quotas", func() {
 			appName = random_name.BARARandomName("APP")
 			Expect(cf.Cf("push",
 				appName,
-				"-b", "staticfile_buildpack",
-				"-p", assets.NewAssets().Staticfile,
+				"-b", Config.GetGoBuildpackName(),
+				"-p", assets.NewAssets().CatnipZip,
 			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 
 			session = cf.Cf("app", appName, "--guid")
 			Expect(session.Wait()).To(Exit(0))
 			appGUID = strings.TrimSpace(string(session.Out.Contents()))
 
-			Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
+			Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 		})
 	})
 
