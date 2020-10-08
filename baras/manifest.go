@@ -144,6 +144,7 @@ applications:
 		})
 
 		Context("when routes are specified", func() {
+			SkipOnK8s("Stacks on k8s aren't populated consistently yet, so get manifest endpoint has different behavior")
 			BeforeEach(func() {
 				manifestToApply = fmt.Sprintf(`
 applications:
@@ -183,6 +184,7 @@ applications:
     annotations:
       contact: "jack@example.com diane@example.org"
       cougar: mellencamp
+	stack: cflinuxfs3
   processes:
   - disk_quota: 1024M
     health-check-http-endpoint: /env
