@@ -14,7 +14,7 @@ import (
 )
 
 var _ = Describe("setting_process_commands", func() {
-	SkipOnK8s("422 in CreateAndAssociateNewDroplet")
+	SkipOnK8s("process command comes back wrong, this is a known bug")
 	var (
 		appName             string
 		appGUID             string
