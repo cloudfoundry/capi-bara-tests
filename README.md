@@ -32,8 +32,9 @@ BARAS is home to tests that couldn't go anywhere else:
 - Same as for [CATS](https://github.com/cloudfoundry/cf-acceptance-tests).
 
 ## Test Configuration
-- Same as for [CATS](https://github.com/cloudfoundry/cf-acceptance-tests).
+- Similar to [CATS](https://github.com/cloudfoundry/cf-acceptance-tests).
 
+Example config for CF for VMs:
 ```bash
 cat > integration_config.json <<EOF
 {
@@ -42,6 +43,32 @@ cat > integration_config.json <<EOF
   "admin_user": "admin",
   "admin_password": "admin",
   "skip_ssl_validation": true
+}
+EOF
+export CONFIG=$PWD/integration_config.json
+```
+
+Example config for CF for Kubernetes:
+```bash
+cat > integration_config.json <<EOF
+{
+  "api": "api.k8s.example.com",
+  "apps_domain": "apps.k8s.example.com",
+  "admin_user": "admin",
+  "admin_password": "admin",
+  "skip_ssl_validation": true,
+  "infrastructure": "kubernetes",
+  "gcloud_project_name": "gcp-project-name",
+  "cluster_zone": "gcp-zone-eg-us-west1-a",
+  "cluster_name": "gke-cluster-name",
+  "cf_push_timeout": 480,
+  "python_buildpack_name": "paketo-community/python",
+  "ruby_buildpack_name": "paketo-buildpacks/ruby",
+  "java_buildpack_name": "paketo-buildpacks/java",
+  "go_buildpack_name": "paketo-buildpacks/go",
+  "nodejs_buildpack_name": "paketo-buildpacks/nodejs",
+  "staticfile_buildpack_name": "paketo-community/staticfile",
+  "binary_buildpack_name": "paketo-buildpacks/procfile"
 }
 EOF
 export CONFIG=$PWD/integration_config.json
