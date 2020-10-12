@@ -278,3 +278,9 @@ var _ = Describe("sidecars", func() {
 
 	})
 })
+
+func restartApp(appName string) {
+	Expect(cf.Cf("restart",
+		appName,
+	).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+}
