@@ -1,10 +1,7 @@
 package baras
 
 import (
-	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
@@ -13,8 +10,6 @@ import (
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gbytes"
-	. "github.com/onsi/gomega/gexec"
 )
 
 var _ = Describe("revisions", func() {
@@ -450,105 +445,6 @@ var _ = Describe("revisions", func() {
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
 				Expect(helpers.CurlApp(Config, appName, "/env/foo")).To(Equal("bar"))
 			})
-		})
-	})
-})
-
-var _ = Describe("mix v2 apps and v3 revisions", func() {
-	var (
-		appName string
-		appGUID string
-	)
-
-	BeforeEach(func() {
-		appName = random_name.BARARandomName("APP")
-		session := cf.Cf("push", appName, "-b", Config.GetRubyBuildpackName(), "-p", assets.NewAssets().Dora)
-		Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
-		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
-		session = cf.Cf("app", appName, "--guid")
-		Expect(session.Wait()).To(Exit(0))
-		appGUID = strings.TrimSpace(string(session.Out.Contents()))
-	})
-
-	AfterEach(func() {
-		FetchRecentLogs(appGUID, Config)
-		DeleteApp(appGUID)
-	})
-
-	Describe("cf push", func() {
-		It("runs the latest droplet and adds a revision", func() {
-			session := cf.Cf("push",
-				appName,
-				"-b", Config.GetGoBuildpackName(),
-				"-p", assets.NewAssets().Catnip)
-
-			Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
-			Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
-			session = cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/revisions", appGUID))
-			Expect(session.Wait()).To(Exit(0))
-			revstr := session.Out.Contents()
-
-			type revisionsType struct {
-				Pagination struct {
-					TotalResults int `json:"total_results"`
-				} `json:"pagination"`
-			}
-
-			revs := revisionsType{}
-			err := json.Unmarshal(revstr, &revs)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(revs.Pagination.TotalResults).To(Equal(2))
-		})
-	})
-
-	Describe("cf restage", func() {
-		It("restages the app and adds a revision", func() {
-			Expect(cf.Cf("restage", appName).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
-
-			session := cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/revisions", appGUID))
-			Expect(session.Wait()).To(Exit(0))
-			revstr := session.Out.Contents()
-
-			type revisionsType struct {
-				Pagination struct {
-					TotalResults int `json:"total_results"`
-				} `json:"pagination"`
-			}
-
-			revs := revisionsType{}
-			err := json.Unmarshal(revstr, &revs)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(revs.Pagination.TotalResults).To(Equal(2))
-		})
-	})
-
-	Describe("cf restart after setting environment variables", func() {
-		It("restarts the app and adds a revision", func() {
-			Expect(cf.Cf("set-env", appName, "ENV", "bar").Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
-			Expect(cf.Cf("restart", appName).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
-
-			Eventually(func() *Session {
-				session := helpers.Curl(Config, fmt.Sprintf("%s%s.%s/env/ENV", Config.Protocol(), appName, Config.GetAppsDomain()))
-				Eventually(session).Should(Exit(0))
-				return session
-			}, Config.DefaultTimeoutDuration()).Should(Say("bar"))
-
-			session := cf.Cf("curl", fmt.Sprintf("/v3/apps/%s/revisions", appGUID))
-			Expect(session.Wait()).To(Exit(0))
-			revstr := session.Out.Contents()
-
-			type revisionsType struct {
-				Pagination struct {
-					TotalResults int `json:"total_results"`
-				} `json:"pagination"`
-			}
-
-			revs := revisionsType{}
-			err := json.Unmarshal(revstr, &revs)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(revs.Pagination.TotalResults).To(Equal(2))
 		})
 	})
 })
