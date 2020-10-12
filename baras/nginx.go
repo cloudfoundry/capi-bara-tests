@@ -16,9 +16,7 @@ var _ = Describe("nginx config logic", func() {
 		})
 	})
 
-	Describe("/v2 endpoints", func() {
-		SkipOnK8s("ignoring v2 on k8s")
-
+	Describe("/v2 upload endpoints", func() {
 		Describe("hitting /v2/apps/:guid/bits with invalid parameters", func() {
 			It("returns 422 Unprocessable Entity", func() {
 				session := cf.Cf("curl", "-X", "POST", "/v2/apps/literally-any-guid/bits?application_path='some/path'", "-i")
@@ -27,6 +25,8 @@ var _ = Describe("nginx config logic", func() {
 		})
 
 		Describe("hitting /v2/buildpacks/:guid/bits with invalid parameters", func() {
+			SkipOnK8s("buildpack upload is not supported on k8s")
+
 			It("returns 422 Unprocessable Entity", func() {
 				session := cf.Cf("curl", "-X", "POST", "/v2/buildpacks/literally-any-guid/bits?buildpack_path='some/path'", "-i")
 				Eventually(session).Should(Say("422 Unprocessable Entity"))
@@ -34,6 +34,8 @@ var _ = Describe("nginx config logic", func() {
 		})
 
 		Describe("hitting /v2/apps/:guid/droplet/upload with invalid parameters", func() {
+			SkipOnK8s("droplet upload is not supported on k8s")
+
 			It("returns 422 Unprocessable Entity", func() {
 				session := cf.Cf("curl", "-X", "POST", "/v2/apps/literally-any-guid/droplet/upload?droplet_path='some/path'", "-i")
 				Eventually(session).Should(Say("422 Unprocessable Entity"))
