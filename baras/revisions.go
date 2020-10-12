@@ -385,7 +385,7 @@ var _ = Describe("revisions", func() {
 			BeforeEach(func() {
 				CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().CatnipZip, Config.GetGoBuildpackName())
 				UpdateEnvironmentVariables(appGUID, `{"foo":"deffo-not-bar"}`)
-				newCommand = "TEST_VAR=real /home/vcap/app/boot.sh"
+				newCommand = "TEST_VAR=real ./bin/catnip"
 				SetCommandOnProcess(appGUID, "web", newCommand)
 				zdtRestartAndWait(appGUID)
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
