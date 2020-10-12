@@ -16,7 +16,6 @@ import (
 )
 
 var _ = Describe("deployments", func() {
-	SkipOnK8s("should work on k8s, but test does not")
 	var (
 		appName        string
 		appGUID        string
