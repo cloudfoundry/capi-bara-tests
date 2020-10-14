@@ -17,7 +17,9 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("Quotas", func() {
+// This file alters the quotas for the org that all bara tests use, which leads to failures in other tests.
+// We should either move this test into CCNG or find a way to run this test in isolation so it doesn't affect other tests
+var _ = XDescribe("Quotas", func() {
 	var (
 		spaceName  string
 		spaceGUID  string
