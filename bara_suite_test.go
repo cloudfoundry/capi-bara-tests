@@ -98,11 +98,13 @@ func TestBARA(t *testing.T) {
 		TestSetup.Setup()
 	})
 
-	SynchronizedAfterSuite(func() {
+	AfterEach(func() {
 		if TestSetup != nil {
 			TestSetup.Teardown()
 		}
-	}, func() {
+	})
+
+	SynchronizedAfterSuite(func() {}, func() {
 		os.Remove(assets.NewAssets().DoraZip)
 		os.Remove(assets.NewAssets().BadDoraZip)
 		os.Remove(assets.NewAssets().StaticfileZip)
