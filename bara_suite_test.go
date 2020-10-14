@@ -2,6 +2,7 @@ package bara_test
 
 import (
 	"fmt"
+	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
 	"os"
 	"os/exec"
 	"testing"
@@ -17,7 +18,6 @@ import (
 	_ "github.com/cloudfoundry/capi-bara-tests/baras"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
-	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/cli_version_check"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/config"
 	. "github.com/onsi/ginkgo"
@@ -88,7 +88,9 @@ func TestBARA(t *testing.T) {
 		}
 
 		return []byte{}
-	}, func([]byte) {
+	}, func([]byte) { })
+
+	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(Config.DefaultTimeoutDuration())
 		SetDefaultEventuallyPollingInterval(1 * time.Second)
 
