@@ -19,7 +19,7 @@ import (
 var _ = Describe("Stack", func() {
 	SkipOnVMs("on VMs, this is orchestrated with BOSH magic")
 	const (
-		defaultStack = "clusterstacks/cflinuxfs3-stack"
+		defaultStack = "clusterstacks/bionic-stack"
 	)
 	var (
 		appName            string
@@ -37,6 +37,7 @@ var _ = Describe("Stack", func() {
 	type Stack struct {
 		Spec Spec `json:"spec"`
 	}
+
 	BeforeEach(func() {
 		appName = random_name.BARARandomName("APP")
 		session := cf.Cf("target",
@@ -58,16 +59,16 @@ var _ = Describe("Stack", func() {
 		err = json.Unmarshal(bytes, &originalStack)
 		Expect(err).NotTo(HaveOccurred(), string(bytes))
 		originalStackImage = originalStack.Spec.RunImage.Image
-		output, err := Kubectl("patch", defaultStack, "--type=merge", "-p", `{"spec":{"runImage":{"image":"gcr.io/paketo-buildpacks/run:0.0.50-full-cnb-cf"}}}`)
+		output, err := Kubectl("patch", defaultStack, "--type=merge", "-p", `{"spec":{"runImage":{"image":"index.docker.io/paketobuildpacks/run:0.0.74-full-cnb"}}}`)
 		Expect(err).NotTo(HaveOccurred(), string(output))
-		Expect(output).To(ContainSubstring("clusterstack.kpack.io/cflinuxfs3-stack patched"))
+		Expect(output).To(ContainSubstring("clusterstack.kpack.io/bionic-stack patched"))
 	})
 
 	AfterEach(func() {
 		DeleteApp(appGUID)
 		output, err := Kubectl("patch", defaultStack, "--type=merge", "-p", fmt.Sprintf(`{"spec":{"runImage":{"image":"%s"}}}`, originalStackImage))
 		Expect(err).NotTo(HaveOccurred(), string(output))
-		Expect(output).To(ContainSubstring("clusterstack.kpack.io/cflinuxfs3-stack patched"))
+		Expect(output).To(ContainSubstring("clusterstack.kpack.io/bionic-stack patched"))
 	})
 
 	Context("When restarting an app with an updated stack", func() {
