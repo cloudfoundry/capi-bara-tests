@@ -34,71 +34,40 @@ var _ = Describe("RouteCRDs", func() {
 		Eventually(session).Should(gexec.Exit(0))
 	})
 
-	Describe("When mapping a route to an app", func() {
-		Context("using v2 endpoints", func() {
-			BeforeEach(func() {
-				session := cf.Cf("push", appName, "--no-route", "-p", assets.NewAssets().Catnip)
-				Expect(session.Wait("3m")).To(gexec.Exit(0))
+	FDescribe("When mapping a route to an app", func() {
+		var appGuid string
 
-				session = cf.Cf("map-route", appName, Config.GetAppsDomain(), "--hostname", "bar", "--path", "foo")
-				Expect(session.Wait("3m")).To(gexec.Exit(0))
-			})
+		BeforeEach(func() {
+			session := cf.Cf("push", appName, "--no-route", "-p", assets.NewAssets().Catnip)
+			Expect(session.Wait("3m")).To(gexec.Exit(0))
 
-			It("creates a Route custom resource in Kubernetes", func() {
-				appGuid := GetAppGuid(appName)
-				routeGuid := GetRouteGUIDFromAppGuid(appGuid)
-				By("Creating the route")
-				routeCR, err := KubectlGetRoute("cf-workloads", routeGuid)
-				Expect(err).ToNot(HaveOccurred())
+			appGuid = GetAppGuid(appName)
+			spaceName := TestSetup.RegularUserContext().Space
+			spaceGUID := GetSpaceGuidFromName(spaceName)
+			domainGUID := GetDomainGUIDFromName(Config.GetAppsDomain())
 
-				Expect(routeCR.ObjectMeta.Name).To(Equal(routeGuid))
-				Expect(routeCR.Spec.Destinations[0].App.Guid).To(Equal(appGuid))
-				Expect(routeCR.Spec.Url).To(Equal(fmt.Sprintf("bar.%s/foo", Config.GetAppsDomain())))
-
-				By("Deleting the route")
-				session := cf.Cf("delete-route", Config.GetAppsDomain(), "--hostname", "bar", "--path", "foo", "-f")
-				Expect(session.Wait("3m")).To(gexec.Exit(0))
-				output, err := Kubectl("get", "route", routeGuid, "-n", "cf-workloads", "-o", "json")
-				Expect(err).To(HaveOccurred(), "Route CR was not deleted")
-				Expect(output).To(ContainSubstring("Error from server (NotFound)"))
-			})
+			routeGUID := CreateRouteWithPath(spaceGUID, domainGUID, appName, "/foo")
+			destination := Destination{App: App{GUID: appGuid}}
+			InsertDestinations(routeGUID, []Destination{destination})
 		})
 
-		Context("using v3 endpoints", func() {
-			var appGuid string
+		It("creates a Route custom resource in Kubernetes", func() {
+			By("Creating the route")
+			routeGuid := GetRouteGUIDFromAppGuid(appGuid)
 
-			BeforeEach(func() {
-				session := cf.Cf("push", appName, "--no-route", "-p", assets.NewAssets().Catnip)
-				Expect(session.Wait("3m")).To(gexec.Exit(0))
+			routeCR, err := KubectlGetRoute("cf-workloads", routeGuid)
+			Expect(err).ToNot(HaveOccurred())
 
-				appGuid = GetAppGuid(appName)
-				spaceName := TestSetup.RegularUserContext().Space
-				spaceGUID := GetSpaceGuidFromName(spaceName)
-				domainGUID := GetDomainGUIDFromName(Config.GetAppsDomain())
+			Expect(routeCR.ObjectMeta.Name).To(Equal(routeGuid))
+			Expect(routeCR.Spec.Destinations[0].App.Guid).To(Equal(appGuid))
+			Expect(routeCR.Spec.Url).To(Equal(fmt.Sprintf("%s.%s/foo", appName, Config.GetAppsDomain())))
 
-				routeGUID := CreateRouteWithPath(spaceGUID, domainGUID, appName, "/foo")
-				destination := Destination{App: App{GUID: appGuid}}
-				InsertDestinations(routeGUID, []Destination{destination})
-			})
-
-			It("creates a Route custom resource in Kubernetes", func() {
-				By("Creating the route")
-				routeGuid := GetRouteGUIDFromAppGuid(appGuid)
-
-				routeCR, err := KubectlGetRoute("cf-workloads", routeGuid)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(routeCR.ObjectMeta.Name).To(Equal(routeGuid))
-				Expect(routeCR.Spec.Destinations[0].App.Guid).To(Equal(appGuid))
-				Expect(routeCR.Spec.Url).To(Equal(fmt.Sprintf("%s.%s/foo", appName, Config.GetAppsDomain())))
-
-				By("Deleting the route")
-				session := cf.Cf("delete-route", Config.GetAppsDomain(), "--hostname", appName, "--path", "foo", "-f")
-				Expect(session.Wait("3m")).To(gexec.Exit(0))
-				output, err := Kubectl("get", "route", routeGuid, "-n", "cf-workloads", "-o", "json")
-				Expect(err).To(HaveOccurred(), "Route CR was not deleted")
-				Expect(output).To(ContainSubstring("Error from server (NotFound)"))
-			})
+			By("Deleting the route")
+			session := cf.Cf("delete-route", Config.GetAppsDomain(), "--hostname", appName, "--path", "foo", "-f")
+			Expect(session.Wait("3m")).To(gexec.Exit(0))
+			output, err := Kubectl("get", "route", routeGuid, "-n", "cf-workloads", "-o", "json")
+			Expect(err).To(HaveOccurred(), "Route CR was not deleted")
+			Expect(output).To(ContainSubstring("Error from server (NotFound)"))
 		})
 	})
 
