@@ -34,7 +34,7 @@ var _ = Describe("RouteCRDs", func() {
 		Eventually(session).Should(gexec.Exit(0))
 	})
 
-	FDescribe("When mapping a route to an app", func() {
+	Describe("When mapping a route to an app", func() {
 		var appGuid string
 
 		BeforeEach(func() {
