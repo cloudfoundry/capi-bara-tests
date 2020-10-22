@@ -64,7 +64,7 @@ var _ = Describe("Kpack lifecycle decomposed", func() {
 
 			droplet = GetDroplet(dropletGUID)
 			Expect(droplet.State).To(Equal("STAGED"))
-			Expect(droplet.Lifecycle.Type).To(Equal("docker"))
+			Expect(droplet.Lifecycle.Type).To(Equal("kpack"))
 			Expect(droplet.Image).ToNot(BeEmpty())
 
 			AssignDropletToApp(appGUID, dropletGUID)
@@ -103,7 +103,7 @@ var _ = Describe("Kpack lifecycle decomposed", func() {
 
 			droplet = GetDroplet(dropletGUID)
 			Expect(droplet.State).To(Equal("STAGED"))
-			Expect(droplet.Lifecycle.Type).To(Equal("docker"))
+			Expect(droplet.Lifecycle.Type).To(Equal("kpack"))
 			Expect(droplet.Image).ToNot(BeEmpty())
 
 			AssignDropletToApp(appGUID, dropletGUID)
