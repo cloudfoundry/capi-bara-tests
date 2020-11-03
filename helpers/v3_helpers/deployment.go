@@ -63,19 +63,29 @@ func CancelDeployment(deploymentGUID string) {
 	Expect(session).To(Exit(0))
 }
 
-func WaitUntilDeploymentReachesState(deploymentGUID, status string) {
+func WaitUntilDeploymentReachesStatus(deploymentGUID, statusValue, statusReason string) {
 	deploymentPath := fmt.Sprintf("/v3/deployments/%s", deploymentGUID)
+
+	type deploymentStatus struct {
+		Value           string `json:"value"`
+		Reason          string `json:"reason"`
+	}
 	deploymentJSON := struct {
-		State string `json:"state"`
+		Status deploymentStatus `json:"status"`
 	}{}
 
-	Eventually(func() string {
+	desiredDeploymentStatus := deploymentStatus{
+		Value: statusValue,
+		Reason: statusReason,
+	}
+
+	Eventually(func() deploymentStatus {
 		session := cf.Cf("curl", "-f", deploymentPath).Wait()
 		Expect(session.Wait()).To(Exit(0))
 		err := json.Unmarshal(session.Out.Contents(), &deploymentJSON)
 		Expect(err).NotTo(HaveOccurred())
-		return deploymentJSON.State
-	}, Config.LongCurlTimeoutDuration()).Should(Equal(status))
+		return deploymentJSON.Status
+	}, Config.LongCurlTimeoutDuration()).Should(Equal(desiredDeploymentStatus))
 }
 
 func GetRunningInstancesStats(processGUID string) int {

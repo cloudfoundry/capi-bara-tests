@@ -148,7 +148,6 @@ var _ = Describe("deployments", func() {
 				HealthCheckTime string `json:"last_successful_healthcheck"`
 			}
 			deploymentJson := struct {
-				State  string           `json:"state"`
 				Status deploymentStatus `json:"status"`
 			}{}
 
@@ -156,7 +155,6 @@ var _ = Describe("deployments", func() {
 			Expect(session.Wait()).To(Exit(0))
 			json.Unmarshal(session.Out.Contents(), &deploymentJson)
 
-			Expect(deploymentJson.State).To(Equal("DEPLOYING"))
 			Expect(deploymentJson.Status.Value).To(Equal("ACTIVE"))
 			Expect(deploymentJson.Status.Reason).To(Equal("DEPLOYING"))
 			Expect(deploymentJson.Status.HealthCheckTime).To(Equal(""))
@@ -172,7 +170,7 @@ var _ = Describe("deployments", func() {
 		It("completes the deployment", func() {
 			deploymentGUID := CreateDeployment(appGUID)
 			Expect(deploymentGUID).ToNot(BeEmpty())
-			WaitUntilDeploymentReachesState(deploymentGUID, "DEPLOYED")
+			WaitUntilDeploymentReachesStatus(deploymentGUID, "FINALIZED", "DEPLOYED")
 		})
 	})
 })
