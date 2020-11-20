@@ -32,7 +32,7 @@ var _ = Describe("setting_process_commands", func() {
 		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
 		dropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().DoraZip, Config.GetRubyBuildpackName())
-		applyEndpoint = fmt.Sprintf("/v3/apps/%s/actions/apply_manifest", appGUID)
+		applyEndpoint = fmt.Sprintf("/v3/spaces/%s/actions/apply_manifest", spaceGUID)
 	})
 
 	AfterEach(func() {
@@ -41,7 +41,8 @@ var _ = Describe("setting_process_commands", func() {
 	})
 
 	Describe("manifest and Procfile/detected buildpack command interactions", func() {
-		manifestToApply = fmt.Sprintf(`
+		BeforeEach(func() {
+			manifestToApply = fmt.Sprintf(`
 applications:
 - name: "%s"
   processes:
@@ -49,13 +50,14 @@ applications:
     command: manifest-command.sh
 `, appName)
 
-		nullCommandManifest = fmt.Sprintf(`
+			nullCommandManifest = fmt.Sprintf(`
 applications:
 - name: "%s"
   processes:
   - type: web
     command: null
 `, appName)
+		})
 
 		It("prioritizes the manifest command over the Procfile and can be reset via the API", func() {
 			session := cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")

@@ -83,11 +83,11 @@ var _ = Describe("apply_manifest", func() {
 		}
 	})
 
-	Describe("Applying a manifest to a space (multiple apps)", func() {
+	Describe("Applying a manifest to multiple apps", func() {
 		BeforeEach(func() {
 			apps = append(apps, makeApp(spaceGUID))
-
 			applyEndpoint = fmt.Sprintf("/v3/spaces/%s/actions/apply_manifest", spaceGUID)
+
 			manifestToApply = fmt.Sprintf(`---
 applications:
   - name: "%s"
@@ -139,7 +139,7 @@ applications:
 
 	Describe("Applying a manifest to a single existing app", func() {
 		BeforeEach(func() {
-			applyEndpoint = fmt.Sprintf("/v3/apps/%s/actions/apply_manifest", apps[0].guid)
+			applyEndpoint = fmt.Sprintf("/v3/spaces/%s/actions/apply_manifest", spaceGUID)
 			getManifestEndpoint = fmt.Sprintf("/v3/apps/%s/manifest", apps[0].guid)
 		})
 
@@ -455,7 +455,7 @@ applications:
     timeout: 75
 `, apps[0].name)
 					})
-					It("fails the job and does not change the memory", func() {
+					XIt("fails the job and does not change the memory", func() {
 						session := cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
 						Expect(session.Wait()).To(Exit(0))
 						response := session.Out.Contents()
@@ -709,7 +709,7 @@ applications:
 				Expect(session.Wait()).To(Exit(0))
 				appGUID := strings.TrimSpace(string(session.Out.Contents()))
 
-				applyEndpoint := fmt.Sprintf("/v3/apps/%s/actions/apply_manifest", appGUID)
+				applyEndpoint = fmt.Sprintf("/v3/spaces/%s/actions/apply_manifest", spaceGUID)
 				manifestToApply := fmt.Sprintf(`
 ---
 applications:
