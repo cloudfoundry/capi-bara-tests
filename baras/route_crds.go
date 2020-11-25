@@ -87,9 +87,19 @@ var _ = Describe("RouteCRDs", func() {
 				_, err = file.Write([]byte(`---	
 apiVersion: networking.cloudfoundry.org/v1alpha1	
 kind: Route	
-metadata:	
-  name: bogus-route	
-  namespace: cf-workloads	
+metadata:
+  name: bogus-route
+  namespace: cf-workloads
+  labels:
+    app.kubernetes.io/component: cf-networking
+    app.kubernetes.io/managed-by: cloudfoundry
+    app.kubernetes.io/name: bogus-route
+    app.kubernetes.io/part-of: cloudfoundry
+    app.kubernetes.io/version: 0.0.0
+    cloudfoundry.org/domain_guid: adc3255b-5a5f-468a-8832-47ae70afde25
+    cloudfoundry.org/org_guid: 2a23c52c-0b46-4d7b-9d14-90a791c8719b
+    cloudfoundry.org/route_guid: 17c82e6e-33ce-42ce-b28e-8cc5109f4459
+    cloudfoundry.org/space_guid: 4d021f3d-13d4-4ded-be6b-d55add346749
 spec:	
   destinations:	
   - app:	
