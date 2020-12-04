@@ -455,7 +455,7 @@ applications:
     timeout: 75
 `, apps[0].name)
 					})
-					XIt("fails the job and does not change the memory", func() {
+					It("fails the job and does not change the memory", func() {
 						session := cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
 						Expect(session.Wait()).To(Exit(0))
 						response := session.Out.Contents()
