@@ -3,13 +3,19 @@ package v3_helpers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"strings"
+
+	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
+)
+
+const (
+	FAILED string = "FAILED"
+	STAGED string = "STAGED"
 )
 
 func StagePackage(packageGUID string, lifecycle string, buildpacks ...string) string {
@@ -21,7 +27,7 @@ func StagePackage(packageGUID string, lifecycle string, buildpacks ...string) st
 	stageBody := fmt.Sprintf(
 		`{"lifecycle":{ "type": "%s", "data": { "buildpacks": %s } }, "package": { "guid": "%s"}}`,
 		lifecycle, buildpackString, packageGUID,
-		)
+	)
 	stageURL := "/v3/builds"
 	session := cf.Cf("curl", "-f", stageURL, "-X", "POST", "-d", stageBody)
 
@@ -35,11 +41,39 @@ func StagePackage(packageGUID string, lifecycle string, buildpacks ...string) st
 	return build.GUID
 }
 
+func GetBuildError(buildGUID string) string {
+	buildPath := buildPath(buildGUID)
+
+	session := cf.Cf("curl", "-f", buildPath).Wait()
+	bytes := session.Wait().Out.Contents()
+
+	var build struct {
+		Error string `json:"error"`
+	}
+	err := json.Unmarshal(bytes, &build)
+	Expect(err).NotTo(HaveOccurred())
+
+	return build.Error
+}
+
 func WaitForBuildToStage(buildGUID string) {
-	buildPath := fmt.Sprintf("/v3/builds/%s", buildGUID)
+	buildPath := buildPath(buildGUID)
 	Eventually(func() *Session {
 		session := cf.Cf("curl", "-f", buildPath).Wait()
-		Expect(session).NotTo(Say("FAILED"))
+		Expect(session).NotTo(Say(FAILED))
 		return session
-	}, Config.CfPushTimeoutDuration()).Should(Say("STAGED"))
+	}, Config.CfPushTimeoutDuration()).Should(Say(STAGED))
+}
+
+func WaitForBuildToFail(buildGUID string) {
+	buildPath := buildPath(buildGUID)
+	Eventually(func() *Session {
+		session := cf.Cf("curl", "-f", buildPath).Wait()
+		Expect(session).NotTo(Say(STAGED))
+		return session
+	}, Config.CfPushTimeoutDuration()).Should(Say(FAILED))
+}
+
+func buildPath(buildGUID string) string {
+	return fmt.Sprintf("/v3/builds/%s", buildGUID)
 }

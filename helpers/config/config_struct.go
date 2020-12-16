@@ -392,6 +392,10 @@ func (c *config) GetApiEndpoint() string {
 	return *c.ApiEndpoint
 }
 
+func (c *config) GetPythonBuildpackName() string {
+	return *c.PythonBuildpackName
+}
+
 func (c *config) GetRubyBuildpackName() string {
 	return *c.RubyBuildpackName
 }

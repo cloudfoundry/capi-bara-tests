@@ -32,6 +32,8 @@ type Assets struct {
 	Php                        string
 	Proxy                      string
 	Python                     string
+	PythonWithoutProcfile      string
+	PythonWithoutProcfileZip   string
 	RubySimple                 string
 	SecurityGroupBuildpack     string
 	ServiceBroker              string
@@ -82,6 +84,8 @@ func NewAssets() Assets {
 		Php:                        "assets/php",
 		Proxy:                      "vendor/code.cloudfoundry.org/cf-networking-release/src/example-apps/proxy",
 		Python:                     "assets/python",
+		PythonWithoutProcfile:      "assets/python-without-procfile",
+		PythonWithoutProcfileZip:   "assets/python-without-procfile.zip",
 		RubySimple:                 "assets/ruby_simple",
 		SecurityGroupBuildpack:     "assets/security_group_buildpack.zip",
 		ServiceBroker:              "assets/service_broker",
