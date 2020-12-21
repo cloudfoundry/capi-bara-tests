@@ -17,6 +17,7 @@ Bundler.require :default, ENV['RACK_ENV'].to_sym
 $stdout.sync = true
 $stderr.sync = true
 $counter = 0
+$start_time = Time.now
 
 class Dora < Sinatra::Base
   use Instances
@@ -125,6 +126,10 @@ class Dora < Sinatra::Base
     response = Typhoeus.get("localhost:#{ENV['CONFIG_SERVER_PORT']}/config/")
     puts "Received #{response.body} from the config-server sidecar"
     response.body
+  end
+
+  get '/uptime' do
+    (Time.now - $start_time).to_s
   end
 
   run! if app_file == $0
