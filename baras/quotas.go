@@ -2,7 +2,6 @@ package baras
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
@@ -17,33 +16,39 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-// This file alters the quotas for the org that all bara tests use, which leads to failures in other tests.
-// We should either move this test into CCNG or find a way to run this test in isolation so it doesn't affect other tests
-var _ = XDescribe("Quotas", func() {
+var _ = Describe("Quotas", func() {
 	var (
+		orgName    string
 		spaceName  string
 		spaceGUID  string
 		orgGUID    string
 		appName    string
-		appGUID    string
 		spaceQuota Quota
 		orgQuota   Quota
 	)
 
 	BeforeEach(func() {
+		orgName = "org-with-quota"
+		spaceName = "space-with-quota"
+
 		workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
-			orgGUID = GetOrgGUIDFromName(TestSetup.RegularUserContext().Org)
+			session := cf.Cf("create-org", orgName)
+			Eventually(session).Should(Exit(0))
+			orgGUID = GetOrgGUIDFromName(orgName)
+
 			orgQuotaName := random_name.BARARandomName("ORG-QUOTA")
 			orgQuota = CreateOrgQuota(orgQuotaName, orgGUID, 2)
 			Expect(orgQuota.Apps.TotalInstances).To(Equal(2))
 
-			spaceName = TestSetup.RegularUserContext().Space
+			session = cf.Cf("create-space", spaceName, "-o", orgName)
+			Eventually(session).Should(Exit(0))
 			spaceGUID = GetSpaceGuidFromName(spaceName)
+
 			spaceQuotaName := random_name.BARARandomName("SPACE-QUOTA")
 			spaceQuota = CreateSpaceQuota(spaceQuotaName, spaceGUID, orgGUID, 1)
 			Expect(spaceQuota.Apps.TotalInstances).To(Equal(1))
 
-			session := cf.Cf("target", "-o", TestSetup.RegularUserContext().Org, "-s", spaceName)
+			session = cf.Cf("target", "-o", orgName, "-s", spaceName)
 			Eventually(session).Should(Exit(0))
 
 			appName = random_name.BARARandomName("APP")
@@ -52,26 +57,22 @@ var _ = XDescribe("Quotas", func() {
 				"-b", Config.GetGoBuildpackName(),
 				"-p", assets.NewAssets().CatnipZip,
 			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
-
-			session = cf.Cf("app", appName, "--guid")
-			Expect(session.Wait()).To(Exit(0))
-			appGUID = strings.TrimSpace(string(session.Out.Contents()))
-
 			Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 		})
 	})
 
 	AfterEach(func() {
 		workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
-			DeleteApp(appGUID)
-			SetDefaultOrgQuota(orgGUID)
+			session := cf.Cf("delete-org", orgName, "-f")
+			Eventually(session).Should(Exit(0))
+
 			DeleteOrgQuota(orgQuota.GUID)
 		})
 	})
 
 	It("respects space and org quota limits", func() {
 		workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
-			session := cf.Cf("target", "-o", TestSetup.RegularUserContext().Org, "-s", spaceName)
+			session := cf.Cf("target", "-o", orgName, "-s", spaceName)
 			Eventually(session).Should(Exit(0))
 
 			session = cf.Cf("scale", appName, "-i", "2")
