@@ -70,6 +70,7 @@ var _ = Describe("deployments", func() {
 		DeleteApp(appGUID)
 	})
 
+	// TODO: delete me once we delete v2
 	Describe("Creating new processes on the same app", func() {
 		It("ignores older processes on the same app", func() {
 			deploymentGuid := CreateDeployment(appGUID)
