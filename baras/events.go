@@ -46,7 +46,7 @@ var _ = Describe("events", func() {
 
 		It("we can see an app stop event in the log stream", func() {
 			Eventually(func() *gexec.Session {
-				session := cf.Cf("tail", appName, "-n", "500")
+				session := cf.Cf("logs", appName, "--recent")
 				Eventually(session).Should(Exit(0))
 				return session
 			}).Should(gbytes.Say("Stopping app with guid"))
@@ -73,7 +73,7 @@ applications:
 			Eventually(session).Should(Exit(0))
 
 			Eventually(func() *gexec.Session {
-				session = cf.Cf("tail", appName, "-n", "500")
+				session = cf.Cf("logs", appName, "--recent")
 				Eventually(session).Should(Exit(0))
 				return session
 			}).Should(gbytes.Say("Applied manifest to app"))
