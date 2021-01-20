@@ -70,7 +70,7 @@ applications:
 - name: "%s"
   processes:
   - type: web
-    command: manifest-command.sh
+    command: python server.py
 `, appName)
 
 				session := cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
@@ -83,7 +83,7 @@ applications:
 				processes := GetProcesses(appGUID, appName)
 				webProcessWithCommandRedacted := GetFirstProcessByType(processes, "web")
 				webProcess := GetProcessByGuid(webProcessWithCommandRedacted.Guid)
-				Expect(webProcess.Command).To(Equal("manifest-command.sh"))
+				Expect(webProcess.Command).To(Equal("python server.py"))
 
 				By("Uploading a Package")
 				UploadPackage(uploadURL, assets.NewAssets().PythonWithoutProcfileZip)
