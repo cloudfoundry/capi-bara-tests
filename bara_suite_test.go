@@ -2,11 +2,12 @@ package bara_test
 
 import (
 	"fmt"
-	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
 	"os"
 	"os/exec"
 	"testing"
 	"time"
+
+	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
 
 	"github.com/cloudfoundry/custom-cats-reporters/honeycomb"
 	"github.com/cloudfoundry/custom-cats-reporters/honeycomb/client"
@@ -78,6 +79,7 @@ func TestBARA(t *testing.T) {
 		ZipAsset(assetPaths.BadDora, assetPaths.BadDoraZip)
 		ZipAsset(assetPaths.Staticfile, assetPaths.StaticfileZip)
 		ZipAsset(assetPaths.Catnip, assetPaths.CatnipZip)
+		ZipAsset(assetPaths.PythonWithoutProcfile, assetPaths.PythonWithoutProcfileZip)
 		ZipAsset(assetPaths.SleepySidecarBuildpack, assetPaths.SleepySidecarBuildpackZip)
 
 		if Config.GetGcloudProjectName() != "" {
@@ -88,7 +90,7 @@ func TestBARA(t *testing.T) {
 		}
 
 		return []byte{}
-	}, func([]byte) { })
+	}, func([]byte) {})
 
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(Config.DefaultTimeoutDuration())
@@ -109,6 +111,7 @@ func TestBARA(t *testing.T) {
 		os.Remove(assets.NewAssets().BadDoraZip)
 		os.Remove(assets.NewAssets().StaticfileZip)
 		os.Remove(assets.NewAssets().CatnipZip)
+		os.Remove(assets.NewAssets().PythonWithoutProcfileZip)
 		os.Remove(assets.NewAssets().SleepySidecarBuildpackZip)
 	})
 

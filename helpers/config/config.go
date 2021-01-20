@@ -34,6 +34,7 @@ type BaraConfig interface {
 	GetJavaBuildpackName() string
 	GetNodejsBuildpackName() string
 	GetRubyBuildpackName() string
+	GetPythonBuildpackName() string
 
 	GetNamePrefix() string
 
