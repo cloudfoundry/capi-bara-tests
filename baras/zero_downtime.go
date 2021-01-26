@@ -2,7 +2,7 @@ package baras
 
 import (
 	"fmt"
-	"strconv"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -32,37 +32,40 @@ var _ = Describe("Zero downtime operations", func() {
 			appName = random_name.BARARandomName("APP")
 			Expect(cf.Cf("push",
 				appName,
-				"-p", assets.NewAssets().Dora,
+				"-b", Config.GetGoBuildpackName(),
+				"-p", assets.NewAssets().MultiPortApp,
+				"-c", "go-online --ports=8080,8081",
+				"-f", filepath.Join(assets.NewAssets().MultiPortApp, "manifest.yml"),
 			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 
 			session = cf.Cf("app", appName, "--guid")
 			Expect(session.Wait()).To(Exit(0))
 			appGUID = strings.TrimSpace(string(session.Out.Contents()))
-			Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+			Expect(helpers.CurlAppRoot(Config, appName)).To(ContainSubstring("8080"))
 		})
 	})
 
 	Context("When scaling memory on an app", func() {
 		It("downtime does not occur until the app is restarted", func() {
-			originalUptime, err := strconv.ParseFloat(helpers.CurlApp(Config, appName, "/uptime"), 64)
+			originalUptime, err := time.ParseDuration(helpers.CurlApp(Config, appName, "/uptime"))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(originalUptime).To(BeNumerically(">", 0))
+			Expect(originalUptime.Seconds()).To(BeNumerically(">", 0))
 
 			ScaleProcess(appGUID, "web", "1500")
 
-			// Allow time for diego clock sync to occur (default=30s)
-			time.Sleep(35 * time.Second)
-			currentUptime, err := strconv.ParseFloat(helpers.CurlApp(Config, appName, "/uptime"), 64)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(currentUptime).To(BeNumerically(">", originalUptime+33))
+			Consistently(func() float64 {
+				currentUptime, err := time.ParseDuration(helpers.CurlApp(Config, appName, "/uptime"))
+				Expect(err).ToNot(HaveOccurred())
+				return currentUptime.Seconds()
+			}, Config.CcClockCycleDuration(), "1s").Should(BeNumerically(">", originalUptime.Seconds()))
 		})
 	})
 
 	Context("When changing the healthcheck http endpoint on an app", func() {
 		It("downtime does not occur until the app is restarted", func() {
-			originalUptime, err := strconv.ParseFloat(helpers.CurlApp(Config, appName, "/uptime"), 64)
+			originalUptime, err := time.ParseDuration(helpers.CurlApp(Config, appName, "/uptime"))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(originalUptime).To(BeNumerically(">", 0))
+			Expect(originalUptime.Seconds()).To(BeNumerically(">", 0))
 
 			process := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 			path := fmt.Sprintf("v3/processes/%s", process.Guid)
@@ -70,19 +73,20 @@ var _ = Describe("Zero downtime operations", func() {
 			Eventually(session).Should(Exit(0))
 			result := session.Out.Contents()
 			Expect(strings.Contains(string(result), "errors")).To(BeFalse())
-			// Allow time for diego clock sync to occur (default=30s)
-			time.Sleep(35 * time.Second)
-			currentUptime, err := strconv.ParseFloat(helpers.CurlApp(Config, appName, "/uptime"), 64)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(currentUptime).To(BeNumerically(">", originalUptime+33))
+
+			Consistently(func() float64 {
+				currentUptime, err := time.ParseDuration(helpers.CurlApp(Config, appName, "/uptime"))
+				Expect(err).ToNot(HaveOccurred())
+				return currentUptime.Seconds()
+			}, Config.CcClockCycleDuration(), "1s").Should(BeNumerically(">", originalUptime.Seconds()))
 		})
 	})
 
 	Context("When changing the healthcheck type on an app", func() {
 		It("downtime does not occur until the app is restarted", func() {
-			originalUptime, err := strconv.ParseFloat(helpers.CurlApp(Config, appName, "/uptime"), 64)
+			originalUptime, err := time.ParseDuration(helpers.CurlApp(Config, appName, "/uptime"))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(originalUptime).To(BeNumerically(">", 0))
+			Expect(originalUptime.Seconds()).To(BeNumerically(">", 0))
 
 			process := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 			path := fmt.Sprintf("v3/processes/%s", process.Guid)
@@ -90,11 +94,38 @@ var _ = Describe("Zero downtime operations", func() {
 			Eventually(session).Should(Exit(0))
 			result := session.Out.Contents()
 			Expect(strings.Contains(string(result), "errors")).To(BeFalse())
-			// Allow time for diego clock sync to occur (default=30s)
-			time.Sleep(35 * time.Second)
-			currentUptime, err := strconv.ParseFloat(helpers.CurlApp(Config, appName, "/uptime"), 64)
+
+			Consistently(func() float64 {
+				currentUptime, err := time.ParseDuration(helpers.CurlApp(Config, appName, "/uptime"))
+				Expect(err).ToNot(HaveOccurred())
+				return currentUptime.Seconds()
+			}, Config.CcClockCycleDuration(), "1s").Should(BeNumerically(">", originalUptime.Seconds()))
+		})
+	})
+
+	Context("When adding a route destination to a process", func() {
+		It("downtime does not occur until the app is restarted", func() {
+			originalUptime, err := time.ParseDuration(helpers.CurlApp(Config, appName, "/uptime"))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(currentUptime).To(BeNumerically(">", originalUptime+33))
+			Expect(originalUptime.Seconds()).To(BeNumerically(">", 0))
+
+			routeGUID := GetRouteGUIDFromAppGuid(appGUID)
+			path := fmt.Sprintf("v3/routes/%s/destinations", routeGUID)
+			body := fmt.Sprintf(`{"destinations": [{"app": {"guid": "%s"}, "port": 8081}]}`, appGUID)
+			session := cf.Cf("curl", "-X", "POST", path, "-d", body).Wait()
+			Eventually(session).Should(Exit(0))
+			result := session.Out.Contents()
+			Expect(strings.Contains(string(result), "errors")).To(BeFalse())
+
+			Consistently(func() float64 {
+				currentUptime, err := time.ParseDuration(helpers.CurlApp(Config, appName, "/uptime"))
+				Expect(err).ToNot(HaveOccurred())
+				return currentUptime.Seconds()
+			}, Config.CcClockCycleDuration(), "1s").Should(BeNumerically(">", originalUptime.Seconds()))
+
+			Consistently(func() string {
+				return helpers.CurlAppRoot(Config, appName)
+			}, Config.DefaultTimeoutDuration(), "5s").Should(ContainSubstring("8080"))
 		})
 	})
 })

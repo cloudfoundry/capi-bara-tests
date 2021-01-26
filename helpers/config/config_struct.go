@@ -30,6 +30,7 @@ type config struct {
 	DetectTimeout                *int `json:"detect_timeout"`
 	LongCurlTimeout              *int `json:"long_curl_timeout"`
 	SleepTimeout                 *int `json:"sleep_timeout"`
+	CcClockCycle                 *int `json:"cc_clock_cycle"`
 
 	TimeoutScale *float64 `json:"timeout_scale"`
 
@@ -103,6 +104,7 @@ func getDefaults() config {
 	defaults.DetectTimeout = ptrToInt(300)
 	defaults.LongCurlTimeout = ptrToInt(120)
 	defaults.SleepTimeout = ptrToInt(30)
+	defaults.CcClockCycle = ptrToInt(30)
 
 	defaults.TimeoutScale = ptrToFloat(2.0)
 
@@ -184,6 +186,9 @@ func validateConfig(config *config) Errors {
 	}
 	if config.SleepTimeout == nil {
 		errs.Add(fmt.Errorf("* 'sleep_timeout' must not be null"))
+	}
+	if config.CcClockCycle == nil {
+		errs.Add(fmt.Errorf("* 'cc_clock_cycle' must not be null"))
 	}
 	if config.TimeoutScale == nil {
 		errs.Add(fmt.Errorf("* 'timeout_scale' must not be null"))
@@ -342,6 +347,10 @@ func (c *config) LongCurlTimeoutDuration() time.Duration {
 
 func (c *config) SleepTimeoutDuration() time.Duration {
 	return c.GetScaledTimeout(time.Duration(*c.SleepTimeout) * time.Second)
+}
+
+func (c *config) CcClockCycleDuration() time.Duration {
+	return c.GetScaledTimeout(time.Duration(*c.CcClockCycle) * time.Second)
 }
 
 func (c *config) DetectTimeoutDuration() time.Duration {

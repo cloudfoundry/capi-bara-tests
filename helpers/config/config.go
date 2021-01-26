@@ -24,6 +24,7 @@ type BaraConfig interface {
 	DetectTimeoutDuration() time.Duration
 	LongCurlTimeoutDuration() time.Duration
 	SleepTimeoutDuration() time.Duration
+	CcClockCycleDuration() time.Duration
 
 	GetScaledTimeout(time.Duration) time.Duration
 
