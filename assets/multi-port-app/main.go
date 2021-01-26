@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 )
 
 var portsFlag = flag.String(
@@ -15,6 +16,7 @@ var portsFlag = flag.String(
 )
 
 func main() {
+	startTime := time.Now()
 	flag.Parse()
 	ports := strings.Split(*portsFlag, ",")
 
@@ -24,10 +26,22 @@ func main() {
 		go func(wg *sync.WaitGroup, port string) {
 			defer wg.Done()
 
-			log.Fatal(http.ListenAndServe(":"+port, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			mux := http.NewServeMux()
+
+			rootHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				w.Header().Set("Content-Type", "text/plain")
 				w.Write([]byte(port + "\n"))
-			})))
+			})
+
+			uptimeHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				uptime := time.Since(startTime)
+				w.Write([]byte(uptime.String()))
+			})
+
+			mux.Handle("/", rootHandler)
+			mux.Handle("/uptime", uptimeHandler)
+
+			log.Fatal(http.ListenAndServe(":"+port, mux))
 		}(&wg, port)
 	}
 	println("Listening on ports ", strings.Join(ports, ", "))
