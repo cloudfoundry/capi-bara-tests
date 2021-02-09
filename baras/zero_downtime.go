@@ -125,7 +125,7 @@ var _ = Describe("Zero downtime operations", func() {
 
 			Consistently(func() string {
 				return helpers.CurlAppRoot(Config, appName)
-			}, Config.DefaultTimeoutDuration(), "5s").Should(ContainSubstring("8080"))
+			}, Config.DefaultTimeoutDuration(), "5s").ShouldNot(ContainSubstring("8081"))
 		})
 	})
 })
