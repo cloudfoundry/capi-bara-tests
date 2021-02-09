@@ -58,6 +58,9 @@ var _ = Describe("Zero downtime operations", func() {
 				Expect(err).ToNot(HaveOccurred())
 				return currentUptime.Seconds()
 			}, Config.CcClockCycleDuration(), "1s").Should(BeNumerically(">", originalUptime.Seconds()))
+
+			processMemory := GetAppInstancesStatsMemory(appGUID)
+			Expect(processMemory).ToNot(Equal(1500))
 		})
 	})
 
