@@ -128,4 +128,30 @@ var _ = Describe("Zero downtime operations", func() {
 			}, Config.DefaultTimeoutDuration(), "5s").ShouldNot(ContainSubstring("8081"))
 		})
 	})
+
+	Context("When updating route destinations on processes", func() {
+		It("downtime does not occur until an app is restarted", func() {
+			originalUptime, err := time.ParseDuration(helpers.CurlApp(Config, appName, "/uptime"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(originalUptime.Seconds()).To(BeNumerically(">", 0))
+
+			routeGUID := GetRouteGUIDFromAppGuid(appGUID)
+			path := fmt.Sprintf("v3/routes/%s/destinations", routeGUID)
+			body := fmt.Sprintf(`{"destinations": [{"app": {"guid": "%s"}, "port": 8080}, {"app": {"guid": "%s"}, "port": 8081}]}`, appGUID, appGUID)
+			session := cf.Cf("curl", "-X", "PATCH", path, "-d", body).Wait()
+			Eventually(session).Should(Exit(0))
+			result := session.Out.Contents()
+			Expect(strings.Contains(string(result), "errors")).To(BeFalse())
+
+			Consistently(func() float64 {
+				currentUptime, err := time.ParseDuration(helpers.CurlApp(Config, appName, "/uptime"))
+				Expect(err).ToNot(HaveOccurred())
+				return currentUptime.Seconds()
+			}, Config.CcClockCycleDuration(), "1s").Should(BeNumerically(">", originalUptime.Seconds()))
+
+			Consistently(func() string {
+				return helpers.CurlAppRoot(Config, appName)
+			}, Config.DefaultTimeoutDuration(), "5s").Should(ContainSubstring("8080"))
+		})
+	})
 })
