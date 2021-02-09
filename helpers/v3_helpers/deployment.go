@@ -67,15 +67,15 @@ func WaitUntilDeploymentReachesStatus(deploymentGUID, statusValue, statusReason 
 	deploymentPath := fmt.Sprintf("/v3/deployments/%s", deploymentGUID)
 
 	type deploymentStatus struct {
-		Value  string `json:"value"`
-		Reason string `json:"reason"`
+		Value           string `json:"value"`
+		Reason          string `json:"reason"`
 	}
 	deploymentJSON := struct {
 		Status deploymentStatus `json:"status"`
 	}{}
 
 	desiredDeploymentStatus := deploymentStatus{
-		Value:  statusValue,
+		Value: statusValue,
 		Reason: statusReason,
 	}
 
@@ -109,19 +109,4 @@ func GetRunningInstancesStats(processGUID string) int {
 		}
 	}
 	return numRunning
-}
-
-func GetAppInstancesStatsMemory(appGUID string) int {
-	processPath := fmt.Sprintf("/v3/apps/%s/processes/web/stats", appGUID)
-	session := cf.Cf("curl", "-f", processPath).Wait()
-	instancesJSON := struct {
-		Resources []struct {
-			MemoryQuota int `json:"mem_quota"`
-		} `json:"resources"`
-	}{}
-
-	bytes := session.Wait().Out.Contents()
-	err := json.Unmarshal(bytes, &instancesJSON)
-	Expect(err).NotTo(HaveOccurred())
-	return instancesJSON.Resources[0].MemoryQuota
 }
