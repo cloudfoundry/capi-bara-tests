@@ -1,4 +1,4 @@
 ---
 applications:
 - env:
-    GOPACKAGENAME: go-online
+    GOPACKAGENAME: workspace

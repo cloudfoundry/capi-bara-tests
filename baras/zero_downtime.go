@@ -34,7 +34,7 @@ var _ = Describe("Zero downtime operations", func() {
 				appName,
 				"-b", Config.GetGoBuildpackName(),
 				"-p", assets.NewAssets().MultiPortApp,
-				"-c", "go-online --ports=8080,8081",
+				"-c", "workspace --ports=8080,8081",
 				"-f", filepath.Join(assets.NewAssets().MultiPortApp, "manifest.yml"),
 			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 
