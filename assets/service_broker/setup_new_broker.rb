@@ -7,16 +7,11 @@ require 'securerandom'
 broker_name = ARGV[0]
 broker_name ||= 'async-broker'
 
-env = ARGV[1]
-env ||= 'bosh-lite'
-
-env_to_domain_mapping = {
-  'bosh-lite' => 'bosh-lite.com',
-  'a1' => 'a1-app.cf-app.com',
-  'tabasco' => 'tabasco-app.cf-app.com'
-}
-
-domain = env_to_domain_mapping[env] || env
+# finds the first public shared domain
+cf_domains_output = `cf domains`
+domain = cf_domains_output.split(/\n/).map { |column| column.split(/\s+/) }.find do |x|
+  x[1] == "shared" && x[2] != "true"
+end[0]
 
 puts "Setting up broker `#{broker_name}` on #{domain}"
 
@@ -64,9 +59,9 @@ def uniquify_config
   end
 end
 
-def push_broker(broker_name, domain)
+def push_broker(broker_name)
   puts "Pushing the broker"
-  IO.popen("cf push #{broker_name} -d #{domain}") do |cmd_output|
+  IO.popen("cf push #{broker_name}") do |cmd_output|
     cmd_output.each { |line| puts line }
   end
   puts
@@ -104,7 +99,7 @@ def enable_service_access
 end
 
 uniquify_config
-push_broker(broker_name, domain)
+push_broker(broker_name)
 
 url = "http://#{broker_name}.#{domain}"
 
