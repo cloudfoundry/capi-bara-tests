@@ -52,6 +52,7 @@ func GetDropletFromBuild(buildGUID string) string {
 	bytes := session.Wait().Out.Contents()
 	err := json.Unmarshal(bytes, &build)
 	Expect(err).NotTo(HaveOccurred())
+	Expect(build.Droplet.GUID).NotTo(BeEmpty(), "Build response didn't contain a droplet GUID")
 	return build.Droplet.GUID
 }
 
