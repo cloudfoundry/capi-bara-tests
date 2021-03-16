@@ -1,17 +1,18 @@
 package k8s_helpers
 
 import (
-	"os/exec"
 	"encoding/json"
 
 	route_crds "code.cloudfoundry.org/cf-k8s-networking/routecontroller/api/v1alpha1"
+	"github.com/cloudfoundry-incubator/cf-test-helpers/commandreporter"
+	"github.com/cloudfoundry-incubator/cf-test-helpers/commandstarter"
 )
 
 func Kubectl(args ...string) ([]byte, error) {
-	cmd := exec.Command("kubectl", args...)
+	cmdstarter := commandstarter.NewCommandStarter()
+	session, err := cmdstarter.Start(commandreporter.NewCommandReporter(), "kubectl", args...)
 
-	output, err := cmd.CombinedOutput()
-	return output, err
+	return session.Wait().Out.Contents(), err
 }
 
 func KubectlGetRoute(namespace, routeGuid string) (route_crds.Route, error) {

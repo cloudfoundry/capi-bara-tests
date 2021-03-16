@@ -54,20 +54,20 @@ var _ = Describe("Stack", func() {
 
 		By("Updating the stack")
 		bytes, err := Kubectl("get", defaultStack, "-o", "json")
-		Expect(err).ToNot(HaveOccurred(), string(bytes))
+		Expect(err).NotTo(HaveOccurred())
 		var originalStack Stack
 		err = json.Unmarshal(bytes, &originalStack)
-		Expect(err).NotTo(HaveOccurred(), string(bytes))
+		Expect(err).NotTo(HaveOccurred())
 		originalStackImage = originalStack.Spec.RunImage.Image
 		output, err := Kubectl("patch", defaultStack, "--type=merge", "-p", `{"spec":{"runImage":{"image":"index.docker.io/paketobuildpacks/run:0.0.74-full-cnb"}}}`)
-		Expect(err).NotTo(HaveOccurred(), string(output))
+		Expect(err).NotTo(HaveOccurred())
 		Expect(output).To(ContainSubstring("clusterstack.kpack.io/bionic-stack patched"))
 	})
 
 	AfterEach(func() {
 		DeleteApp(appGUID)
 		output, err := Kubectl("patch", defaultStack, "--type=merge", "-p", fmt.Sprintf(`{"spec":{"runImage":{"image":"%s"}}}`, originalStackImage))
-		Expect(err).NotTo(HaveOccurred(), string(output))
+		Expect(err).NotTo(HaveOccurred())
 		Expect(output).To(ContainSubstring("clusterstack.kpack.io/bionic-stack patched"))
 	})
 
