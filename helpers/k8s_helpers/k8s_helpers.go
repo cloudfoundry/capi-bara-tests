@@ -11,20 +11,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func Kubectl(args ...string) ([]byte, error) {
+func Kubectl(args ...string) *gexec.Session {
 	cmdstarter := commandstarter.NewCommandStarter()
 	session, err := cmdstarter.Start(commandreporter.NewCommandReporter(), "kubectl", args...)
 	if err != nil {
-		return nil, err
-	}
-	return session.Wait().Out.Contents(), nil
-}
-
-// TODO: rename this l8r
-func KubectlSession(args ...string) *gexec.Session {
-	cmdstarter := commandstarter.NewCommandStarter()
-	session, err := cmdstarter.Start(commandreporter.NewCommandReporter(), "kubectl", args...)
-	if err != nil {
+		// panic here because this indicates a global error for the suite such as `kubectl` not being in the environment's path
 		panic(err)
 	}
 	return session
@@ -33,7 +24,7 @@ func KubectlSession(args ...string) *gexec.Session {
 func KubectlGetRoute(namespace, routeGuid string) (route_crds.Route, error) {
 	var route route_crds.Route
 
-	session := KubectlSession("get", "route", routeGuid, "-n", namespace, "-o", "json")
+	session := Kubectl("get", "route", routeGuid, "-n", namespace, "-o", "json")
 	Expect(session.Wait("3m")).To(gexec.Exit(0), "Failed to get route resource from Kubernetes")
 
 	err := json.Unmarshal(session.Out.Contents(), &route)

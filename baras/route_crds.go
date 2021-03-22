@@ -65,7 +65,7 @@ var _ = Describe("RouteCRDs", func() {
 			By("Deleting the route")
 			session := cf.Cf("delete-route", Config.GetAppsDomain(), "--hostname", appName, "--path", "foo", "-f")
 			Expect(session.Wait("3m")).To(gexec.Exit(0))
-			session = KubectlSession("get", "route", routeGuid, "-n", "cf-workloads", "-o", "json")
+			session = Kubectl("get", "route", routeGuid, "-n", "cf-workloads", "-o", "json")
 			Expect(session.Wait("1m")).ToNot(gexec.Exit(0), "Route CR was not deleted")
 			Expect(session.Err.Contents()).Should(ContainSubstring("Error from server (NotFound)"))
 		})
@@ -75,7 +75,7 @@ var _ = Describe("RouteCRDs", func() {
 		Context("given there is a route resource in Kubernetes that doesn't match a route in CC", func() {
 			BeforeEach(func() {
 				// grab PeriodicSync resource from k8s and note the value of `status.lastTransitionTime`
-				session := KubectlSession("-n", "cf-system", "get", "periodicsync", "cf-api-periodic-route-sync", "-o", `jsonpath='{.status.conditions[?(@.type=="Synced")].lastTransitionTime}'`)
+				session := Kubectl("-n", "cf-system", "get", "periodicsync", "cf-api-periodic-route-sync", "-o", `jsonpath='{.status.conditions[?(@.type=="Synced")].lastTransitionTime}'`)
 				Expect(session.Wait("1m")).To(gexec.Exit(0), "Failed to get PeriodicSync resource")
 				lastSyncTime := session.Out.Contents()
 
@@ -120,19 +120,19 @@ spec:
   url: nevermind.tim.is.vain`))
 				Expect(err).ToNot(HaveOccurred())
 
-				session = KubectlSession("apply", "-f", file.Name())
+				session = Kubectl("apply", "-f", file.Name())
 				Expect(session.Wait("2m")).To(gexec.Exit(0), "Failed to apply route resource file to Kubernetes")
 
 				// poll PeriodicSync resource until its `status.lastTransitionTime` has updated from our initial saved-off value
 				Eventually(func() string {
-					session := KubectlSession("-n", "cf-system", "get", "periodicsync", "cf-api-periodic-route-sync", "-o", `jsonpath='{.status.conditions[?(@.type=="Synced")].lastTransitionTime}'`)
+					session := Kubectl("-n", "cf-system", "get", "periodicsync", "cf-api-periodic-route-sync", "-o", `jsonpath='{.status.conditions[?(@.type=="Synced")].lastTransitionTime}'`)
 					Expect(session.Wait("1m")).To(gexec.Exit(0), "Failed to get PeriodicSync resource")
 					return string(session.Out.Contents())
 				}, "30s", "1s").ShouldNot(Equal(string(lastSyncTime)))
 			})
 
 			It("should eventually get deleted from Kubernetes", func() {
-				session := KubectlSession("get", "route", "bogus-route", "-n", "cf-workloads", "-o", "json")
+				session := Kubectl("get", "route", "bogus-route", "-n", "cf-workloads", "-o", "json")
 				Expect(session.Wait("1m")).ToNot(gexec.Exit(0), "Route CR was not deleted")
 				Expect(session.Err.Contents()).Should(ContainSubstring("Error from server (NotFound)"))
 			})
@@ -151,19 +151,19 @@ spec:
 				routeGUID = CreateRouteWithPath(spaceGUID, domainGUID, "hello-baras", "/foo")
 
 				// grab PeriodicSync resource from k8s and note the value of `status.lastTransitionTime`
-				session := KubectlSession("-n", "cf-system", "get", "periodicsync", "cf-api-periodic-route-sync", "-o", `jsonpath='{.status.conditions[?(@.type=="Synced")].lastTransitionTime}'`)
+				session := Kubectl("-n", "cf-system", "get", "periodicsync", "cf-api-periodic-route-sync", "-o", `jsonpath='{.status.conditions[?(@.type=="Synced")].lastTransitionTime}'`)
 				Expect(session.Wait("1m")).To(gexec.Exit(0), "Failed to get PeriodicSync resource")
 				lastSyncTime := session.Out.Contents()
 
 
 				// delete route resource in Kubernetes
-				session = KubectlSession("delete", "-n", "cf-workloads", "route", routeGUID)
+				session = Kubectl("delete", "-n", "cf-workloads", "route", routeGUID)
 				Expect(session.Wait("3m")).To(gexec.Exit(0), "Failed to delete route resource")
 				Expect(session.Out.Contents()).Should(ContainSubstring(fmt.Sprintf(`"%s" deleted`, routeGUID)))
 
 				// poll PeriodicSync resource until its `status.lastTransitionTime` has updated from our initial saved-off value
 				Eventually(func() string {
-					session := KubectlSession("-n", "cf-system", "get", "periodicsync", "cf-api-periodic-route-sync", "-o", `jsonpath='{.status.conditions[?(@.type=="Synced")].lastTransitionTime}'`)
+					session := Kubectl("-n", "cf-system", "get", "periodicsync", "cf-api-periodic-route-sync", "-o", `jsonpath='{.status.conditions[?(@.type=="Synced")].lastTransitionTime}'`)
 					Expect(session.Wait("1m")).To(gexec.Exit(0), "Failed to get PeriodicSync resource")
 					return string(session.Out.Contents())
 				}, "30s", "1s").ShouldNot(Equal(string(lastSyncTime)))
@@ -174,7 +174,7 @@ spec:
 			})
 
 			It("should eventually recreate the route resource in Kubernetes", func() {
-				session := KubectlSession("get", "route", routeGUID, "-n", "cf-workloads", "-o", "json")
+				session := Kubectl("get", "route", routeGUID, "-n", "cf-workloads", "-o", "json")
 				Expect(session.Wait("1m")).To(gexec.Exit(0), "Route CR was not recreated")
 
 				var route v1alpha1.Route
