@@ -53,22 +53,22 @@ var _ = Describe("Stack", func() {
 		dropletImage = GetDroplet(dropletGUID).Image
 
 		By("Updating the stack")
-		bytes, err := Kubectl("get", defaultStack, "-o", "json")
-		Expect(err).NotTo(HaveOccurred())
-		var originalStack Stack
-		err = json.Unmarshal(bytes, &originalStack)
+		session = KubectlSession("get", defaultStack, "-o", "json")
+		Expect(session.Wait("1m")).To(gexec.Exit(0))
+		originalStack := &Stack{}
+		err := json.Unmarshal(session.Out.Contents(), originalStack)
 		Expect(err).NotTo(HaveOccurred())
 		originalStackImage = originalStack.Spec.RunImage.Image
-		output, err := Kubectl("patch", defaultStack, "--type=merge", "-p", `{"spec":{"runImage":{"image":"index.docker.io/paketobuildpacks/run:0.0.74-full-cnb"}}}`)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(output).To(ContainSubstring("clusterstack.kpack.io/bionic-stack patched"))
+		session = KubectlSession("patch", defaultStack, "--type=merge", "-p", `{"spec":{"runImage":{"image":"index.docker.io/paketobuildpacks/run:0.0.74-full-cnb"}}}`)
+		Expect(session.Wait("3m")).To(gexec.Exit(0))
+		Expect(session.Out.Contents()).Should(ContainSubstring("clusterstack.kpack.io/bionic-stack patched"))
 	})
 
 	AfterEach(func() {
 		DeleteApp(appGUID)
-		output, err := Kubectl("patch", defaultStack, "--type=merge", "-p", fmt.Sprintf(`{"spec":{"runImage":{"image":"%s"}}}`, originalStackImage))
-		Expect(err).NotTo(HaveOccurred())
-		Expect(output).To(ContainSubstring("clusterstack.kpack.io/bionic-stack patched"))
+		session := KubectlSession("patch", defaultStack, "--type=merge", "-p", fmt.Sprintf(`{"spec":{"runImage":{"image":"%s"}}}`, originalStackImage))
+		Expect(session.Wait("3m")).To(gexec.Exit(0))
+		Expect(session.Out.Contents()).Should(ContainSubstring("clusterstack.kpack.io/bionic-stack patched"))
 	})
 
 	Context("When restarting an app with an updated stack", func() {
