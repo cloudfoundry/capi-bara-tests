@@ -1,4 +1,4 @@
 ---
 applications:
 - env:
-    GOPACKAGENAME: workspace
+    GOPACKAGENAME: multi-port-app
