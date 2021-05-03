@@ -1,8 +1,11 @@
 package v3_helpers
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 
@@ -89,8 +92,14 @@ func WaitUntilDeploymentReachesStatus(deploymentGUID, statusValue, statusReason 
 }
 
 func GetRunningInstancesStats(processGUID string) int {
-	processPath := fmt.Sprintf("/v3/processes/%s/stats", processGUID)
-	session := cf.Cf("curl", "-f", processPath).Wait()
+	processStatsURL := fmt.Sprintf("%s%s/v3/processes/%s/stats", Config.Protocol(), Config.GetApiEndpoint(), processGUID)
+
+	client := buildHTTPClient()
+	req, err := http.NewRequest("GET", processStatsURL, nil)
+	req.Header.Add("Authorization", GetAuthToken())
+	resp, err := client.Do(req)
+	Expect(err).NotTo(HaveOccurred())
+
 	instancesJSON := struct {
 		Resources []struct {
 			Type  string `json:"type"`
@@ -98,8 +107,12 @@ func GetRunningInstancesStats(processGUID string) int {
 		} `json:"resources"`
 	}{}
 
-	bytes := session.Wait().Out.Contents()
-	err := json.Unmarshal(bytes, &instancesJSON)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(resp.StatusCode).To(Equal(200))
+
+	err = json.Unmarshal(body, &instancesJSON)
 	Expect(err).NotTo(HaveOccurred())
 	numRunning := 0
 
@@ -109,4 +122,17 @@ func GetRunningInstancesStats(processGUID string) int {
 		}
 	}
 	return numRunning
+}
+
+func buildHTTPClient() *http.Client {
+	var client *http.Client
+	if Config.GetSkipSSLValidation() {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client = &http.Client{Transport: tr}
+	} else {
+		client = &http.Client{}
+	}
+	return client
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func GetAuthToken() string {
-	session := cf.Cf("oauth-token")
+	session := cf.CfRedact("bearer", "oauth-token")
 	bytes := session.Wait().Out.Contents()
 	return strings.TrimSpace(string(bytes))
 }
