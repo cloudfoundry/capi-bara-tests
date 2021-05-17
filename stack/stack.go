@@ -3,7 +3,6 @@ package stack
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
@@ -20,6 +19,7 @@ var _ = Describe("Stack", func() {
 	SkipOnVMs("on VMs, this is orchestrated with BOSH magic")
 	const (
 		defaultStack = "clusterstacks/bionic-stack"
+		newRunImage = "index.docker.io/paketobuildpacks/run:1.2.0-full-cnb"
 	)
 	var (
 		appName            string
@@ -59,7 +59,8 @@ var _ = Describe("Stack", func() {
 		err := json.Unmarshal(session.Out.Contents(), originalStack)
 		Expect(err).NotTo(HaveOccurred())
 		originalStackImage = originalStack.Spec.RunImage.Image
-		session = Kubectl("patch", defaultStack, "--type=merge", "-p", `{"spec":{"runImage":{"image":"index.docker.io/paketobuildpacks/run:0.0.74-full-cnb"}}}`)
+
+		session = Kubectl("patch", defaultStack, "--type=merge", "-p", fmt.Sprintf(`{"spec":{"runImage":{"image":"%s"}}}`, newRunImage))
 		Expect(session.Wait("3m")).To(gexec.Exit(0))
 		Expect(session.Out.Contents()).Should(ContainSubstring("clusterstack.kpack.io/bionic-stack patched"))
 	})
@@ -72,10 +73,11 @@ var _ = Describe("Stack", func() {
 	})
 
 	Context("When restarting an app with an updated stack", func() {
-		It("starts the app successfully and the droplet contains the rebased image reference", func() {
+		FIt("starts the app successfully and the droplet contains the rebased image reference", func() {
+			stackFailedToUpdateMsg := fmt.Sprintf("Stack did not update. Make sure the %s stack updated to %s without errors", defaultStack, newRunImage)
 			Eventually(func() string {
 				return GetDroplet(dropletGUID).Image
-			}, "45s", "1s").ShouldNot(Equal(dropletImage))
+			}, "45s", "1s").ShouldNot(Equal(dropletImage), stackFailedToUpdateMsg)
 
 			By("Restarting the app")
 			Expect(cf.Cf("restart", appName).Wait(Config.CfPushTimeoutDuration())).To(gexec.Exit(0))
