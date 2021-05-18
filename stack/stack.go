@@ -73,7 +73,7 @@ var _ = Describe("Stack", func() {
 	})
 
 	Context("When restarting an app with an updated stack", func() {
-		FIt("starts the app successfully and the droplet contains the rebased image reference", func() {
+		It("starts the app successfully and the droplet contains the rebased image reference", func() {
 			stackFailedToUpdateMsg := fmt.Sprintf("Stack did not update. Make sure the %s stack updated to %s without errors", defaultStack, newRunImage)
 			Eventually(func() string {
 				return GetDroplet(dropletGUID).Image
