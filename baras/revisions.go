@@ -336,7 +336,7 @@ var _ = Describe("revisions", func() {
 			)
 
 			BeforeEach(func() {
-				newCommand = "TEST_VAR=real bundle exec rackup config.ru -p $PORT"
+				newCommand = "TEST_VAR=real bundle exec rackup config.ru -p $PORT -o 0.0.0.0"
 				SetCommandOnProcess(appGUID, "web", newCommand)
 			})
 
@@ -419,7 +419,7 @@ var _ = Describe("revisions", func() {
 			)
 
 			BeforeEach(func() {
-				newCommand = "TEST_VAR=real bundle exec rackup config.ru -p $PORT"
+				newCommand = "TEST_VAR=real bundle exec rackup config.ru -p $PORT -o 0.0.0.0"
 				SetCommandOnProcess(appGUID, "web", newCommand)
 				UpdateEnvironmentVariables(appGUID, `{"foo":"deffo-not-bar"}`)
 				zdtRestartAndWait(appGUID)
