@@ -314,12 +314,12 @@ applications:
     WHAT_AM_I: MOTORCYCLE
   sidecars:
   - name: 'left_sidecar'
-    command: WHAT_AM_I=LEFT_SIDECAR bundle exec rackup config.ru -p 8081
+    command: WHAT_AM_I=LEFT_SIDECAR bundle exec rackup config.ru -o 0.0.0.0 -p 8081
     memory: 10M
     process_types: ['web']
   - name: 'right_sidecar'
     process_types: ['web']
-    command: WHAT_AM_I=RIGHT_SIDECAR bundle exec rackup config.ru -p 8082
+    command: WHAT_AM_I=RIGHT_SIDECAR bundle exec rackup config.ru -o 0.0.0.0 -p 8082
     memory: 20M
 
 `, apps[0].name)
@@ -726,7 +726,7 @@ applications:
   - type: logs
     instances: 1
     memory: 4096M
-    command: "bundle exec rackup config.ru -p $PORT"
+    command: "bundle exec rackup config.ru -o 0.0.0.0 -p $PORT"
     disk_quota: 1024M
     health-check-type: http
     health-check-http-endpoint: '/'

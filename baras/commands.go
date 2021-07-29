@@ -145,7 +145,7 @@ applications:
 			Expect(string(response)).To(ContainSubstring("200 OK"))
 
 			webProcess = GetProcessByGuid(webProcessWithCommandRedacted.Guid)
-			Expect(webProcess.Command).To(Equal("bundle exec rackup config.ru -p $PORT"))
+			Expect(webProcess.Command).To(Equal("bundle exec rackup config.ru -p $PORT -o 0.0.0.0"))
 		})
 
 		It("prioritizes the manifest command over the Procfile and can be reset via manifest", func() {
@@ -174,7 +174,7 @@ applications:
 			PollJob(GetJobPath(response))
 
 			webProcess = GetProcessByGuid(webProcessWithCommandRedacted.Guid)
-			Expect(webProcess.Command).To(Equal("bundle exec rackup config.ru -p $PORT"))
+			Expect(webProcess.Command).To(Equal("bundle exec rackup config.ru -p $PORT -o 0.0.0.0"))
 		})
 	})
 })

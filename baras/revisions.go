@@ -109,7 +109,7 @@ var _ = Describe("revisions", func() {
 			)
 
 			BeforeEach(func() {
-				newCommand = "cmd=real bundle exec rackup config.ru -p $PORT"
+				newCommand = "cmd=real bundle exec rackup config.ru -p $PORT -o 0.0.0.0"
 				SetCommandOnProcess(appGUID, "web", newCommand)
 			})
 
@@ -212,7 +212,7 @@ var _ = Describe("revisions", func() {
 			)
 
 			BeforeEach(func() {
-				newCommand = "cmd=real bundle exec rackup config.ru -p $PORT"
+				newCommand = "cmd=real bundle exec rackup config.ru -p $PORT -o 0.0.0.0"
 				SetCommandOnProcess(appGUID, "web", newCommand)
 			})
 
@@ -279,7 +279,7 @@ var _ = Describe("revisions", func() {
 			)
 
 			BeforeEach(func() {
-				newCommand = "cmd=real bundle exec rackup config.ru -p $PORT"
+				newCommand = "cmd=real bundle exec rackup config.ru -p $PORT -o 0.0.0.0"
 				SetCommandOnProcess(appGUID, "web", newCommand)
 			})
 
