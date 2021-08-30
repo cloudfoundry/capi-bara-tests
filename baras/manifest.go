@@ -177,6 +177,7 @@ applications:
     snack: walnuts
   routes:
   - route: %s
+    protocol: http1
   metadata:
     labels:
       potato: yams
