@@ -11,7 +11,6 @@ require "stress_testers"
 require "log_utils"
 require "curl"
 require 'bundler'
-require 'typhoeus'
 Bundler.require :default, ENV['RACK_ENV'].to_sym
 
 $stdout.sync = true
@@ -119,13 +118,6 @@ class Dora < Sinatra::Base
     size = numKB > fiveMB ? fiveMB : numKB
     size.times {text+=ktext}
     text
-  end
-
-  get '/config' do
-    puts "Sending a request to the config-server sidecar at localhost:#{ENV['CONFIG_SERVER_PORT']}/config/"
-    response = Typhoeus.get("localhost:#{ENV['CONFIG_SERVER_PORT']}/config/")
-    puts "Received #{response.body} from the config-server sidecar"
-    response.body
   end
 
   get '/uptime' do
