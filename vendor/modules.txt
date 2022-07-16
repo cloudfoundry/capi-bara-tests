@@ -59,9 +59,14 @@ github.com/facebookgo/muster
 ## explicit
 # github.com/facebookgo/subset v0.0.0-20200203212716-c811ad88dec4
 ## explicit
+# github.com/frankban/quicktest v1.14.3
+## explicit
 # github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
+# github.com/golang/snappy v0.0.4
+## explicit
+github.com/golang/snappy
 # github.com/google/gofuzz v1.0.0
 github.com/google/gofuzz
 # github.com/gorilla/mux v1.7.4
@@ -78,7 +83,7 @@ github.com/hpcloud/tail/ratelimiter
 github.com/hpcloud/tail/util
 github.com/hpcloud/tail/watch
 github.com/hpcloud/tail/winfile
-# github.com/mholt/archiver v2.0.0+incompatible
+# github.com/mholt/archiver v2.1.0+incompatible
 ## explicit
 github.com/mholt/archiver
 # github.com/nwaples/rardecode v0.0.0-20171029023500-e06696f847ae
@@ -127,6 +132,10 @@ github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
+# github.com/pierrec/lz4 v2.6.1+incompatible
+## explicit
+github.com/pierrec/lz4
+github.com/pierrec/lz4/internal/xxh32
 # github.com/satori/go.uuid v1.2.0
 ## explicit
 github.com/satori/go.uuid

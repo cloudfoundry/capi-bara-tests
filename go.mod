@@ -15,12 +15,15 @@ require (
 	github.com/facebookgo/muster v0.0.0-20150708232844-fd3d7953fd52 // indirect
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/facebookgo/subset v0.0.0-20200203212716-c811ad88dec4 // indirect
+	github.com/frankban/quicktest v1.14.3 // indirect
+	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gorilla/mux v1.7.4
 	github.com/honeycombio/libhoney-go v1.6.1-0.20180420154957-26d0d7dd8b07
-	github.com/mholt/archiver v2.0.0+incompatible
+	github.com/mholt/archiver v2.1.0+incompatible
 	github.com/nwaples/rardecode v0.0.0-20171029023500-e06696f847ae // indirect
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
+	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/satori/go.uuid v1.2.0
 	github.com/ulikunitz/xz v0.5.4 // indirect
 	golang.org/x/sys v0.0.0-20200331124033-c3d80250170d // indirect
