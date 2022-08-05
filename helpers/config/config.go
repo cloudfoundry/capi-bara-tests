@@ -57,6 +57,13 @@ type BaraConfig interface {
 	GetUseExistingUser() bool
 	GetUseExistingOrganization() bool
 	GetUseExistingSpace() bool
+
+	// not implemented
+	GetAddExistingUserToExistingSpace() bool
+	GetAdminClient() string
+	GetAdminClientSecret() string
+	GetExistingClient() string
+	GetExistingClientSecret() string
 }
 
 func NewBaraConfig(path string) (BaraConfig, error) {

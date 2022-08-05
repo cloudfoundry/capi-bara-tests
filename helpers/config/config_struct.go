@@ -463,3 +463,28 @@ func (c *config) GetShouldKeepUser() bool             { return false }
 func (c *config) GetUseExistingUser() bool            { return false }
 func (c *config) GetUseExistingOrganization() bool    { return false }
 func (c *config) GetUseExistingSpace() bool           { return false }
+
+func (c *config) GetAddExistingUserToExistingSpace() bool {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *config) GetAdminClient() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *config) GetAdminClientSecret() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *config) GetExistingClient() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *config) GetExistingClientSecret() string {
+	//TODO implement me
+	panic("implement me")
+}
