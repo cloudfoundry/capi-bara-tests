@@ -58,7 +58,7 @@ type BaraConfig interface {
 	GetUseExistingOrganization() bool
 	GetUseExistingSpace() bool
 
-	// not implemented
+	// added from bumping cf-test-helper to v2
 	GetAddExistingUserToExistingSpace() bool
 	GetAdminClient() string
 	GetAdminClientSecret() string
