@@ -14,7 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
 
-	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
+	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	bara_config "github.com/cloudfoundry/capi-bara-tests/helpers/config"
 )

@@ -1,7 +1,7 @@
 package app_helpers
 
 import (
-	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
+	"github.com/cloudfoundry/cf-test-helpers/v2/workflowhelpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 )
 

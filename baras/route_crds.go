@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/cf-k8s-networking/routecontroller/api/v1alpha1"
-	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
+	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

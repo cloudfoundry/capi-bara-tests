@@ -3,7 +3,7 @@ package v3_helpers
 import (
 	"strings"
 
-	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
+	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
 )
 
 func GetAuthToken() string {

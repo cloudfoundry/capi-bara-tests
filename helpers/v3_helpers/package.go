@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
-	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
+	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
+	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -26,7 +26,7 @@ func CreatePackage(appGUID string) string {
 
 func UploadPackage(uploadURL, packageZipPath string) {
 	bits := fmt.Sprintf(`bits=@%s`, packageZipPath)
-	curl := helpers.Curl(Config, "--http1.1", "-v", "-s", "-f", "--show-error", uploadURL, "-F", bits, "-H", fmt.Sprintf("Authorization: %s", GetAuthToken())).		Wait(Config.CfPushTimeoutDuration())
+	curl := helpers.Curl(Config, "--http1.1", "-v", "-s", "-f", "--show-error", uploadURL, "-F", bits, "-H", fmt.Sprintf("Authorization: %s", GetAuthToken())).Wait(Config.CfPushTimeoutDuration())
 	Expect(curl).To(Exit(0))
 }
 

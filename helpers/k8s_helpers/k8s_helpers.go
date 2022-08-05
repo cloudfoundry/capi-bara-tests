@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 
 	route_crds "code.cloudfoundry.org/cf-k8s-networking/routecontroller/api/v1alpha1"
-	"github.com/cloudfoundry-incubator/cf-test-helpers/commandreporter"
-	"github.com/cloudfoundry-incubator/cf-test-helpers/commandstarter"
+	"github.com/cloudfoundry/cf-test-helpers/v2/commandreporter"
+	"github.com/cloudfoundry/cf-test-helpers/v2/commandstarter"
 	"github.com/onsi/gomega/gexec"
 
 	. "github.com/onsi/gomega"
