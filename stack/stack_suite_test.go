@@ -4,19 +4,16 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/cloudfoundry/custom-cats-reporters/honeycomb"
-	"github.com/cloudfoundry/custom-cats-reporters/honeycomb/client"
-	"github.com/honeycombio/libhoney-go"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/cli_version_check"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/config"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
@@ -67,34 +64,14 @@ func TestStack(t *testing.T) {
 		}
 	}, func() {})
 
-	rs := []Reporter{}
+	_, rc := GinkgoConfiguration()
 
 	if validationError == nil {
 		if Config.GetArtifactsDirectory() != "" {
 			helpers.EnableCFTrace(Config, "STACK")
-			rs = append(rs, helpers.NewJUnitReporter(Config, "STACK"))
+			rc.JUnitReport = filepath.Join(Config.GetArtifactsDirectory(), fmt.Sprintf("junit-%s-%d.xml", "STACK", GinkgoParallelProcess()))
 		}
 	}
 
-	reporterConfig := Config.GetReporterConfig()
-
-	if reporterConfig.HoneyCombDataset != "" && reporterConfig.HoneyCombWriteKey != "" {
-		honeyCombClient := client.New(libhoney.Config{
-			WriteKey: reporterConfig.HoneyCombWriteKey,
-			Dataset:  reporterConfig.HoneyCombDataset,
-		})
-
-		globalTags := map[string]interface{}{
-			"run_id":  os.Getenv("RUN_ID"),
-			"env_api": Config.GetApiEndpoint(),
-		}
-
-		honeyCombReporter := honeycomb.New(honeyCombClient)
-		honeyCombReporter.SetGlobalTags(globalTags)
-		honeyCombReporter.SetCustomTags(reporterConfig.CustomTags)
-
-		rs = append(rs, honeyCombReporter)
-	}
-
-	RunSpecsWithDefaultAndCustomReporters(t, "STACK", rs)
+	RunSpecs(t, "STACK", rc)
 }

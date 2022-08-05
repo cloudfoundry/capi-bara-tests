@@ -9,7 +9,7 @@ import (
 	"code.cloudfoundry.org/cf-k8s-networking/routecontroller/api/v1alpha1"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 
@@ -154,7 +154,6 @@ spec:
 				session := Kubectl("-n", "cf-system", "get", "periodicsync", "cf-api-periodic-route-sync", "-o", `jsonpath='{.status.conditions[?(@.type=="Synced")].lastTransitionTime}'`)
 				Expect(session.Wait("1m")).To(gexec.Exit(0), "Failed to get PeriodicSync resource")
 				lastSyncTime := session.Out.Contents()
-
 
 				// delete route resource in Kubernetes
 				session = Kubectl("delete", "-n", "cf-workloads", "route", routeGUID)

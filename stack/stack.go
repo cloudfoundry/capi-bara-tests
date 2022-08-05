@@ -10,7 +10,7 @@ import (
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/k8s_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
@@ -19,7 +19,7 @@ var _ = Describe("Stack", func() {
 	SkipOnVMs("on VMs, this is orchestrated with BOSH magic")
 	const (
 		defaultStack = "clusterstacks/bionic-stack"
-		newRunImage = "index.docker.io/paketobuildpacks/run:1.2.0-full-cnb"
+		newRunImage  = "index.docker.io/paketobuildpacks/run:1.2.0-full-cnb"
 	)
 	var (
 		appName            string

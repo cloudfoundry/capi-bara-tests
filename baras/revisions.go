@@ -8,7 +8,7 @@ import (
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -429,7 +429,7 @@ var _ = Describe("revisions", func() {
 			It("creates a new revision with the droplet, environment variables, and detected start command from the specified revision", func() {
 				deploymentGUID := RollbackDeployment(appGUID, originalRevisionGUID)
 				Expect(deploymentGUID).ToNot(BeEmpty())
-				WaitUntilDeploymentReachesStatus(deploymentGUID,"FINALIZED", "DEPLOYED")
+				WaitUntilDeploymentReachesStatus(deploymentGUID, "FINALIZED", "DEPLOYED")
 
 				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 2))
 				revision := GetNewestRevision(appGUID)
@@ -461,5 +461,5 @@ func waitForAllInstancesToStart(appGUID string, instances int) {
 func zdtRestartAndWait(appGUID string) {
 	deploymentGUID := CreateDeployment(appGUID)
 	Expect(deploymentGUID).ToNot(BeEmpty())
-	WaitUntilDeploymentReachesStatus(deploymentGUID,"FINALIZED", "DEPLOYED")
+	WaitUntilDeploymentReachesStatus(deploymentGUID, "FINALIZED", "DEPLOYED")
 }
