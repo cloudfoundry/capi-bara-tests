@@ -191,12 +191,14 @@ applications:
     health-check-http-endpoint: /env
     health-check-type: http
     instances: 2
+    log-rate-limit-per-second: -1
     memory: 300M
     timeout: 75
     type: web
   - disk_quota: 1024M
     health-check-type: process
     instances: 0
+    log-rate-limit-per-second: -1
     memory: 256M
     type: worker
 `, apps[0].name, Config.GetRubyBuildpackName(), apps[0].route)
