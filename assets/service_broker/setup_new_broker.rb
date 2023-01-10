@@ -7,14 +7,6 @@ require 'securerandom'
 broker_name = ARGV[0]
 broker_name ||= 'async-broker'
 
-# finds the first public shared domain
-cf_domains_output = `cf domains`
-domain = cf_domains_output.split(/\n/).map { |column| column.split(/\s+/) }.find do |x|
-  x[1] == "shared" && x[2] != "true"
-end[0]
-
-puts "Setting up broker `#{broker_name}` on #{domain}"
-
 $service_name = nil
 
 def uniquify_config
@@ -99,9 +91,17 @@ def enable_service_access
 end
 
 uniquify_config
+
 push_broker(broker_name)
 
-url = "http://#{broker_name}.#{domain}"
+app_guid, routes_object, url = ""
+IO.popen("cf app #{broker_name} --guid") do |cmd|
+  app_guid = cmd.read.chomp
+end
+
+IO.popen("cf curl /v3/apps/#{app_guid}/routes") do |cmd|
+  url = "https://" + JSON.parse(cmd.read)["resources"][0]["url"]
+end
 
 output = create_service_broker(broker_name, url)
 if broker_already_exists?(output)
