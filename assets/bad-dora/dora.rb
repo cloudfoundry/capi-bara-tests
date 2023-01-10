@@ -12,12 +12,12 @@ require "stress_testers"
 require "log_utils"
 require "curl"
 require 'bundler'
-require 'typhoeus'
 Bundler.require :default, ENV['RACK_ENV'].to_sym
 
 $stdout.sync = true
 $stderr.sync = true
 $counter = 0
+$start_time = Time.now
 
 class Dora < Sinatra::Base
   use Instances
@@ -38,10 +38,6 @@ class Dora < Sinatra::Base
     else
       "I'm alive"
     end
-  end
-
-  get '/always_crash' do
-    status 500
   end
 
   get '/ping/:address' do
@@ -125,11 +121,8 @@ class Dora < Sinatra::Base
     text
   end
 
-  get '/config' do
-    puts "Sending a request to the config-server sidecar at localhost:#{ENV['CONFIG_SERVER_PORT']}/config/"
-    response = Typhoeus.get("localhost:#{ENV['CONFIG_SERVER_PORT']}/config/")
-    puts "Received #{response.body} from the config-server sidecar"
-    response.body
+  get '/uptime' do
+    (Time.now - $start_time).to_s
   end
 
   run! if app_file == $0
