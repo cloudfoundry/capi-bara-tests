@@ -23,6 +23,6 @@ require (
 	github.com/onsi/gomega v1.9.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/ulikunitz/xz v0.5.4 // indirect
-	golang.org/x/sys v0.0.0-20200331124033-c3d80250170d // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	gopkg.in/alexcesaro/statsd.v2 v2.0.0 // indirect
 )
