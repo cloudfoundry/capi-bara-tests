@@ -6,4 +6,4 @@ include_files:
 - bin/supply
 - manifest.yml
 language: sleepy-sidecar
-stack: cflinuxfs3
+stack: cflinuxfs4

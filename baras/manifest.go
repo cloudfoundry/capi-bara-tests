@@ -185,7 +185,7 @@ applications:
     annotations:
       contact: "jack@example.com diane@example.org"
       cougar: mellencamp
-  stack: cflinuxfs3
+  stack: cflinuxfs4
   processes:
   - disk_quota: 1024M
     health-check-http-endpoint: /env
