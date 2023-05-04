@@ -44,7 +44,7 @@ func (droplet *AppDroplet) Create() error {
 	dropletBytes, err := json.Marshal(droplet)
 	Expect(err).ToNot(HaveOccurred())
 
-	session := cf.Cf("curl", "-X", "POST", "/v3/droplets", "-d", fmt.Sprintf("'%s'", string(dropletBytes)))
+	session := cf.Cf("curl", "-X", "POST", "/v3/droplets", "-d", string(dropletBytes))
 	Eventually(session).Should(Exit(0))
 
 	// Populate the guid on the struct from the curl output

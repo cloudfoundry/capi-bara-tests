@@ -231,9 +231,9 @@ var _ = Describe("sidecars", func() {
 		Context("using cf push", func() {
 			JustBeforeEach(func() {
 				session := cf.Cf("push", appName,
-					"-p", assets.NewAssets().Binary,
+					"-p", assets.NewAssets().Dora,
 					"-b", buildpackName,
-					"-b", Config.GetBinaryBuildpackName())
+					"-b", Config.GetRubyBuildpackName())
 				Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 			})
 
@@ -250,32 +250,7 @@ var _ = Describe("sidecars", func() {
 				session := cf.Cf("ssh", appName, "-c", "ps aux | grep sleep | grep -v grep")
 				Eventually(session).Should(Exit(0))
 			})
-
 		})
-
-		Context("using v3 endpoints", func() {
-			JustBeforeEach(func() {
-				session := cf.Cf("push", appName,
-					"-p", assets.NewAssets().Binary,
-					"-b", buildpackName,
-					"-b", Config.GetBinaryBuildpackName())
-				Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
-			})
-
-			It("runs the sidecar process", func() {
-				By("verifying the sidecar is on the app")
-				sidecars := GetAppSidecars(appGUID)
-				Expect(sidecars).To(HaveLen(1))
-				Expect(sidecars[0].Name).To(Equal("sleepy"))
-				Expect(sidecars[0].Command).To(Equal("sleep infinity"))
-				Expect(sidecars[0].ProcessTypes).To(Equal([]string{"web"}))
-
-				By("verify the sidecar is running")
-				session := cf.Cf("ssh", appName, "-c", "ps aux | grep sleep | grep -v grep")
-				Eventually(session).Should(Exit(0))
-			})
-		})
-
 	})
 })
 
