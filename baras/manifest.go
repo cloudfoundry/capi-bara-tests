@@ -193,6 +193,7 @@ applications:
     instances: 2
     log-rate-limit-per-second: -1
     memory: 300M
+    readiness-health-check-type: process
     timeout: 75
     type: web
   - disk_quota: 1024M
@@ -200,6 +201,7 @@ applications:
     instances: 0
     log-rate-limit-per-second: -1
     memory: 256M
+    readiness-health-check-type: process
     type: worker
 `, apps[0].name, Config.GetRubyBuildpackName(), apps[0].route)
 			})
