@@ -469,3 +469,5 @@ func (c *config) GetAdminClient() string                  { return "" }
 func (c *config) GetAdminClientSecret() string            { return "" }
 func (c *config) GetExistingClient() string               { return "" }
 func (c *config) GetExistingClientSecret() string         { return "" }
+func (c *config) GetAdminOrigin() string                  { return "" }
+func (c *config) GetUserOrigin() string                   { return "" }
