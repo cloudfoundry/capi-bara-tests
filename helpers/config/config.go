@@ -64,6 +64,8 @@ type BaraConfig interface {
 	GetAdminClientSecret() string
 	GetExistingClient() string
 	GetExistingClientSecret() string
+	GetAdminOrigin() string
+	GetUserOrigin() string
 }
 
 func NewBaraConfig(path string) (BaraConfig, error) {
