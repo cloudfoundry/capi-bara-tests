@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
 	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
 	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
 	"github.com/cloudfoundry/cf-test-helpers/v2/workflowhelpers"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
 
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/services"
@@ -144,7 +144,6 @@ applications:
 		})
 
 		Context("when routes are specified", func() {
-			SkipOnK8s("Stacks on k8s aren't populated consistently yet, so get manifest endpoint has different behavior")
 			BeforeEach(func() {
 				manifestToApply = fmt.Sprintf(`
 applications:
@@ -308,7 +307,6 @@ applications:
 		})
 
 		Describe("sidecars", func() {
-			SkipOnK8s("no sidecars available on k8s (yet)")
 			BeforeEach(func() {
 				manifestToApply = fmt.Sprintf(`
 applications:
@@ -606,7 +604,6 @@ applications:
 				})
 
 				Context("when buildpack autodetection is specified", func() {
-					SkipOnK8s("kpack buildpack autodetection doesn't currently populate docker dropets with lifecycle info")
 					var currentDrop struct {
 						Buildpacks []map[string]string `json:"buildpacks"`
 					}
@@ -645,7 +642,6 @@ applications:
 		})
 
 		Describe("services", func() {
-			SkipOnK8s("requires real TLS for broker.Create()")
 			BeforeEach(func() {
 				apps = append(apps, makeApp(spaceGUID))
 
@@ -704,7 +700,6 @@ applications:
 		})
 
 		Context("with multiple processes and custom commands in the manifest", func() {
-			SkipOnK8s("custom start commands dont get correct environment")
 			It("starts all the processes", func() {
 				appName := random_name.BARARandomName("APP")
 				session := cf.Cf("create-app", appName)

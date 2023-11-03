@@ -45,7 +45,6 @@ type BaraConfig interface {
 	GetGcloudProjectName() string
 	GetClusterZone() string
 	GetClusterName() string
-	RunningOnK8s() bool
 
 	// Used only by TestConfig?
 	GetConfigurableTestPassword() string

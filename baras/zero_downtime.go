@@ -6,13 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
-	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
-	"github.com/cloudfoundry/cf-test-helpers/v2/workflowhelpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
+	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
+	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
+	"github.com/cloudfoundry/cf-test-helpers/v2/workflowhelpers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
@@ -104,8 +104,6 @@ var _ = Describe("Zero downtime operations", func() {
 	})
 
 	Context("When adding a route destination to a process", func() {
-		SkipOnK8s("not entirely clear why this doesn't work on cf-for-k8s...")
-
 		It("downtime does not occur until the app is restarted", func() {
 			originalUptime, err := time.ParseDuration(helpers.CurlApp(Config, appName, "/uptime"))
 			Expect(err).ToNot(HaveOccurred())
@@ -132,8 +130,6 @@ var _ = Describe("Zero downtime operations", func() {
 	})
 
 	Context("When updating route destinations on processes", func() {
-		SkipOnK8s("not entirely clear why this doesn't work on cf-for-k8s...")
-
 		It("downtime does not occur until an app is restarted", func() {
 			originalUptime, err := time.ParseDuration(helpers.CurlApp(Config, appName, "/uptime"))
 			Expect(err).ToNot(HaveOccurred())

@@ -2,12 +2,12 @@ package baras
 
 import (
 	"fmt"
-	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
-	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
+	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
+	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -103,7 +103,6 @@ var _ = Describe("revisions", func() {
 		})
 
 		Context("when the start command has changed on the app's processes", func() {
-			SkipOnK8s("custom start commands dont get correct environment")
 			var (
 				newCommand string
 			)
@@ -206,7 +205,6 @@ var _ = Describe("revisions", func() {
 		})
 
 		Context("when the start command has changed on the app's processes", func() {
-			SkipOnK8s("custom start commands dont get correct environment")
 			var (
 				newCommand string
 			)
@@ -273,7 +271,6 @@ var _ = Describe("revisions", func() {
 		})
 
 		Context("when there is a new command on a process", func() {
-			SkipOnK8s("custom start commands dont get correct environment")
 			var (
 				newCommand string
 			)
@@ -330,7 +327,6 @@ var _ = Describe("revisions", func() {
 		})
 
 		Context("when the start command has changed on the app's processes", func() {
-			SkipOnK8s("custom start commands dont get correct environment")
 			var (
 				newCommand string
 			)
@@ -377,7 +373,6 @@ var _ = Describe("revisions", func() {
 		})
 
 		Context("rolling back to detected dora command", func() {
-			SkipOnK8s("custom start commands dont get correct environment")
 			var (
 				newCommand string
 			)
@@ -413,7 +408,6 @@ var _ = Describe("revisions", func() {
 		})
 
 		Context("rolling back to specified dora command", func() {
-			SkipOnK8s("custom start commands dont get correct environment")
 			var (
 				newCommand string
 			)
