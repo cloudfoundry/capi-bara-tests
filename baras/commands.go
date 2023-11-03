@@ -38,8 +38,6 @@ var _ = Describe("setting_process_commands", func() {
 	})
 
 	Describe("when a buildpack doesn't return process types with start commands", func() {
-		SkipOnK8s("the fix made which introduced this test hasn't been made on cf-for-k8s yet")
-
 		BeforeEach(func() {
 			By("Creating an app")
 			appGUID = CreateApp(appName, spaceGUID, "{}")

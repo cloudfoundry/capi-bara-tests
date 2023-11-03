@@ -420,11 +420,7 @@ func (c *config) GetStaticFileBuildpackName() string {
 }
 
 func (c *config) Lifecycle() string {
-	if c.RunningOnK8s() {
-		return "kpack"
-	} else {
-		return "buildpack"
-	}
+	return "buildpack"
 }
 
 func (c *config) GetGcloudProjectName() string {
@@ -447,10 +443,6 @@ func (c *config) GetReporterConfig() reporterConfig {
 	}
 
 	return reporterConfig{}
-}
-
-func (c *config) RunningOnK8s() bool {
-	return *c.Infrastructure == "kubernetes"
 }
 
 // Used only by TestConfig?
