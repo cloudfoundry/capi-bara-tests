@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"regexp"
 
-	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
+	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/config"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 )

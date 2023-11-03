@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
-	"github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/config"
+	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
 )
@@ -43,7 +42,8 @@ func printAppReportBanner(announcement string) {
 func getColor() (string, string) {
 	startColor := ""
 	endColor := ""
-	if !config.DefaultReporterConfig.NoColor {
+	_, reporterConfig := ginkgo.GinkgoConfiguration()
+	if !reporterConfig.NoColor {
 		startColor = "\x1b[35m"
 		endColor = "\x1b[0m"
 	}

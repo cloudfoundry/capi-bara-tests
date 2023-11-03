@@ -57,6 +57,15 @@ type BaraConfig interface {
 	GetUseExistingUser() bool
 	GetUseExistingOrganization() bool
 	GetUseExistingSpace() bool
+
+	// added from bumping cf-test-helper to v2
+	GetAddExistingUserToExistingSpace() bool
+	GetAdminClient() string
+	GetAdminClientSecret() string
+	GetExistingClient() string
+	GetExistingClientSecret() string
+	GetAdminOrigin() string
+	GetUserOrigin() string
 }
 
 func NewBaraConfig(path string) (BaraConfig, error) {

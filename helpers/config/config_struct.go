@@ -463,3 +463,11 @@ func (c *config) GetShouldKeepUser() bool             { return false }
 func (c *config) GetUseExistingUser() bool            { return false }
 func (c *config) GetUseExistingOrganization() bool    { return false }
 func (c *config) GetUseExistingSpace() bool           { return false }
+
+func (c *config) GetAddExistingUserToExistingSpace() bool { return false }
+func (c *config) GetAdminClient() string                  { return "" }
+func (c *config) GetAdminClientSecret() string            { return "" }
+func (c *config) GetExistingClient() string               { return "" }
+func (c *config) GetExistingClientSecret() string         { return "" }
+func (c *config) GetAdminOrigin() string                  { return "" }
+func (c *config) GetUserOrigin() string                   { return "" }

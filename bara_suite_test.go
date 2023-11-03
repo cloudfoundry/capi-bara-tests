@@ -4,24 +4,21 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
-
-	"github.com/cloudfoundry/custom-cats-reporters/honeycomb"
-	"github.com/cloudfoundry/custom-cats-reporters/honeycomb/client"
-	"github.com/honeycombio/libhoney-go"
+	"github.com/cloudfoundry/cf-test-helpers/v2/workflowhelpers"
 
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 
 	_ "github.com/cloudfoundry/capi-bara-tests/baras"
 
-	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/cli_version_check"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/config"
-	. "github.com/onsi/ginkgo"
+	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
@@ -115,34 +112,14 @@ func TestBARA(t *testing.T) {
 		os.Remove(assets.NewAssets().SleepySidecarBuildpackZip)
 	})
 
-	rs := []Reporter{}
+	_, rc := GinkgoConfiguration()
 
 	if validationError == nil {
 		if Config.GetArtifactsDirectory() != "" {
 			helpers.EnableCFTrace(Config, "BARA")
-			rs = append(rs, helpers.NewJUnitReporter(Config, "BARA"))
+			rc.JUnitReport = filepath.Join(Config.GetArtifactsDirectory(), fmt.Sprintf("junit-%s-%d.xml", "BARA", GinkgoParallelProcess()))
 		}
 	}
 
-	reporterConfig := Config.GetReporterConfig()
-
-	if reporterConfig.HoneyCombDataset != "" && reporterConfig.HoneyCombWriteKey != "" {
-		honeyCombClient := client.New(libhoney.Config{
-			WriteKey: reporterConfig.HoneyCombWriteKey,
-			Dataset:  reporterConfig.HoneyCombDataset,
-		})
-
-		globalTags := map[string]interface{}{
-			"run_id":  os.Getenv("RUN_ID"),
-			"env_api": Config.GetApiEndpoint(),
-		}
-
-		honeyCombReporter := honeycomb.New(honeyCombClient)
-		honeyCombReporter.SetGlobalTags(globalTags)
-		honeyCombReporter.SetCustomTags(reporterConfig.CustomTags)
-
-		rs = append(rs, honeyCombReporter)
-	}
-
-	RunSpecsWithDefaultAndCustomReporters(t, "BARA", rs)
+	RunSpecs(t, "BARA", rc)
 }
