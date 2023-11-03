@@ -50,8 +50,8 @@ github.com/go-logr/logr/funcr
 # github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572
 ## explicit; go 1.13
 github.com/go-task/slim-sprig
-# github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
-## explicit
+# github.com/gogo/protobuf v1.3.2
+## explicit; go 1.15
 github.com/gogo/protobuf/proto
 # github.com/golang/snappy v0.0.4
 ## explicit
