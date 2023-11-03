@@ -1,6 +1,3 @@
-# code.cloudfoundry.org/cf-k8s-networking/routecontroller v0.0.0-20200402182325-93aa9d58f2cf
-## explicit; go 1.13
-code.cloudfoundry.org/cf-k8s-networking/routecontroller/api/v1alpha1
 # code.cloudfoundry.org/credhub-cli v0.0.0-20231030130452-94343e94cef6
 ## explicit; go 1.21
 code.cloudfoundry.org/credhub-cli/credhub
@@ -56,7 +53,6 @@ github.com/go-task/slim-sprig
 # github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
 ## explicit
 github.com/gogo/protobuf/proto
-github.com/gogo/protobuf/sortkeys
 # github.com/golang/snappy v0.0.4
 ## explicit
 github.com/golang/snappy
@@ -67,9 +63,6 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/gofuzz v1.0.0
-## explicit; go 1.12
-github.com/google/gofuzz
 # github.com/google/pprof v0.0.0-20231023181126-ff6d637d2a7b
 ## explicit; go 1.19
 github.com/google/pprof/profile
@@ -130,8 +123,6 @@ github.com/pierrec/lz4/internal/xxh32
 # github.com/satori/go.uuid v1.2.0
 ## explicit
 github.com/satori/go.uuid
-# github.com/spf13/pflag v1.0.5
-## explicit; go 1.12
 # github.com/stretchr/testify v1.8.4
 ## explicit; go 1.20
 # github.com/ulikunitz/xz v0.5.4
@@ -156,10 +147,6 @@ golang.org/x/net/context
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
-golang.org/x/net/http/httpguts
-golang.org/x/net/http2
-golang.org/x/net/http2/hpack
-golang.org/x/net/idna
 golang.org/x/net/internal/socks
 golang.org/x/net/proxy
 # golang.org/x/sys v0.13.0
@@ -184,46 +171,11 @@ golang.org/x/text/internal/tag
 golang.org/x/text/internal/utf8internal
 golang.org/x/text/language
 golang.org/x/text/runes
-golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
-golang.org/x/text/unicode/bidi
-golang.org/x/text/unicode/norm
 # golang.org/x/tools v0.14.0
 ## explicit; go 1.18
 golang.org/x/tools/go/ast/inspector
 golang.org/x/tools/internal/typeparams
-# gopkg.in/inf.v0 v0.9.1
-## explicit
-gopkg.in/inf.v0
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
-# k8s.io/apimachinery v0.0.0-20191014065749-fb3eea214746
-## explicit; go 1.12
-k8s.io/apimachinery/pkg/api/resource
-k8s.io/apimachinery/pkg/apis/meta/v1
-k8s.io/apimachinery/pkg/conversion
-k8s.io/apimachinery/pkg/conversion/queryparams
-k8s.io/apimachinery/pkg/fields
-k8s.io/apimachinery/pkg/labels
-k8s.io/apimachinery/pkg/runtime
-k8s.io/apimachinery/pkg/runtime/schema
-k8s.io/apimachinery/pkg/selection
-k8s.io/apimachinery/pkg/types
-k8s.io/apimachinery/pkg/util/errors
-k8s.io/apimachinery/pkg/util/intstr
-k8s.io/apimachinery/pkg/util/json
-k8s.io/apimachinery/pkg/util/naming
-k8s.io/apimachinery/pkg/util/net
-k8s.io/apimachinery/pkg/util/runtime
-k8s.io/apimachinery/pkg/util/sets
-k8s.io/apimachinery/pkg/util/validation
-k8s.io/apimachinery/pkg/util/validation/field
-k8s.io/apimachinery/pkg/watch
-k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/klog v1.0.0
-## explicit; go 1.12
-k8s.io/klog
-# sigs.k8s.io/controller-runtime v0.4.0
-## explicit; go 1.13
-sigs.k8s.io/controller-runtime/pkg/scheme
