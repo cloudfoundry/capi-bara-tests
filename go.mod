@@ -5,7 +5,6 @@ go 1.21
 require (
 	code.cloudfoundry.org/credhub-cli v0.0.0-20231030130452-94343e94cef6
 	github.com/cloudfoundry/cf-test-helpers/v2 v2.8.0
-	github.com/cloudfoundry/noaa v0.0.0-20150515173136-f8b6ee8f2667
 	github.com/gorilla/mux v1.8.0
 	github.com/mholt/archiver v2.1.0+incompatible
 	github.com/onsi/ginkgo/v2 v2.13.0
@@ -21,7 +20,6 @@ require (
 	github.com/frankban/quicktest v1.14.6 // indirect
 	github.com/go-logr/logr v1.3.0 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
-	github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/pprof v0.0.0-20231023181126-ff6d637d2a7b // indirect
