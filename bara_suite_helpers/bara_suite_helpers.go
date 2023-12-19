@@ -29,6 +29,6 @@ func ZipAsset(assetPath, zipPath string) {
 		fileNames = append(fileNames, assetPath+"/"+file.Name())
 	}
 
-	err = archiver.Zip.Make(zipPath, fileNames)
+	err = archiver.Archive(fileNames, zipPath)
 	Expect(err).NotTo(HaveOccurred())
 }
