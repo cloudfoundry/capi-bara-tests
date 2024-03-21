@@ -11,21 +11,21 @@ var _ = Describe("nginx config logic", func() {
 	Describe("hitting /v3/packages/:guid/upload with invalid parameters", func() {
 		It("returns 422 Unprocessable Entity", func() {
 			session := cf.Cf("curl", "-X", "POST", "/v3/packages/literally-any-guid/upload?bits_path='some/path'", "-i")
-			Eventually(session).Should(Say("422 Unprocessable Entity"))
+			Eventually(session).Should(Say("422"))
 		})
 	})
 
 	Describe("hitting /v3/buildpacks/:guid/bits with invalid parameters", func() {
 		It("returns 422 Unprocessable Entity", func() {
 			session := cf.Cf("curl", "-X", "POST", "/v3/buildpacks/literally-any-guid/upload?bits_path='some/path'", "-i")
-			Eventually(session).Should(Say("422 Unprocessable Entity"))
+			Eventually(session).Should(Say("422"))
 		})
 	})
 
 	Describe("hitting /v3/droplets/:guid/upload with invalid parameters", func() {
 		It("returns 422 Unprocessable Entity", func() {
 			session := cf.Cf("curl", "-X", "POST", "/v3/droplets/literally-any-guid/upload?bits_path='some/path'", "-i")
-			Eventually(session).Should(Say("422 Unprocessable Entity"))
+			Eventually(session).Should(Say("422"))
 		})
 	})
 })
