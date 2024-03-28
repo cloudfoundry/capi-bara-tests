@@ -1,23 +1,25 @@
 package baras
 
 import (
+	"fmt"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/app_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
 	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
+	"os"
 )
 
 var _ = Describe("Droplet upload and download", func() {
 	var (
 		appGUID string
 		appName string
+		token   string
 	)
 
 	BeforeEach(func() {
@@ -25,6 +27,7 @@ var _ = Describe("Droplet upload and download", func() {
 		spaceName := TestSetup.RegularUserContext().Space
 		spaceGUID := GetSpaceGuidFromName(spaceName)
 		domainGUID := GetDomainGUIDFromName(Config.GetAppsDomain())
+		token = GetAuthToken()
 
 		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
@@ -45,14 +48,17 @@ var _ = Describe("Droplet upload and download", func() {
 				"-p", assets.NewAssets().CatnipZip,
 			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 
-			Expect(cf.Cf("download-droplet",
-				appName,
-				"--path", "/tmp/app.tgz",
-			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+			tmpDir, err := os.CreateTemp("", "droplet")
+			dropletPath := fmt.Sprintf("%s.tgz", tmpDir.Name())
+			Expect(err).NotTo(HaveOccurred())
+
+			// App droplet needs to be downloaded with curl due to:
+			// https://github.com/cloudfoundry/cli/issues/2225
+			DownloadAppDroplet(appGUID, dropletPath, token)
 
 			Expect(cf.Cf("push",
 				appName2,
-				"--droplet", "/tmp/app.tgz",
+				"--droplet", dropletPath,
 			).Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 
 			Eventually(helpers.CurlAppRoot(Config, appName2)).Should(Equal("Catnip?"))
@@ -69,7 +75,7 @@ var _ = Describe("Droplet upload and download", func() {
 
 			droplet.UploadFrom(assets.NewAssets().DoraDroplet)
 
-			v3_helpers.AssignDropletToApp(droplet.AppGUID, droplet.GUID)
+			AssignDropletToApp(droplet.AppGUID, droplet.GUID)
 			session := cf.Cf("start", appName)
 			Eventually(session).Should(Exit(0))
 			Eventually(helpers.CurlAppRoot(Config, appName)).Should(Equal("Hi, I'm Dora!"))

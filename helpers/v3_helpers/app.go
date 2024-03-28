@@ -3,11 +3,12 @@ package v3_helpers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
 	"strings"
 	"time"
 
-	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
+	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
 )
@@ -71,4 +72,22 @@ func RestartApp(appGUID string) {
 
 func DeleteApp(appGUID string) {
 	HandleAsyncRequest(fmt.Sprintf("/v3/apps/%s", appGUID), "DELETE")
+}
+
+func DownloadAppDroplet(appGuid string, dropletPath string, token string) *Session {
+	currentDroplet := cf.CfSilent("curl",
+		fmt.Sprintf("/v3/apps/%s/droplets/current", appGuid)).Wait()
+	Expect(currentDroplet).To(Exit(0),
+		fmt.Sprintf("failed getting current droplet for app %s plans", appGuid))
+
+	var droplet = struct {
+		Guid string `json:"guid"`
+	}{}
+	err := json.Unmarshal(currentDroplet.Out.Contents(), &droplet)
+	Expect(err).ToNot(HaveOccurred())
+
+	dropletDownloadUrl := fmt.Sprintf("%s%s/v3/droplets/%s/download", Config.Protocol(), Config.GetApiEndpoint(), droplet.Guid)
+	curl := helpers.CurlRedact(token, Config, dropletDownloadUrl, "-o", dropletPath, "-L", "-H", fmt.Sprintf("Authorization: %s", token)).Wait()
+	Expect(curl).To(Exit(0))
+	return curl
 }
