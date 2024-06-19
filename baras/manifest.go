@@ -171,6 +171,7 @@ applications:
 - name: %s
   buildpacks:
   - %s
+  lifecycle: buildpack
   env:
     foo: qux
     snack: walnuts
