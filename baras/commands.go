@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/app_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
@@ -33,7 +34,7 @@ var _ = Describe("setting_process_commands", func() {
 	})
 
 	AfterEach(func() {
-		FetchRecentLogs(appGUID, Config)
+		app_helpers.AppReport(appName)
 		DeleteApp(appGUID)
 	})
 

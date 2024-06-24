@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/cloudfoundry/capi-bara-tests/helpers/app_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
 	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
@@ -77,7 +78,7 @@ var _ = Describe("apply_manifest", func() {
 	})
 
 	AfterEach(func() {
-		FetchRecentLogs(apps[0].guid, Config)
+		app_helpers.AppReport(apps[0].name)
 		for _, app := range apps {
 			DeleteApp(app.guid)
 		}

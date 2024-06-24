@@ -6,10 +6,7 @@ import (
 	"strings"
 
 	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
-	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/config"
 
-	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
@@ -71,14 +68,6 @@ func HandleAsyncRequest(path string, method string) {
 
 	jobPath := GetJobPath(bytes)
 	PollJob(jobPath)
-}
-
-func FetchRecentLogs(appGuid string, config config.BaraConfig) *Session {
-	loggregatorEndpoint := getHttpLoggregatorEndpoint()
-	logURL := fmt.Sprintf("%s/apps/%s/recentlogs", loggregatorEndpoint, appGuid)
-	session := helpers.Curl(Config, logURL, "-H", fmt.Sprintf("Authorization: %s", GetAuthToken()))
-	Expect(session.Wait()).To(Exit(0))
-	return session
 }
 
 func GetGuidFromResponse(response []byte) string {
