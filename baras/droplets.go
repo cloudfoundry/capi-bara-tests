@@ -35,7 +35,7 @@ var _ = Describe("Droplet upload and download", func() {
 	})
 
 	AfterEach(func() {
-		FetchRecentLogs(appGUID, Config)
+		app_helpers.AppReport(appName)
 		DeleteApp(appGUID)
 	})
 

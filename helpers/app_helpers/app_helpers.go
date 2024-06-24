@@ -3,6 +3,7 @@ package app_helpers
 import (
 	"fmt"
 	"strings"
+        "time"
 
 	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
 	"github.com/onsi/ginkgo/v2"
@@ -26,6 +27,20 @@ func printStartAppReport(appName string) {
 func printEndAppReport(appName string) {
 	printAppReportBanner(fmt.Sprintf("*** END APP REPORT: %s ***", appName))
 }
+
+func AppReport(appName string) {
+	if appName == "" || !ginkgo.CurrentSpecReport().Failed() {
+		return
+	}
+
+	printStartAppReport(appName)
+
+	Eventually(cf.Cf("app", appName, "--guid"), time.Second*60).Should(Exit())
+	Eventually(cf.Cf("logs", "--recent", appName), time.Second*60).Should(Exit())
+
+	printEndAppReport(appName)
+}
+
 
 func printAppReportBanner(announcement string) {
 	startColor, endColor := getColor()
