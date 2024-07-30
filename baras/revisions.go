@@ -455,7 +455,7 @@ func waitForAllInstancesToStart(appGUID string, instances int) {
 }
 
 func zdtRestartAndWait(appGUID string) {
-	deploymentGUID := CreateDeployment(appGUID, "rolling")
+	deploymentGUID := CreateDeployment(appGUID, "rolling", "1")
 	Expect(deploymentGUID).ToNot(BeEmpty())
 	WaitUntilDeploymentReachesStatus(deploymentGUID, "FINALIZED", "DEPLOYED")
 }
