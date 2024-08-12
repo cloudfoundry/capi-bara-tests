@@ -14,9 +14,9 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-func CreateDeployment(appGUID, strategy, max_in_flight string) string {
+func CreateDeployment(appGUID, strategy string, max_in_flight int) string {
 	deploymentPath := fmt.Sprintf("/v3/deployments")
-	deploymentRequestBody := fmt.Sprintf(`{"strategy": "%s", "options": {"max_in_flight": %s }, "relationships": {"app": {"data": {"guid": "%s"}}}}`, strategy, max_in_flight, appGUID)
+	deploymentRequestBody := fmt.Sprintf(`{"strategy": "%s", "options": {"max_in_flight": %d }, "relationships": {"app": {"data": {"guid": "%s"}}}}`, strategy, max_in_flight, appGUID)
 	session := cf.Cf("curl", "-f", deploymentPath, "-X", "POST", "-d", deploymentRequestBody).Wait()
 	Expect(session).To(Exit(0))
 	var deployment struct {

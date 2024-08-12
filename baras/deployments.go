@@ -76,7 +76,7 @@ var _ = Describe("deployments", func() {
 	// TODO: delete me once we delete v2
 	Describe("Creating new processes on the same app", func() {
 		It("ignores older processes on the same app", func() {
-			deploymentGuid := CreateDeployment(appGUID, "rolling", "1")
+			deploymentGuid := CreateDeployment(appGUID, "rolling", 1)
 			Expect(deploymentGuid).ToNot(BeEmpty())
 			v3_processes := GetProcesses(appGUID, appName)
 			numWebProcesses := 0
@@ -172,7 +172,7 @@ var _ = Describe("deployments", func() {
 		})
 
 		It("completes the deployment", func() {
-			deploymentGUID := CreateDeployment(appGUID, "rolling", "1")
+			deploymentGUID := CreateDeployment(appGUID, "rolling", 1)
 			Expect(deploymentGUID).ToNot(BeEmpty())
 			WaitUntilDeploymentReachesStatus(deploymentGUID, "FINALIZED", "DEPLOYED")
 		})
@@ -358,7 +358,7 @@ var _ = Describe("deployments", func() {
 				return helpers.CurlAppRoot(Config, appName)
 			}).Should(ContainSubstring("Hi, I'm Dora"))
 
-			deploymentGuid := CreateDeployment(appGUID, "rolling", "4")
+			deploymentGuid := CreateDeployment(appGUID, "rolling", 4)
 			Expect(deploymentGuid).ToNot(BeEmpty())
 
 			Eventually(func() int { return len(GetProcessGuidsForType(appGUID, "web")) }, Config.CfPushTimeoutDuration()).
@@ -383,7 +383,7 @@ var _ = Describe("deployments", func() {
 				return helpers.CurlAppRoot(Config, appName)
 			}).Should(ContainSubstring("Hi, I'm Dora"))
 
-			deploymentGuid := CreateDeployment(appGUID, "canary", "4")
+			deploymentGuid := CreateDeployment(appGUID, "canary", 4)
 			Expect(deploymentGuid).ToNot(BeEmpty())
 
 			Eventually(func() int { return len(GetProcessGuidsForType(appGUID, "web")) }, Config.CfPushTimeoutDuration()).
