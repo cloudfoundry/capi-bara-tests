@@ -14,9 +14,9 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-func CreateDeployment(appGUID string) string {
+func CreateDeployment(appGUID, strategy string) string {
 	deploymentPath := fmt.Sprintf("/v3/deployments")
-	deploymentRequestBody := fmt.Sprintf(`{"relationships": {"app": {"data": {"guid": "%s"}}}}`, appGUID)
+	deploymentRequestBody := fmt.Sprintf(`{"strategy": "%s", "relationships": {"app": {"data": {"guid": "%s"}}}}`, strategy, appGUID)
 	session := cf.Cf("curl", "-f", deploymentPath, "-X", "POST", "-d", deploymentRequestBody).Wait()
 	Expect(session).To(Exit(0))
 	var deployment struct {
@@ -29,9 +29,9 @@ func CreateDeployment(appGUID string) string {
 	return deployment.GUID
 }
 
-func CreateDeploymentForDroplet(appGUID, dropletGUID string) string {
+func CreateDeploymentForDroplet(appGUID, dropletGUID, strategy string) string {
 	deploymentPath := fmt.Sprintf("/v3/deployments")
-	deploymentRequestBody := fmt.Sprintf(`{"droplet": {"guid": "%s"}, "relationships": {"app": {"data": {"guid": "%s"}}}}`, dropletGUID, appGUID)
+	deploymentRequestBody := fmt.Sprintf(`{"strategy": "%s", "droplet": {"guid": "%s"}, "relationships": {"app": {"data": {"guid": "%s"}}}}`, strategy, dropletGUID, appGUID)
 	session := cf.Cf("curl", "-f", deploymentPath, "-X", "POST", "-d", deploymentRequestBody).Wait()
 	Expect(session).To(Exit(0))
 	var deployment struct {
@@ -61,6 +61,13 @@ func RollbackDeployment(appGUID, revisionGUID string) string {
 
 func CancelDeployment(deploymentGUID string) {
 	deploymentPath := fmt.Sprintf("/v3/deployments/%s/actions/cancel", deploymentGUID)
+	session := cf.Cf("curl", "-f", deploymentPath, "-X", "POST", "-i").Wait()
+	Expect(session.Out.Contents()).To(ContainSubstring("200 OK"))
+	Expect(session).To(Exit(0))
+}
+
+func ContinueDeployment(deploymentGUID string) {
+	deploymentPath := fmt.Sprintf("/v3/deployments/%s/actions/continue", deploymentGUID)
 	session := cf.Cf("curl", "-f", deploymentPath, "-X", "POST", "-i").Wait()
 	Expect(session.Out.Contents()).To(ContainSubstring("200 OK"))
 	Expect(session).To(Exit(0))
