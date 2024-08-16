@@ -76,7 +76,7 @@ var _ = Describe("deployments", func() {
 	// TODO: delete me once we delete v2
 	Describe("Creating new processes on the same app", func() {
 		It("ignores older processes on the same app", func() {
-			deploymentGuid := CreateDeployment(appGUID, "rolling")
+			deploymentGuid := CreateDeployment(appGUID, "rolling", 1)
 			Expect(deploymentGuid).ToNot(BeEmpty())
 			v3_processes := GetProcesses(appGUID, appName)
 			numWebProcesses := 0
@@ -172,7 +172,7 @@ var _ = Describe("deployments", func() {
 		})
 
 		It("completes the deployment", func() {
-			deploymentGUID := CreateDeployment(appGUID, "rolling")
+			deploymentGUID := CreateDeployment(appGUID, "rolling", 1)
 			Expect(deploymentGUID).ToNot(BeEmpty())
 			WaitUntilDeploymentReachesStatus(deploymentGUID, "FINALIZED", "DEPLOYED")
 		})
@@ -348,6 +348,67 @@ var _ = Describe("deployments", func() {
 				}
 				return counter
 			}).Should(Equal(10))
+		})
+	})
+
+	Describe("max-in-flight deployments", func() {
+		It("deploys an app with max_in_flight with a rolling deployment", func() {
+			By("Pushing a new rolling deployment with max in flight of 4")
+			Eventually(func() string {
+				return helpers.CurlAppRoot(Config, appName)
+			}).Should(ContainSubstring("Hi, I'm Dora"))
+
+			deploymentGuid := CreateDeployment(appGUID, "rolling", 4)
+			Expect(deploymentGuid).ToNot(BeEmpty())
+
+			Eventually(func() int { return len(GetProcessGuidsForType(appGUID, "web")) }, Config.CfPushTimeoutDuration()).
+				Should(BeNumerically(">", 1))
+
+			processGuids := GetProcessGuidsForType(appGUID, "web")
+			newDeploymentGuid := processGuids[len(processGuids)-1]
+
+			By("Ensuring that the new process starts at 4")
+			Consistently(func() int {
+				return GetProcessByGuid(newDeploymentGuid).Instances
+			}).Should(Equal(4))
+
+			Eventually(func() int {
+				return GetRunningInstancesStats(newDeploymentGuid)
+			}).Should(Equal(instances))
+		})
+
+		It("deploys an app with max_in_flight after a canary deployment has been continued", func() {
+			By("Pushing a canary deployment")
+			Eventually(func() string {
+				return helpers.CurlAppRoot(Config, appName)
+			}).Should(ContainSubstring("Hi, I'm Dora"))
+
+			deploymentGuid := CreateDeployment(appGUID, "canary", 4)
+			Expect(deploymentGuid).ToNot(BeEmpty())
+
+			Eventually(func() int { return len(GetProcessGuidsForType(appGUID, "web")) }, Config.CfPushTimeoutDuration()).
+				Should(BeNumerically(">", 1))
+
+			By("Waiting for the a canary deployment to be paused")
+			WaitUntilDeploymentReachesStatus(deploymentGuid, "ACTIVE", "PAUSED")
+
+			processGuids := GetProcessGuidsForType(appGUID, "web")
+			newDeploymentGuid := processGuids[len(processGuids)-1]
+
+			By("Continuing the deployment")
+			ContinueDeployment(deploymentGuid)
+			Eventually(func() int {
+				return GetProcessByGuid(newDeploymentGuid).Instances
+			}).ShouldNot(Equal(1))
+
+			By("Ensuring that the new process continues at max-in-flight 4")
+			Consistently(func() int {
+				return GetProcessByGuid(newDeploymentGuid).Instances
+			}).Should(Equal(4))
+
+			Eventually(func() int {
+				return GetRunningInstancesStats(newDeploymentGuid)
+			}).Should(Equal(instances))
 		})
 	})
 })
