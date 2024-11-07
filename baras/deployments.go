@@ -74,7 +74,7 @@ var _ = Describe("deployments", func() {
 	})
 
 	// TODO: delete me once we delete v2
-	Describe("Creating new processes on the same app", func() {
+	Describe("Creating new processes on the same app", Label("v2_api"), func() {
 		It("ignores older processes on the same app", func() {
 			deploymentGuid := CreateDeployment(appGUID, "rolling", 1)
 			Expect(deploymentGuid).ToNot(BeEmpty())
