@@ -10,11 +10,11 @@ import (
 	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
 
+	bara_config "github.com/cloudfoundry/capi-bara-tests/helpers/config"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
 	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
 	"github.com/cloudfoundry/cf-test-helpers/v2/workflowhelpers"
-	bara_config "github.com/cloudfoundry/capi-bara-tests/helpers/config"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
@@ -62,41 +62,30 @@ type ServiceBroker struct {
 	AsyncPlans []Plan
 }
 
-type ServicesResponse struct {
-	Resources []ServiceResponse
+type ServiceOfferingsResponse struct {
+	Resources []ServiceOfferingsResource `json:"resources"`
 }
 
-type ServiceResponse struct {
-	Entity struct {
-		Label        string
-		ServicePlans []ServicePlanResponse `json:"service_plans"`
-	}
+type ServiceOfferingsResource struct {
+	Guid string `json:"guid"`
+	Name string `json:"name"`
 }
 
 type ServicePlansResponse struct {
-	Resources []ServicePlanResponse
+	Resources []ServicePlansResource `json:"resources"`
 }
 
-type ServicePlanResponse struct {
-	Entity struct {
-		Name    string
-		Public  bool
-		Schemas PlanSchemas
-	}
-	Metadata struct {
-		Url  string
-		Guid string
-	}
+type ServicePlansResource struct {
+	Guid string `json:"guid"`
+	Name string `json:"name"`
 }
 
-type ServiceInstance struct {
-	Metadata struct {
-		Guid string `json:"guid"`
-	}
+type ServiceInstancesResponse struct {
+	Resources []ServiceInstancesResource `json:"resources"`
 }
 
-type ServiceInstanceResponse struct {
-	Resources []ServiceInstance
+type ServiceInstancesResource struct {
+	Guid string `json:"guid"`
 }
 
 type SpaceJson struct {
@@ -220,22 +209,28 @@ func (b ServiceBroker) ToJSON() string {
 }
 
 func (b ServiceBroker) PublicizePlans() {
-	url := fmt.Sprintf("/v2/services?inline-relations-depth=1&q=label:%s", b.Service.Name)
+	url := fmt.Sprintf("/v3/service_offerings?names=%s", b.Service.Name)
 	var session *Session
 	workflowhelpers.AsUser(b.TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
 		session = cf.Cf("curl", url).Wait()
 		Expect(session).To(Exit(0))
 	})
-	structure := ServicesResponse{}
-	json.Unmarshal(session.Out.Contents(), &structure)
+	serviceOfferingsResponse := ServiceOfferingsResponse{}
+	json.Unmarshal(session.Out.Contents(), &serviceOfferingsResponse)
 
-	for _, service := range structure.Resources {
-		if service.Entity.Label == b.Service.Name {
-			for _, plan := range service.Entity.ServicePlans {
-				if b.HasPlan(plan.Entity.Name) {
-					b.PublicizePlan(plan.Metadata.Url)
-				}
-			}
+	serviceOfferingGuid := serviceOfferingsResponse.Resources[0].Guid
+
+	url = fmt.Sprintf("/v3/service_plans?service_offering_guids=%s", serviceOfferingGuid)
+	workflowhelpers.AsUser(b.TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
+		session = cf.Cf("curl", url).Wait()
+		Expect(session).To(Exit(0))
+	})
+	servicePlansResponse := ServicePlansResponse{}
+	json.Unmarshal(session.Out.Contents(), &servicePlansResponse)
+
+	for _, servicePlansResource := range servicePlansResponse.Resources {
+		if b.HasPlan(servicePlansResource.Name) {
+			b.PublicizePlan(servicePlansResource.Guid)
 		}
 	}
 }
@@ -249,23 +244,24 @@ func (b ServiceBroker) HasPlan(planName string) bool {
 	return false
 }
 
-func (b ServiceBroker) PublicizePlan(url string) {
-	jsonMap := make(map[string]bool)
-	jsonMap["public"] = true
+func (b ServiceBroker) PublicizePlan(guid string) {
+	jsonMap := make(map[string]string)
+	jsonMap["type"] = "public"
 	planJson, _ := json.Marshal(jsonMap)
+	url := fmt.Sprintf("/v3/service_plans/%s/visibility", guid)
 	workflowhelpers.AsUser(b.TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {
-		Expect(cf.Cf("curl", url, "-X", "PUT", "-d", string(planJson)).Wait()).To(Exit(0))
+		Expect(cf.Cf("curl", url, "-X", "PATCH", "-d", string(planJson)).Wait()).To(Exit(0))
 	})
 }
 
 func (b ServiceBroker) CreateServiceInstance(instanceName string) string {
 	Expect(cf.Cf("create-service", b.Service.Name, b.SyncPlans[0].Name, instanceName).Wait()).To(Exit(0))
-	url := fmt.Sprintf("/v2/service_instances?q=name:%s", instanceName)
-	serviceInstance := ServiceInstanceResponse{}
+	url := fmt.Sprintf("/v3/service_instances?names=%s", instanceName)
+	serviceInstancesResponse := ServiceInstancesResponse{}
 	curl := cf.Cf("curl", url).Wait()
 	Expect(curl).To(Exit(0))
-	json.Unmarshal(curl.Out.Contents(), &serviceInstance)
-	return serviceInstance.Resources[0].Metadata.Guid
+	json.Unmarshal(curl.Out.Contents(), &serviceInstancesResponse)
+	return serviceInstancesResponse.Resources[0].Guid
 }
 
 func (b ServiceBroker) Plans() []Plan {
