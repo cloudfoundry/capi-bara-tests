@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/cloudfoundry/capi-bara-tests/helpers/config"
+	"github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
 	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/config"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/download"
-	"github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
 
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -59,14 +58,6 @@ func (droplet *AppDroplet) Create() error {
 
 	droplet.GUID = guidGrabber.GUID
 	return nil
-}
-
-func (droplet *AppDroplet) DownloadTo(downloadPath string) (string, error) {
-	dropletTarballPath := fmt.Sprintf("%s.tar.gz", downloadPath)
-	downloadURL := fmt.Sprintf("/v2/apps/%s/droplet/download", droplet.AppGUID)
-
-	err := download.WithRedirect(downloadURL, dropletTarballPath, droplet.Config)
-	return dropletTarballPath, err
 }
 
 func (droplet *AppDroplet) UploadFrom(uploadPath string) {

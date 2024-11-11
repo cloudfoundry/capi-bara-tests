@@ -1,7 +1,6 @@
 package baras
 
 import (
-	"encoding/json"
 	"fmt"
 
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
@@ -52,18 +51,6 @@ var _ = Describe("sidecars", func() {
 			CreateSidecar("my_sidecar1", []string{"web"}, fmt.Sprintf("WHAT_AM_I=LEFT_SIDECAR bundle exec rackup config.ru -o 0.0.0.0 -p %d", 8081), 50, appGUID)
 			CreateSidecar("my_sidecar2", []string{"web"}, fmt.Sprintf("WHAT_AM_I=RIGHT_SIDECAR bundle exec rackup config.ru -o 0.0.0.0 -p %d", 8082), 100, appGUID)
 
-			appEndpoint := fmt.Sprintf("/v2/apps/%s", appGUID)
-			extraPortsJSON, err := json.Marshal(
-				struct {
-					Ports []int `json:"ports"`
-				}{
-					[]int{8080, 8081, 8082},
-				},
-			)
-			Expect(err).NotTo(HaveOccurred())
-			session := cf.Cf("curl", appEndpoint, "-X", "PUT", "-d", string(extraPortsJSON))
-			Eventually(session).Should(Exit(0))
-
 			appRoutePrefix = random_name.BARARandomName("ROUTE")
 			sidecarRoutePrefix1 = random_name.BARARandomName("ROUTE")
 			sidecarRoutePrefix2 = random_name.BARARandomName("ROUTE")
@@ -71,8 +58,6 @@ var _ = Describe("sidecars", func() {
 			CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, appRoutePrefix, 8080)
 			CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, sidecarRoutePrefix1, 8081)
 			CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, sidecarRoutePrefix2, 8082)
-
-			Eventually(session).Should(Exit(0))
 		})
 
 		Context("and the app and sidecar are listening on different ports", func() {
