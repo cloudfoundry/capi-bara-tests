@@ -344,18 +344,6 @@ applications:
 						target := cf.Cf("target", "-o", apps[0].orgName, "-s", spaceName).Wait()
 						Expect(target).To(Exit(0), "failed targeting")
 
-						appEndpoint := fmt.Sprintf("/v2/apps/%s", appGUID)
-						extraPortsJSON, err := json.Marshal(
-							struct {
-								Ports []int `json:"ports"`
-							}{
-								[]int{8080, 8081, 8082},
-							},
-						)
-						Expect(err).NotTo(HaveOccurred())
-						session := cf.Cf("curl", appEndpoint, "-X", "PUT", "-d", string(extraPortsJSON))
-						Eventually(session).Should(Exit(0))
-
 						appRoutePrefix := random_name.BARARandomName("ROUTE")
 						sidecarRoutePrefix1 := random_name.BARARandomName("ROUTE")
 						sidecarRoutePrefix2 := random_name.BARARandomName("ROUTE")
@@ -364,7 +352,7 @@ applications:
 						CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, sidecarRoutePrefix1, 8081)
 						CreateAndMapRouteWithPort(appGUID, spaceGUID, domainGUID, sidecarRoutePrefix2, 8082)
 
-						session = cf.Cf("start", apps[0].name)
+						session = cf.Cf("restart", apps[0].name)
 						Eventually(session).Should(Exit(0))
 
 						Eventually(func() *Session {
