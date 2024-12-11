@@ -179,6 +179,7 @@ applications:
   routes:
   - route: %s
     protocol: http1
+    options: {}
   metadata:
     labels:
       potato: yams
