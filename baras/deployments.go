@@ -73,51 +73,6 @@ var _ = Describe("deployments", func() {
 		DeleteApp(appGUID)
 	})
 
-	// TODO: delete me once we delete v2
-	Describe("Creating new processes on the same app", Label("v2_api"), func() {
-		It("ignores older processes on the same app", func() {
-			deploymentGuid := CreateDeployment(appGUID, "rolling", 1)
-			Expect(deploymentGuid).ToNot(BeEmpty())
-			v3_processes := GetProcesses(appGUID, appName)
-			numWebProcesses := 0
-			for _, v3_process := range v3_processes {
-				Expect(v3_process.Name).To(Equal(appName))
-				if v3_process.Type == "web" {
-					numWebProcesses += 1
-				}
-			}
-			Expect(numWebProcesses).To(Equal(2))
-
-			// Ignore older processes in the v2 world
-			session := cf.Cf("curl", fmt.Sprintf("/v2/apps?results-per-page=1&page=1&q=space_guid:%s&q=name:%s", spaceGUID, appName))
-			bytes := session.Wait().Out.Contents()
-			var v2process struct {
-				TotalResults int    `json:"total_results"`
-				TotalPages   int    `json:"total_pages"`
-				PrevURL      string `json:"prev_url"`
-				NextURL      string `json:"next_url"`
-				Resources    []struct {
-					Metadata struct {
-						Guid      string `json:"guid"`
-						CreatedAt string `json:"created_at"`
-					} `json:"metadata"`
-					Entity struct {
-						Name string `json:"name"`
-					} `json:"entity"`
-				} `json:"resources"`
-			}
-
-			json.Unmarshal(bytes, &v2process)
-			Expect(len(v2process.Resources)).To(Equal(1))
-			Expect(v2process.TotalResults).To(Equal(1))
-			Expect(v2process.TotalPages).To(Equal(1))
-			Expect(v2process.PrevURL).To(Equal(""))
-			Expect(v2process.NextURL).To(Equal(""))
-			Expect(v2process.Resources[0].Metadata.Guid).To(Equal(appGUID))
-			Expect(v2process.Resources[0].Entity.Name).To(Equal(appName))
-		})
-	})
-
 	Describe("Deploy a bad droplet on the same app", func() {
 		It("does not update the last_successful_healthcheck field", func() {
 			By("Creating a New Package")
