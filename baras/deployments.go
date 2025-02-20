@@ -349,6 +349,75 @@ var _ = Describe("deployments", func() {
 				return counter
 			}).Should(Equal(10))
 		})
+
+		Context("with instance steps", func() {
+			It("deploys an app, transitions to pause and can be continued multiple times and then deploys successfully", func() {
+				By("Pushing a canary deployment")
+				Eventually(func() string {
+					return helpers.CurlAppRoot(Config, appName)
+				}).Should(ContainSubstring("Hi, I'm Dora"))
+
+				_, originalWorkerStartEvent := GetLastAppUseEventForProcess("worker", "STARTED", "")
+
+				instanceWeights := []int{1, 50, 75, 99}
+
+				deploymentGuid := CreateCanaryDeploymentWithWeightsForDroplet(appGUID, secondDropletGuid, instanceWeights)
+				Expect(deploymentGuid).ToNot(BeEmpty())
+
+				Eventually(func() int { return len(GetProcessGuidsForType(appGUID, "web")) }, Config.CfPushTimeoutDuration()).
+					Should(BeNumerically(">", 1))
+
+				for i := 1; i <= len(instanceWeights); i++ {
+					By(fmt.Sprintf("Waiting for the a canary deployment to be paused on step %d", i))
+					WaitUntilDeploymentReachesStatus(deploymentGuid, "ACTIVE", "PAUSED")
+
+					By(fmt.Sprintf("Verifying both original and canary apps are available on step %d", i))
+					Eventually(func() string {
+						return helpers.CurlAppRoot(Config, appName)
+					}).Should(ContainSubstring("Hello from a staticfile"))
+
+					Eventually(func() string {
+						return helpers.CurlAppRoot(Config, appName)
+					}).Should(ContainSubstring("Hi, I'm Dora"))
+
+					processGuids := GetProcessGuidsForType(appGUID, "web")
+					canaryProcessGuid := processGuids[len(processGuids)-1]
+
+					Eventually(func() int {
+						return GetRunningInstancesStats(canaryProcessGuid)
+					}).Should(Equal(i))
+
+					By(fmt.Sprintf("Continuing the deployment on step %d", i))
+					ContinueDeployment(deploymentGuid)
+					WaitUntilDeploymentReachesStatus(deploymentGuid, "ACTIVE", "DEPLOYING")
+				}
+
+				By("Verfiying the canary process is rolled out successfully")
+				WaitUntilDeploymentReachesStatus(deploymentGuid, "FINALIZED", "DEPLOYED")
+
+				processGuids := GetProcessGuidsForType(appGUID, "web")
+				canaryProcessGuid := processGuids[len(processGuids)-1]
+
+				Eventually(func() int {
+					return GetRunningInstancesStats(canaryProcessGuid)
+				}).Should(Equal(instances))
+
+				counter := 0
+				Eventually(func() int {
+					if strings.Contains(helpers.CurlAppRoot(Config, appName), "Hello from a staticfile") {
+						counter++
+					} else {
+						counter = 0
+					}
+					return counter
+				}).Should(Equal(10))
+
+				Eventually(func() bool {
+					restartEventExists, _ := GetLastAppUseEventForProcess("worker", "STARTED", originalWorkerStartEvent.Guid)
+					return restartEventExists
+				}).Should(BeTrue(), "Did not find a start event indicating the 'worker' process restarted")
+			})
+		})
 	})
 })
 

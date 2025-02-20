@@ -44,6 +44,30 @@ func CreateDeploymentForDroplet(appGUID, dropletGUID, strategy string) string {
 	return deployment.GUID
 }
 
+func CreateCanaryDeploymentWithWeightsForDroplet(appGUID, dropletGUID string, stepWeights []int) string {
+	deploymentPath := "/v3/deployments"
+
+	var weightRequestBody string
+	for i, weight := range stepWeights {
+		weightRequestBody += fmt.Sprintf(`{"instance_weight": %d}`, weight)
+		if i < len(stepWeights)-1 {
+			weightRequestBody += ","
+		}
+	}
+
+	deploymentRequestBody := fmt.Sprintf(`{"strategy": "canary", "options": {"canary": {"steps": [%s]}}, "droplet": {"guid": "%s"}, "relationships": {"app": {"data": {"guid": "%s"}}}}`, weightRequestBody, dropletGUID, appGUID)
+	session := cf.Cf("curl", "-f", deploymentPath, "-X", "POST", "-d", deploymentRequestBody).Wait()
+	Expect(session).To(Exit(0))
+	var deployment struct {
+		GUID string `json:"guid"`
+	}
+
+	bytes := session.Wait().Out.Contents()
+	err := json.Unmarshal(bytes, &deployment)
+	Expect(err).NotTo(HaveOccurred())
+	return deployment.GUID
+}
+
 func RollbackDeployment(appGUID, revisionGUID string) string {
 	deploymentPath := fmt.Sprintf("/v3/deployments")
 	deploymentRequestBody := fmt.Sprintf(`{"revision": { "guid": "%s" },"relationships": {"app": {"data": {"guid": "%s"}}}}`, revisionGUID, appGUID)
