@@ -176,6 +176,11 @@ applications:
   env:
     foo: qux
     snack: walnuts
+  features:
+    file-based-vcap-services: false
+    revisions: true
+    service-binding-k8s: false
+    ssh: true
   routes:
   - route: %s
     protocol: http1
