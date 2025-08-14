@@ -233,10 +233,6 @@ func validateApiEndpoint(config *config) error {
 		host = u.Path
 	}
 
-	if _, err = net.LookupHost(host); err != nil {
-		return fmt.Errorf("* Invalid configuration for 'api' <%s>: %s", config.GetApiEndpoint(), err)
-	}
-
 	return nil
 }
 
