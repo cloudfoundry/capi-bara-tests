@@ -352,7 +352,7 @@ func (c *config) AsyncServiceOperationTimeoutDuration() time.Duration {
 }
 
 func (c *config) Protocol() string {
-	return "https://"
+	return ""
 }
 
 func (c *config) GetAppsDomain() string {
