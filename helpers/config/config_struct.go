@@ -7,10 +7,14 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/validationerrors"
 )
+
+// The suite talks to the Cloud Controller over TLS unless 'api' says otherwise.
+const defaultApiProtocol = "https://"
 
 type config struct {
 	ApiEndpoint *string `json:"api"`
@@ -222,15 +226,26 @@ func validateApiEndpoint(config *config) error {
 		return fmt.Errorf("* Invalid configuration: 'api' must be a valid Cloud Controller endpoint but was blank")
 	}
 
-	u, err := url.Parse(config.GetApiEndpoint())
+	// url.Parse needs a scheme to find a host. Without one it reads
+	// "127.0.0.1:9999" as scheme "127.0.0.1" and "localhost:9999" as scheme
+	// "localhost", so a port in 'api' never resolved. GetApiProtocol supplies
+	// the scheme, or "" when 'api' already carries its own.
+	u, err := url.Parse(config.GetApiProtocol() + config.GetApiEndpoint())
 	if err != nil {
 		return fmt.Errorf("* Invalid configuration: 'api' must be a valid URL but was set to '%s'", config.GetApiEndpoint())
 	}
 
-	host := u.Host
+	// Hostname() drops the port and unwraps IPv6 brackets, either of which
+	// would otherwise be handed to the resolver as part of the name.
+	host := u.Hostname()
 	if host == "" {
-		// url.Parse misunderstood our convention and treated the hostname as a URL path
-		host = u.Path
+		return fmt.Errorf("* Invalid configuration: 'api' must be a valid URL but was set to '%s'", config.GetApiEndpoint())
+	}
+
+	// An IP literal has nothing to look up, and a validating proxy on 127.0.0.1
+	// is a legitimate target for the suite.
+	if net.ParseIP(host) != nil {
+		return nil
 	}
 
 	if _, err = net.LookupHost(host); err != nil {
@@ -381,6 +396,25 @@ func (c *config) GetAdminUser() string {
 
 func (c *config) GetAdminPassword() string {
 	return *c.AdminPassword
+}
+
+// GetApiProtocol is the scheme to put in front of GetApiEndpoint when building
+// a Cloud Controller URL by hand. It is empty when 'api' already carries its
+// own scheme.
+//
+// Writing the scheme into 'api' is how the suite gets pointed at a plain-HTTP
+// endpoint, such as a local validating proxy. It has to live there rather than
+// in a setting of its own because `cf api` is handed 'api' verbatim and assumes
+// https for any value without a scheme.
+func (c *config) GetApiProtocol() string {
+	if apiEndpointHasScheme(c.GetApiEndpoint()) {
+		return ""
+	}
+	return defaultApiProtocol
+}
+
+func apiEndpointHasScheme(endpoint string) bool {
+	return strings.Contains(endpoint, "://")
 }
 
 func (c *config) GetApiEndpoint() string {

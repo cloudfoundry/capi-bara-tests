@@ -123,7 +123,7 @@ func WaitUntilDeploymentReachesStatus(deploymentGUID, statusValue, statusReason 
 }
 
 func GetRunningInstancesStats(processGUID string) int {
-	processStatsURL := fmt.Sprintf("%s%s/v3/processes/%s/stats", Config.Protocol(), Config.GetApiEndpoint(), processGUID)
+	processStatsURL := fmt.Sprintf("%s%s/v3/processes/%s/stats", Config.GetApiProtocol(), Config.GetApiEndpoint(), processGUID)
 
 	client := buildHTTPClient()
 	req, err := http.NewRequest("GET", processStatsURL, nil)

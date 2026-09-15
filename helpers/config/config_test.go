@@ -187,6 +187,7 @@ var _ = Describe("Config", func() {
 		Expect(config.GetNamePrefix()).To(Equal("BARA"))
 
 		Expect(config.Protocol()).To(Equal("https://"))
+		Expect(config.GetApiProtocol()).To(Equal("https://"))
 
 		// undocumented
 		Expect(config.DetectTimeoutDuration()).To(Equal(10 * time.Minute))
@@ -377,6 +378,75 @@ var _ = Describe("Config", func() {
 				_, err := cfg.NewBaraConfig(tmpFilePath)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("'api' must not be null"))
+			})
+		})
+	})
+
+	Describe("GetApiProtocol", func() {
+		It("defaults to https for a bare host", func() {
+			c, err := cfg.NewBaraConfig(tmpFilePath)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(c.GetApiProtocol()).To(Equal("https://"))
+		})
+
+		Context("when api carries its own scheme", func() {
+			BeforeEach(func() {
+				testCfg.ApiEndpoint = ptrToString("http://api.bosh-lite.com")
+			})
+
+			It("adds no scheme of its own", func() {
+				c, err := cfg.NewBaraConfig(tmpFilePath)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(c.GetApiProtocol()).To(BeEmpty())
+			})
+
+			It("leaves 'api' untouched, since `cf api` needs the scheme too", func() {
+				c, err := cfg.NewBaraConfig(tmpFilePath)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(c.GetApiEndpoint()).To(Equal("http://api.bosh-lite.com"))
+			})
+
+			It("leaves the app route protocol alone", func() {
+				c, err := cfg.NewBaraConfig(tmpFilePath)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(c.Protocol()).To(Equal("https://"))
+			})
+		})
+
+		Context("when api is a local proxy with a port", func() {
+			BeforeEach(func() {
+				testCfg.ApiEndpoint = ptrToString("http://127.0.0.1:9999")
+			})
+
+			It("validates without a DNS lookup", func() {
+				c, err := cfg.NewBaraConfig(tmpFilePath)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(c.GetApiProtocol()).To(BeEmpty())
+				Expect(c.GetApiEndpoint()).To(Equal("http://127.0.0.1:9999"))
+			})
+		})
+
+		Context("when api is a resolvable host with a port", func() {
+			BeforeEach(func() {
+				testCfg.ApiEndpoint = ptrToString("localhost:9999")
+			})
+
+			It("resolves the host without the port", func() {
+				c, err := cfg.NewBaraConfig(tmpFilePath)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(c.GetApiEndpoint()).To(Equal("localhost:9999"))
+			})
+		})
+
+		Context("when api has a port but the host does not resolve", func() {
+			BeforeEach(func() {
+				testCfg.ApiEndpoint = ptrToString("some-url-that-does-not-resolve.com.some-url-that-does-not-resolve.com:9999")
+			})
+
+			It("still returns an error", func() {
+				_, err := cfg.NewBaraConfig(tmpFilePath)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("no such host"))
 			})
 		})
 	})

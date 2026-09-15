@@ -8,7 +8,11 @@ type BaraConfig interface {
 	GetApiEndpoint() string
 	GetAppsDomain() string
 
+	// Protocol is the scheme for app routes; GetApiProtocol is the scheme for
+	// the Cloud Controller itself. They differ when the suite is pointed at a
+	// local proxy while apps still resolve through the real router.
 	Protocol() string
+	GetApiProtocol() string
 
 	GetAdminPassword() string
 	GetAdminUser() string

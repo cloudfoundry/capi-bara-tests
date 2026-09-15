@@ -41,7 +41,7 @@ var _ = Describe("deployments", func() {
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
 		By("Creating a Package")
 		packageGUID = CreatePackage(appGUID)
-		uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
+		uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.GetApiProtocol(), Config.GetApiEndpoint(), packageGUID)
 
 		By("Uploading a Package")
 		UploadPackage(uploadURL, assets.NewAssets().DoraZip)
@@ -77,7 +77,7 @@ var _ = Describe("deployments", func() {
 		It("does not update the last_successful_healthcheck field", func() {
 			By("Creating a New Package")
 			newPackageGUID = CreatePackage(appGUID)
-			uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), newPackageGUID)
+			uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.GetApiProtocol(), Config.GetApiEndpoint(), newPackageGUID)
 
 			By("Upload Bad Dora the Package")
 			UploadPackage(uploadURL, assets.NewAssets().BadDoraZip)
@@ -439,7 +439,7 @@ var _ = Describe("deployments", func() {
 
 func uploadDroplet(appGuid, zipFile, buildpackName string) string {
 	packageGuid := CreatePackage(appGuid)
-	url := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGuid)
+	url := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.GetApiProtocol(), Config.GetApiEndpoint(), packageGuid)
 
 	UploadPackage(url, zipFile)
 	WaitForPackageToBeReady(packageGuid)
