@@ -86,7 +86,7 @@ func DownloadAppDroplet(appGuid string, dropletPath string, token string) *Sessi
 	err := json.Unmarshal(currentDroplet.Out.Contents(), &droplet)
 	Expect(err).ToNot(HaveOccurred())
 
-	dropletDownloadUrl := fmt.Sprintf("%s%s/v3/droplets/%s/download", Config.Protocol(), Config.GetApiEndpoint(), droplet.Guid)
+	dropletDownloadUrl := fmt.Sprintf("%s%s/v3/droplets/%s/download", Config.GetApiProtocol(), Config.GetApiEndpoint(), droplet.Guid)
 	curl := helpers.CurlRedact(token, Config, dropletDownloadUrl, "-o", dropletPath, "-L", "-H", fmt.Sprintf("Authorization: %s", token)).Wait()
 	Expect(curl).To(Exit(0))
 	return curl

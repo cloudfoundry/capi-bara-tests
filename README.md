@@ -48,6 +48,26 @@ EOF
 export CONFIG=$PWD/integration_config.json
 ```
 
+### Targeting the API through a proxy
+
+`api` is normally a bare host and the suite prefixes it with `https://`. To send
+Cloud Controller requests somewhere else — a local validating or recording
+proxy, for instance — write the scheme and port into `api` itself:
+
+```json
+{
+  "api": "http://127.0.0.1:9999",
+  "apps_domain": "bosh-lite.com"
+}
+```
+
+The scheme has to live in `api` rather than in a setting of its own because
+`cf api` is given that value verbatim and assumes `https` for anything without
+a scheme.
+
+This only affects requests to the Cloud Controller. App routes keep using
+`https`, since they still go through the real router.
+
 ## Test Execution
 To execute all test groups, run the following from the root directory of cf-acceptance-tests:
 ```bash

@@ -14,7 +14,7 @@ func WithRedirect(url, path string, config config.BaraConfig) error {
 	oauthToken := v3_helpers.GetAuthToken()
 	downloadCurl := helpers.Curl(
 		config,
-		"-v", fmt.Sprintf("%s%s%s", config.Protocol(), config.GetApiEndpoint(), url),
+		"-v", fmt.Sprintf("%s%s%s", config.GetApiProtocol(), config.GetApiEndpoint(), url),
 		"-H", fmt.Sprintf("Authorization: %s", oauthToken),
 		"-f",
 	).Wait()

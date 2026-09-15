@@ -29,7 +29,7 @@ func makeApp(spaceGUID string) app {
 	newApp.guid = CreateApp(newApp.name, spaceGUID, `{"foo":"bar"}`)
 	newApp.packageGUID = CreatePackage(newApp.guid)
 
-	uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), newApp.packageGUID)
+	uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.GetApiProtocol(), Config.GetApiEndpoint(), newApp.packageGUID)
 
 	UploadPackage(uploadURL, assets.NewAssets().DoraZip)
 	WaitForPackageToBeReady(newApp.packageGUID)

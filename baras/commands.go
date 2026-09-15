@@ -47,7 +47,7 @@ var _ = Describe("setting_process_commands", func() {
 		Describe("if the web process doesn't already have a command", func() {
 			It("fails staging with an error message", func() {
 				packageGUID := CreatePackage(appGUID)
-				uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
+				uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.GetApiProtocol(), Config.GetApiEndpoint(), packageGUID)
 
 				By("Uploading a Package")
 				UploadPackage(uploadURL, assets.NewAssets().PythonWithoutProcfileZip)
@@ -63,7 +63,7 @@ var _ = Describe("setting_process_commands", func() {
 		Describe("if the web process already has a command", func() {
 			It("succeeds at staging, using the existing start command", func() {
 				packageGUID := CreatePackage(appGUID)
-				uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
+				uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.GetApiProtocol(), Config.GetApiEndpoint(), packageGUID)
 
 				By("Applying Manifest with a Command")
 				manifestToApply = fmt.Sprintf(`

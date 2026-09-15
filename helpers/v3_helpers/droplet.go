@@ -25,7 +25,7 @@ func AssignDropletToApp(appGUID, dropletGUID string) {
 func CreateAndAssociateNewDroplet(appGUID, assetPath string, buildpacks ...string) string {
 	By("Creating a Package")
 	packageGUID := CreatePackage(appGUID)
-	uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.Protocol(), Config.GetApiEndpoint(), packageGUID)
+	uploadURL := fmt.Sprintf("%s%s/v3/packages/%s/upload", Config.GetApiProtocol(), Config.GetApiEndpoint(), packageGUID)
 
 	By("Uploading a Package")
 	UploadPackage(uploadURL, assetPath)

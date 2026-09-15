@@ -62,7 +62,7 @@ func (droplet *AppDroplet) Create() error {
 
 func (droplet *AppDroplet) UploadFrom(uploadPath string) {
 	token := v3_helpers.GetAuthToken()
-	uploadURL := fmt.Sprintf("%s%s/v3/droplets/%s/upload", droplet.Config.Protocol(), droplet.Config.GetApiEndpoint(), droplet.GUID)
+	uploadURL := fmt.Sprintf("%s%s/v3/droplets/%s/upload", droplet.Config.GetApiProtocol(), droplet.Config.GetApiEndpoint(), droplet.GUID)
 	bits := fmt.Sprintf(`bits=@%s`, uploadPath)
 	curl := helpers.Curl(droplet.Config, "-v", uploadURL, "-X", "POST", "-F", bits, "-H", fmt.Sprintf("Authorization: %s", token)).Wait()
 	Expect(curl).To(Exit(0))
