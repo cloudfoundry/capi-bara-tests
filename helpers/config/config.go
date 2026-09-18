@@ -19,6 +19,8 @@ type BaraConfig interface {
 
 	GetSkipSSLValidation() bool
 
+	GetLocalBlobstore() bool
+
 	GetArtifactsDirectory() string
 
 	AsyncServiceOperationTimeoutDuration() time.Duration
