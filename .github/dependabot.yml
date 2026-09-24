@@ -1,0 +1,186 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      go-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: gomod
+    directory: /assets/catnip
+    schedule:
+      interval: weekly
+    groups:
+      go-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: gomod
+    directory: /assets/credhub-service-broker
+    schedule:
+      interval: weekly
+    groups:
+      go-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: gomod
+    directory: /assets/multi-port-app
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: gomod
+    directory: /assets/sidecar
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: gomod
+    directory: /assets/sidecar-dependent
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: gomod
+    directory: /assets/tcp-listener
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: gomod
+    directory: /assets/worker-app
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: bundler
+    directory: /assets/bad-dora
+    schedule:
+      interval: weekly
+    groups:
+      ruby-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: bundler
+    directory: /assets/dora
+    schedule:
+      interval: weekly
+    groups:
+      ruby-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: bundler
+    directory: /assets/go_calls_ruby
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: bundler
+    directory: /assets/hello-routing
+    schedule:
+      interval: weekly
+    groups:
+      ruby-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: bundler
+    directory: /assets/hello-world
+    schedule:
+      interval: weekly
+    groups:
+      ruby-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: bundler
+    directory: /assets/loggregator-load-generator
+    schedule:
+      interval: weekly
+    groups:
+      ruby-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: bundler
+    directory: /assets/service_broker
+    schedule:
+      interval: weekly
+    groups:
+      ruby-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: gradle
+    directory: /assets/credhub-enabled-app
+    schedule:
+      interval: weekly
+    groups:
+      java-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: gradle
+    directory: /assets/java-config-server
+    schedule:
+      interval: weekly
+    groups:
+      java-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: gradle
+    directory: /assets/java-dora
+    schedule:
+      interval: weekly
+    groups:
+      java-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: nuget
+    directory: /assets/nora/Nora
+    schedule:
+      interval: weekly
+    groups:
+      dotnet-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: nuget
+    directory: /assets/nora/Nora.Tests
+    schedule:
+      interval: weekly
+    groups:
+      dotnet-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: nuget
+    directory: /assets/nora/NoraPublished
+    schedule:
+      interval: weekly
+    groups:
+      dotnet-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: /assets/node
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: npm
+    directory: /assets/node-with-procfile
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: pip
+    directory: /assets/python
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: pip
+    directory: /assets/python-without-procfile
+    schedule:
+      interval: weekly
