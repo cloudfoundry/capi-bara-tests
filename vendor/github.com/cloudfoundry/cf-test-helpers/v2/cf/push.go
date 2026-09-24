@@ -2,7 +2,7 @@ package cf
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -28,7 +28,7 @@ type Application struct {
 }
 
 var Push = func(appName string, args ...string) *gexec.Session {
-	tmpDir, err := ioutil.TempDir("", "")
+	tmpDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		panic(err)
 	}
@@ -77,17 +77,20 @@ var Push = func(appName string, args ...string) *gexec.Session {
 	}
 
 	manifestPath := filepath.Join(tmpDir, "manifest.yml")
-	err = ioutil.WriteFile(manifestPath, manifestText, 0644)
+	err = os.WriteFile(manifestPath, manifestText, 0644)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Fprintf(
+	_, err = fmt.Fprintf(
 		ginkgo.GinkgoWriter,
 		"\n[%s]> Generated app manifest:\n%s\n",
 		time.Now().UTC().Format("2006-01-02 15:04:05.00 (MST)"),
 		string(manifestText),
 	)
+	if err != nil {
+		panic(err)
+	}
 
 	return Cf("push",
 		"-f", manifestPath,

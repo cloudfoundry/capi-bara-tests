@@ -46,7 +46,7 @@ type config struct {
 
 	Infrastructure *string `json:"infrastructure"`
 
-	GcloudProjectName *string `json:"gcloud_project_name""`
+	GcloudProjectName *string `json:"gcloud_project_name"`
 	ClusterZone       *string `json:"cluster_zone"`
 	ClusterName       *string `json:"cluster_name"`
 
