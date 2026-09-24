@@ -13,5 +13,6 @@ assets/staticfile.zip
 assets/credhub-enabled-app/build
 assets/credhub-enabled-app/.gradle
 bin/ginkgo
+/vendor/
 *~
 on
