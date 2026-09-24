@@ -50,7 +50,7 @@ func logSpeed(w http.ResponseWriter, r *http.Request) {
 	sleepTimeInSeconds := float64(sleepTime) / float64(1000000)
 
 	logline := fmt.Sprintf("Muahaha... let's go. Waiting %f seconds between loglines. Logging 'Muahaha...' every time.\n", sleepTimeInSeconds)
-	fmt.Printf(logline)
+	fmt.Print(logline)
 
 	run = true
 
