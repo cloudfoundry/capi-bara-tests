@@ -1,4 +1,4 @@
-ENV['RACK_ENV'] ||= 'development'
+ENV['RACK_ENV'] ||= 'production'
 
 require 'rubygems'
 require 'sinatra/base'
@@ -7,7 +7,6 @@ require 'pp'
 require 'logger'
 require 'rainbow/ext/string'
 require 'uri'
-
 require 'bundler'
 Bundler.require :default, ENV['RACK_ENV'].to_sym
 Rainbow.enabled = true
@@ -146,11 +145,9 @@ class ServiceBroker < Sinatra::Base
 
   def log(request)
     $log.info "#{request.env['REQUEST_METHOD']} #{request.env['PATH_INFO']} #{request.env['QUERY_STRING']}".color(:yellow)
-    request.body.rewind
     headers = find_headers(request)
     $log.info "Request headers: #{headers}".color(:cyan)
-    $log.info "Request body: #{request.body.read}".color(:yellow)
-    request.body.rewind
+    $log.info "Request body: #{request.env['rack.body_cache']}".color(:yellow)
   end
 
   def find_headers(request)
@@ -220,7 +217,7 @@ class ServiceBroker < Sinatra::Base
 
   # provision
   put '/v2/service_instances/:id/?' do |id|
-    json_body = JSON.parse(request.body.read)
+    json_body = JSON.parse(request.env['rack.body_cache'])
     service_instance = $datasource.create_service_instance(id, json_body)
     respond_with_behavior($datasource.behavior_for_type(:provision, service_instance.plan_id), params['accepts_incomplete'])
   end
@@ -266,7 +263,7 @@ class ServiceBroker < Sinatra::Base
 
   # update service instance
   patch '/v2/service_instances/:id/?' do |id|
-    json_body = JSON.parse(request.body.read)
+    json_body = JSON.parse(request.env['rack.body_cache'])
     service_instance = $datasource.service_instance_by_id(id)
     plan_id = json_body['plan_id']
 
@@ -292,7 +289,7 @@ class ServiceBroker < Sinatra::Base
   # create service binding
   put '/v2/service_instances/:instance_id/service_bindings/:id' do |instance_id, binding_id|
     content_type :json
-    json_body = JSON.parse(request.body.read)
+    json_body = JSON.parse(request.env['rack.body_cache'])
 
     service_binding = $datasource.create_service_binding(instance_id, binding_id, json_body)
     respond_with_behavior($datasource.behavior_for_type(:bind, service_binding['binding_data']['plan_id']), params[:accepts_incomplete])
@@ -331,7 +328,7 @@ class ServiceBroker < Sinatra::Base
   end
 
   post '/config/?' do
-    json_body = JSON.parse(request.body.read)
+    json_body = JSON.parse(request.env['rack.body_cache'])
     $datasource.merge!(json_body)
     log_response(status, JSON.pretty_generate($datasource.without_instances_or_bindings))
   end

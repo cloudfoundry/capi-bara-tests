@@ -12,9 +12,9 @@ app = lambda do |env|
   $stdout.flush
 
   [ 200,
-    { "Content-Type" => "text/plain",
-      "Content-Length" => body.length.to_s,
-      "Set-Cookie" => "JSESSIONID=12345",
+    { "content-type" => "text/plain",
+      "content-length" => body.length.to_s,
+      "set-cookie" => "JSESSIONID=12345",
     },
     [body]
   ]
