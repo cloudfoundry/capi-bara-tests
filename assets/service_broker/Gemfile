@@ -2,6 +2,7 @@ source 'http://rubygems.org'
 
 gem 'sinatra'
 gem 'json'
+gem 'rackup', '~> 2.2'
 gem 'rainbow'
 gem 'webrick'
 
