@@ -36,7 +36,6 @@ type BaraConfig interface {
 	GetStaticFileBuildpackName() string
 	GetGoBuildpackName() string
 	GetHwcBuildpackName() string
-	GetJavaBuildpackName() string
 	GetNodejsBuildpackName() string
 	GetRubyBuildpackName() string
 	GetPythonBuildpackName() string

@@ -6,7 +6,6 @@ type Assets struct {
 	Binary                     string
 	Catnip                     string
 	CatnipZip                  string
-	CredHubEnabledApp          string
 	CredHubServiceBroker       string
 	BadDora                    string
 	Dora                       string
@@ -19,9 +18,6 @@ type Assets struct {
 	Golang                     string
 	HelloRouting               string
 	HelloWorld                 string
-	Java                       string
-	JavaSpringZip              string
-	JavaUnwriteableZip         string
 	LoggingRouteService        string
 	LoggregatorLoadGenerator   string
 	LoggregatorLoadGeneratorGo string
@@ -40,7 +36,6 @@ type Assets struct {
 	SleepySidecarBuildpack     string
 	SleepySidecarBuildpackZip  string
 	SidecarDependent           string
-	SpringSleuthZip            string
 	Staticfile                 string
 	StaticfileZip              string
 	SyslogDrainListener        string
@@ -58,7 +53,6 @@ func NewAssets() Assets {
 		Binary:                     "assets/binary",
 		Catnip:                     "assets/catnip",
 		CatnipZip:                  "assets/catnip.zip",
-		CredHubEnabledApp:          "assets/credhub-enabled-app/credhub-enabled-app.jar",
 		CredHubServiceBroker:       "assets/credhub-service-broker",
 		BadDora:                    "assets/bad-dora",
 		Dora:                       "assets/dora",
@@ -71,9 +65,6 @@ func NewAssets() Assets {
 		Golang:                     "assets/golang",
 		HelloRouting:               "assets/hello-routing",
 		HelloWorld:                 "assets/hello-world",
-		Java:                       "assets/java",
-		JavaSpringZip:              "assets/java-spring/java-spring.jar",
-		JavaUnwriteableZip:         "assets/java-unwriteable-dir/java-unwriteable-dir.jar",
 		LoggingRouteService:        "assets/logging-route-service",
 		LoggregatorLoadGenerator:   "assets/loggregator-load-generator",
 		LoggregatorLoadGeneratorGo: "assets/loggregator-load-generator-go",
@@ -92,7 +83,6 @@ func NewAssets() Assets {
 		SidecarDependent:           "assets/sidecar-dependent",
 		SleepySidecarBuildpack:     "assets/sleepy-sidecar-buildpack",
 		SleepySidecarBuildpackZip:  "assets/sleepy-sidecar-buildpack.zip",
-		SpringSleuthZip:            "assets/spring-sleuth/spring-sleuth.jar",
 		Staticfile:                 "assets/staticfile",
 		StaticfileZip:              "assets/staticfile.zip",
 		SyslogDrainListener:        "assets/syslog-drain-listener",

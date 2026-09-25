@@ -111,33 +111,6 @@ updates:
         patterns:
           - "*"
 
-  - package-ecosystem: gradle
-    directory: /assets/credhub-enabled-app
-    schedule:
-      interval: weekly
-    groups:
-      java-dependencies:
-        patterns:
-          - "*"
-
-  - package-ecosystem: gradle
-    directory: /assets/java-config-server
-    schedule:
-      interval: weekly
-    groups:
-      java-dependencies:
-        patterns:
-          - "*"
-
-  - package-ecosystem: gradle
-    directory: /assets/java-dora
-    schedule:
-      interval: weekly
-    groups:
-      java-dependencies:
-        patterns:
-          - "*"
-
   - package-ecosystem: nuget
     directory: /assets/nora/Nora
     schedule:

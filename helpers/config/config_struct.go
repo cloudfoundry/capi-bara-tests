@@ -41,7 +41,6 @@ type config struct {
 	BinaryBuildpackName     *string `json:"binary_buildpack_name"`
 	GoBuildpackName         *string `json:"go_buildpack_name"`
 	HwcBuildpackName        *string `json:"hwc_buildpack_name"`
-	JavaBuildpackName       *string `json:"java_buildpack_name"`
 	NodejsBuildpackName     *string `json:"nodejs_buildpack_name"`
 	PhpBuildpackName        *string `json:"php_buildpack_name"`
 	PythonBuildpackName     *string `json:"python_buildpack_name"`
@@ -83,7 +82,6 @@ func getDefaults() config {
 	defaults.BinaryBuildpackName = ptrToString("binary_buildpack")
 	defaults.GoBuildpackName = ptrToString("go_buildpack")
 	defaults.HwcBuildpackName = ptrToString("hwc_buildpack")
-	defaults.JavaBuildpackName = ptrToString("java_buildpack")
 	defaults.NodejsBuildpackName = ptrToString("nodejs_buildpack")
 	defaults.PhpBuildpackName = ptrToString("php_buildpack")
 	defaults.PythonBuildpackName = ptrToString("python_buildpack")
@@ -191,9 +189,6 @@ func validateConfig(config *config) Errors {
 	}
 	if config.HwcBuildpackName == nil {
 		errs.Add(fmt.Errorf("* 'hwc_buildpack_name' must not be null"))
-	}
-	if config.JavaBuildpackName == nil {
-		errs.Add(fmt.Errorf("* 'java_buildpack_name' must not be null"))
 	}
 	if config.NodejsBuildpackName == nil {
 		errs.Add(fmt.Errorf("* 'nodejs_buildpack_name' must not be null"))
@@ -435,10 +430,6 @@ func (c *config) GetGoBuildpackName() string {
 
 func (c *config) GetHwcBuildpackName() string {
 	return *c.HwcBuildpackName
-}
-
-func (c *config) GetJavaBuildpackName() string {
-	return *c.JavaBuildpackName
 }
 
 func (c *config) GetNodejsBuildpackName() string {
