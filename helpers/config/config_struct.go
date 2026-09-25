@@ -25,6 +25,8 @@ type config struct {
 
 	SkipSSLValidation *bool `json:"skip_ssl_validation"`
 
+	LocalBlobstore *bool `json:"local_blobstore"`
+
 	ArtifactsDirectory *string `json:"artifacts_directory"`
 
 	AsyncServiceOperationTimeout *int `json:"async_service_operation_timeout"`
@@ -71,6 +73,10 @@ func ptrToString(str string) *string {
 	return &str
 }
 
+func ptrToBool(b bool) *bool {
+	return &b
+}
+
 func ptrToInt(i int) *int {
 	return &i
 }
@@ -91,6 +97,8 @@ func getDefaults() config {
 	defaults.StaticFileBuildpackName = ptrToString("staticfile_buildpack")
 
 	defaults.ReporterConfig = &reporterConfig{}
+
+	defaults.LocalBlobstore = ptrToBool(false)
 
 	defaults.AsyncServiceOperationTimeout = ptrToInt(120)
 	defaults.BrokerStartTimeout = ptrToInt(300)
@@ -380,6 +388,10 @@ func (c *config) GetAppsDomain() string {
 
 func (c *config) GetSkipSSLValidation() bool {
 	return *c.SkipSSLValidation
+}
+
+func (c *config) GetLocalBlobstore() bool {
+	return *c.LocalBlobstore
 }
 
 func (c *config) GetArtifactsDirectory() string {
