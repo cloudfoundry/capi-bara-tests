@@ -87,9 +87,24 @@ func TestBARA(t *testing.T) {
 		}
 
 		return []byte{}
-	}, func([]byte) {})
-
-	BeforeEach(func() {
+	}, func([]byte) {
+		// This closure runs once per Ginkgo parallel process.
+		//
+		// Historically the org/space/user creation lived inside a
+		// per-test BeforeEach, which meant every single It() paid the
+		// cost of `cf create-quota` + `cf create-org` + `cf create-space`
+		// + `cf create-user` + `cf set-space-role` (×3) + `cf api` +
+		// `cf auth` + `cf target` — roughly 15-20s of pure fixture work
+		// before any actual assertion. Multiplied by ~60 tests that's
+		// 15-20 minutes per suite run.
+		//
+		// The reusable state (space, user, cf home dir, credentials) is
+		// safe to share across tests in a single process because every
+		// test uses random_name.BARARandomName for its own resources and
+		// its AfterEach explicitly deletes them. Tests that must operate
+		// in a different org/space (e.g. Quotas) create + tear down their
+		// own scope entirely and the per-test BeforeEach below re-targets
+		// the shared space afterwards.
 		SetDefaultEventuallyTimeout(Config.DefaultTimeoutDuration())
 		SetDefaultEventuallyPollingInterval(1 * time.Second)
 
@@ -97,13 +112,21 @@ func TestBARA(t *testing.T) {
 		TestSetup.Setup()
 	})
 
-	AfterEach(func() {
+	BeforeEach(func() {
+		// Cheap safety net: ensure the cf CLI is always targeted at the
+		// shared regular-user space before a test starts, in case an
+		// earlier test (e.g. Quotas) targeted somewhere else. This is a
+		// single `cf target` call, not a full Setup().
+		TestSetup.RegularUserContext().TargetSpace()
+	})
+
+	SynchronizedAfterSuite(func() {
+		// Per-process teardown: drop the shared org/space/user created
+		// in the matching SynchronizedBeforeSuite closure above.
 		if TestSetup != nil {
 			TestSetup.Teardown()
 		}
-	})
-
-	SynchronizedAfterSuite(func() {}, func() {
+	}, func() {
 		os.Remove(assets.NewAssets().DoraZip)
 		os.Remove(assets.NewAssets().BadDoraZip)
 		os.Remove(assets.NewAssets().StaticfileZip)
