@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/app_helpers"
@@ -97,8 +96,6 @@ var _ = Describe("deployments", func() {
 			deploymentGuid := CreateDeploymentForDroplet(appGUID, newDropletGuid, "rolling")
 			Expect(deploymentGuid).ToNot(BeEmpty())
 
-			time.Sleep(60 * time.Second)
-
 			deploymentPath := fmt.Sprintf("/v3/deployments/%s", deploymentGuid)
 
 			type deploymentStatus struct {
@@ -110,13 +107,21 @@ var _ = Describe("deployments", func() {
 				Status deploymentStatus `json:"status"`
 			}{}
 
-			session := cf.Cf("curl", "-f", deploymentPath).Wait()
-			Expect(session.Wait()).To(Exit(0))
-			json.Unmarshal(session.Out.Contents(), &deploymentJson)
-
-			Expect(deploymentJson.Status.Value).To(Equal("ACTIVE"))
-			Expect(deploymentJson.Status.Reason).To(Equal("DEPLOYING"))
-			Expect(deploymentJson.Status.HealthCheckTime).To(Equal(""))
+			// Verify that for at least one CC deployment-updater cycle the
+			// deployment stays ACTIVE/DEPLOYING and no successful healthcheck
+			// is ever recorded (bad-dora never boots). Polling instead of a
+			// hard Sleep means we fail fast if the state regresses.
+			Consistently(func() deploymentStatus {
+				session := cf.Cf("curl", "-f", deploymentPath).Wait()
+				Expect(session).To(Exit(0))
+				deploymentJson.Status = deploymentStatus{}
+				json.Unmarshal(session.Out.Contents(), &deploymentJson)
+				return deploymentJson.Status
+			}, Config.CcClockCycleDuration(), "2s").Should(Equal(deploymentStatus{
+				Value:           "ACTIVE",
+				Reason:          "DEPLOYING",
+				HealthCheckTime: "",
+			}))
 		})
 	})
 
