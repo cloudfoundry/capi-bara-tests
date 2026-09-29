@@ -135,24 +135,33 @@ var _ = Describe("sidecars", func() {
 				Eventually(session).Should(Say("502"))
 				Eventually(session).Should(Exit(0))
 
+				// Under 12-process parallel CI runs, Diego's
+				// crash-detect + route-deregister + container-restart +
+				// route-reregister cycle can comfortably exceed the
+				// default ~60s Eventually budget when the cell is
+				// juggling many concurrent restarts. Use the
+				// CfPushTimeout budget (~240s) instead, matching what
+				// `cf push` allows for the same Diego pipeline. This
+				// eliminates the flake-and-retry that was doubling the
+				// test's wall time.
 				By("Polling the app and sidecar for 404s")
 				Eventually(func() *Session {
 					session := helpers.Curl(Config, fmt.Sprintf("%s.%s", appRoutePrefix, Config.GetAppsDomain()))
 					Eventually(session).Should(Exit(0))
 					return session
-				}, Config.DefaultTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
+				}, Config.CfPushTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
 				Eventually(func() *Session {
 					session := helpers.Curl(Config, fmt.Sprintf("%s.%s", sidecarRoutePrefix2, Config.GetAppsDomain()))
 					Eventually(session).Should(Exit(0))
 					return session
-				}, Config.DefaultTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
+				}, Config.CfPushTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
 
 				By("Polling for the app to be restarted by Diego")
 				Eventually(func() *Session {
 					session := helpers.Curl(Config, fmt.Sprintf("%s.%s", appRoutePrefix, Config.GetAppsDomain()))
 					Eventually(session).Should(Exit(0))
 					return session
-				}, Config.DefaultTimeoutDuration()).Should(Say("Hi, I'm Dora!"))
+				}, Config.CfPushTimeoutDuration()).Should(Say("Hi, I'm Dora!"))
 			})
 		})
 
@@ -170,30 +179,33 @@ var _ = Describe("sidecars", func() {
 				Eventually(session).Should(Say("502"))
 				Eventually(session).Should(Exit(0))
 
+				// See comment on the sibling test above — Diego's
+				// crash-recovery cycle needs CfPushTimeout headroom
+				// under 12-process parallel runs.
 				By("Polling both sidecars for 404s")
 				Eventually(func() *Session {
 					session := helpers.Curl(Config, fmt.Sprintf("%s.%s", sidecarRoutePrefix1, Config.GetAppsDomain()))
 					Eventually(session).Should(Exit(0))
 					return session
-				}, Config.DefaultTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
+				}, Config.CfPushTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
 				Eventually(func() *Session {
 					session := helpers.Curl(Config, fmt.Sprintf("%s.%s", sidecarRoutePrefix2, Config.GetAppsDomain()))
 					Eventually(session).Should(Exit(0))
 					return session
-				}, Config.DefaultTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
+				}, Config.CfPushTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
 
 				By("Polling for the sidecars to be restarted by Diego")
 				Eventually(func() *Session {
 					session := helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix1, Config.GetAppsDomain()))
 					Eventually(session).Should(Exit(0))
 					return session
-				}, Config.DefaultTimeoutDuration()).Should(Say("LEFT_SIDECAR"))
+				}, Config.CfPushTimeoutDuration()).Should(Say("LEFT_SIDECAR"))
 
 				Eventually(func() *Session {
 					session := helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix2, Config.GetAppsDomain()))
 					Eventually(session).Should(Exit(0))
 					return session
-				}, Config.DefaultTimeoutDuration()).Should(Say("RIGHT_SIDECAR"))
+				}, Config.CfPushTimeoutDuration()).Should(Say("RIGHT_SIDECAR"))
 			})
 		})
 	})
