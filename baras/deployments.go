@@ -125,19 +125,6 @@ var _ = Describe("deployments", func() {
 		})
 	})
 
-	Describe("Health check timeout is set on the app", func() {
-		BeforeEach(func() {
-			ScaleApp(appGUID, 2)
-			SetHealthCheckTimeoutOnProcess(appGUID, "web", 5)
-		})
-
-		It("completes the deployment", func() {
-			deploymentGUID := CreateDeployment(appGUID, "rolling", 1)
-			Expect(deploymentGUID).ToNot(BeEmpty())
-			WaitUntilDeploymentReachesStatus(deploymentGUID, "FINALIZED", "DEPLOYED")
-		})
-	})
-
 	Describe("Canary deployments", func() {
 		var secondDropletGuid string
 		BeforeEach(func() {
@@ -439,6 +426,58 @@ var _ = Describe("deployments", func() {
 				return GetRunningInstancesStats(newDeploymentGuid)
 			}).Should(Equal(instances))
 		})
+	})
+})
+
+// The "health-check timeout" scenario needs an app that boots fast
+// enough for a 5-second timeout to be a comfortable margin, otherwise
+// the deployment races the healthcheck and the test flakes. Ruby Dora
+// can easily exceed 5s of boot on a busy environment; Catnip is a
+// static Go binary that starts in well under a second. This suite is
+// therefore its own top-level Describe with a Catnip-based setup — it
+// deliberately does not share the Dora BeforeEach above.
+var _ = Describe("deployment with a tight healthcheck timeout", func() {
+	var (
+		appName    string
+		appGUID    string
+		spaceGUID  string
+		spaceName  string
+		domainGUID string
+	)
+
+	BeforeEach(func() {
+		appName = random_name.BARARandomName("APP")
+		spaceName = TestSetup.RegularUserContext().Space
+		spaceGUID = GetSpaceGuidFromName(spaceName)
+		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
+
+		By("Creating a Catnip-backed app")
+		appGUID = CreateApp(appName, spaceGUID, `{}`)
+		_ = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().CatnipZip, Config.GetGoBuildpackName())
+
+		CreateAndMapRoute(appGUID, spaceGUID, domainGUID, appName)
+		ScaleApp(appGUID, 2)
+		StartApp(appGUID)
+
+		By("waiting until all instances are running")
+		Eventually(func() int {
+			guids := GetProcessGuidsForType(appGUID, "web")
+			Expect(guids).ToNot(BeEmpty())
+			return GetRunningInstancesStats(guids[0])
+		}, Config.CfPushTimeoutDuration()).Should(Equal(2))
+
+		SetHealthCheckTimeoutOnProcess(appGUID, "web", 5)
+	})
+
+	AfterEach(func() {
+		app_helpers.AppReport(appName)
+		DeleteApp(appGUID)
+	})
+
+	It("completes the deployment", func() {
+		deploymentGUID := CreateDeployment(appGUID, "rolling", 1)
+		Expect(deploymentGUID).ToNot(BeEmpty())
+		WaitUntilDeploymentReachesStatus(deploymentGUID, "FINALIZED", "DEPLOYED")
 	})
 })
 
