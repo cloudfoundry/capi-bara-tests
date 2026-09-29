@@ -5,7 +5,6 @@ import (
 
 	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
-	. "github.com/cloudfoundry/capi-bara-tests/helpers/app_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/assets"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/random_name"
 	. "github.com/cloudfoundry/capi-bara-tests/helpers/v3_helpers"
@@ -31,7 +30,7 @@ var _ = Describe("events", func() {
 
 		session = cf.Cf("push", appName, "-p", assets.NewAssets().Catnip)
 		Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
-		appGuid = GetAppGuid(appName)
+		appGuid = GetAppGUID(appName)
 	})
 
 	AfterEach(func() {

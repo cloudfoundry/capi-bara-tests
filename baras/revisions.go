@@ -14,6 +14,24 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+// The revisions suite exercises how CC creates / restores revisions
+// under stop/start, restart, and rolling deploys. None of those state
+// transitions are Ruby-specific, so the base fixture is Catnip (Go,
+// ~10s to stage).
+//
+// Contexts that swap to a second droplet mostly use Staticfile —
+// nginx-based, no compilation, the fastest buildpack to stage — since
+// they only need a fixture that produces a distinguishable HTTP
+// response and does not need to accept a custom start command. The
+// single exception is the "rolling back to detected dora command"
+// context, which mutates the start command to a Ruby-flavoured
+// `bundle exec rackup ...` string that must actually run when the app
+// starts; that context alone swaps to Dora.
+//
+// Custom start commands are kept fixture-appropriate: rackup for
+// Ruby/Dora, ./bin/catnip for Go/Catnip. The tests only care that the
+// command was set and that a matching revision was produced, so the
+// literal command string is an implementation detail.
 var _ = Describe("revisions", func() {
 	var (
 		appName              string
@@ -40,7 +58,7 @@ var _ = Describe("revisions", func() {
 		By("Enabling Revisions")
 		EnableRevisions(appGUID)
 
-		dropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().DoraZip, Config.GetRubyBuildpackName())
+		dropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().CatnipZip, Config.GetGoBuildpackName())
 
 		CreateAndMapRoute(appGUID, spaceGUID, domainGUID, appName)
 		ScaleApp(appGUID, instances)
@@ -52,8 +70,8 @@ var _ = Describe("revisions", func() {
 
 		waitForAllInstancesToStart(appGUID, instances)
 
-		By("checking that dora responds")
-		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+		By("checking that the app responds")
+		Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 
 		revisions = GetRevisions(appGUID)
 		originalWebProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
@@ -78,7 +96,7 @@ var _ = Describe("revisions", func() {
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(originalRevisionGUID))
 
 				waitForAllInstancesToStart(appGUID, instances)
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 			})
 		})
 
@@ -99,7 +117,7 @@ var _ = Describe("revisions", func() {
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
 				waitForAllInstancesToStart(appGUID, instances)
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 				Expect(helpers.CurlApp(Config, appName, "/env/foo2")).To(Equal("bar2"))
 			})
 		})
@@ -110,7 +128,7 @@ var _ = Describe("revisions", func() {
 			)
 
 			BeforeEach(func() {
-				newCommand = "cmd=real bundle exec rackup config.ru -p $PORT -o 0.0.0.0"
+				newCommand = "cmd=real ./bin/catnip"
 				SetCommandOnProcess(appGUID, "web", newCommand)
 			})
 
@@ -127,7 +145,7 @@ var _ = Describe("revisions", func() {
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
 				waitForAllInstancesToStart(appGUID, instances)
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 				Expect(helpers.CurlApp(Config, appName, "/env/cmd")).To(Equal("real"))
 			})
 		})
@@ -136,7 +154,7 @@ var _ = Describe("revisions", func() {
 			var newDropletGUID string
 
 			BeforeEach(func() {
-				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().CatnipZip, Config.GetGoBuildpackName())
+				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
 			})
 
 			It("creates a new revision", func() {
@@ -151,7 +169,7 @@ var _ = Describe("revisions", func() {
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
 				waitForAllInstancesToStart(appGUID, instances)
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 			})
 		})
 
@@ -182,7 +200,7 @@ var _ = Describe("revisions", func() {
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(originalRevisionGUID))
 
 				waitForAllInstancesToStart(appGUID, instances)
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 			})
 		})
 
@@ -201,7 +219,7 @@ var _ = Describe("revisions", func() {
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
 				waitForAllInstancesToStart(appGUID, instances)
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 				Expect(helpers.CurlApp(Config, appName, "/env/foo2")).To(Equal("bar2"))
 			})
 		})
@@ -212,7 +230,7 @@ var _ = Describe("revisions", func() {
 			)
 
 			BeforeEach(func() {
-				newCommand = "cmd=real bundle exec rackup config.ru -p $PORT -o 0.0.0.0"
+				newCommand = "cmd=real ./bin/catnip"
 				SetCommandOnProcess(appGUID, "web", newCommand)
 			})
 
@@ -227,7 +245,7 @@ var _ = Describe("revisions", func() {
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
 				waitForAllInstancesToStart(appGUID, instances)
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 				Expect(helpers.CurlApp(Config, appName, "/env/cmd")).To(Equal("real"))
 			})
 		})
@@ -236,7 +254,7 @@ var _ = Describe("revisions", func() {
 			var newDropletGUID string
 
 			BeforeEach(func() {
-				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().CatnipZip, Config.GetGoBuildpackName())
+				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
 			})
 
 			It("creates a new revision", func() {
@@ -249,7 +267,7 @@ var _ = Describe("revisions", func() {
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
 				waitForAllInstancesToStart(appGUID, instances)
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 			})
 		})
 	})
@@ -257,7 +275,7 @@ var _ = Describe("revisions", func() {
 	Describe("starting a started app", func() {
 		Context("when there is a new droplet", func() {
 			BeforeEach(func() {
-				CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().CatnipZip, Config.GetGoBuildpackName())
+				CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
 			})
 
 			It("does not create a new revision", func() {
@@ -268,7 +286,7 @@ var _ = Describe("revisions", func() {
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(originalRevisionGUID))
 
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 			})
 		})
 
@@ -278,7 +296,7 @@ var _ = Describe("revisions", func() {
 			)
 
 			BeforeEach(func() {
-				newCommand = "cmd=real bundle exec rackup config.ru -p $PORT -o 0.0.0.0"
+				newCommand = "cmd=real ./bin/catnip"
 				SetCommandOnProcess(appGUID, "web", newCommand)
 			})
 
@@ -290,7 +308,7 @@ var _ = Describe("revisions", func() {
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(originalRevisionGUID))
 				Expect(newProcess.Command).NotTo(Equal(newCommand))
 
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 			})
 		})
 	})
@@ -305,7 +323,7 @@ var _ = Describe("revisions", func() {
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(originalRevisionGUID))
 
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 			})
 		})
 
@@ -323,7 +341,7 @@ var _ = Describe("revisions", func() {
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 				Expect(helpers.CurlApp(Config, appName, "/env/foo2")).To(Equal("bar2"))
 			})
 		})
@@ -334,7 +352,7 @@ var _ = Describe("revisions", func() {
 			)
 
 			BeforeEach(func() {
-				newCommand = "TEST_VAR=real bundle exec rackup config.ru -p $PORT -o 0.0.0.0"
+				newCommand = "TEST_VAR=real ./bin/catnip"
 				SetCommandOnProcess(appGUID, "web", newCommand)
 			})
 
@@ -349,7 +367,7 @@ var _ = Describe("revisions", func() {
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
 				waitForAllInstancesToStart(appGUID, instances)
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 				Expect(helpers.CurlApp(Config, appName, "/env/TEST_VAR")).To(Equal("real"))
 			})
 		})
@@ -358,7 +376,7 @@ var _ = Describe("revisions", func() {
 			var newDropletGUID string
 
 			BeforeEach(func() {
-				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().CatnipZip, Config.GetGoBuildpackName())
+				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
 			})
 
 			It("creates a new revision", func() {
@@ -370,20 +388,59 @@ var _ = Describe("revisions", func() {
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 			})
 		})
 
+		// Rollback: the app is initially Catnip, gets swapped to Dora
+		// with a Ruby-flavoured custom command and mutated env, then
+		// rolled back to the very first (Catnip) revision. The context
+		// name is kept for historical/git-blame stability.
 		Context("rolling back to detected dora command", func() {
 			var (
 				newCommand string
 			)
 
 			BeforeEach(func() {
-				CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().CatnipZip, Config.GetGoBuildpackName())
+				CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().DoraZip, Config.GetRubyBuildpackName())
 				UpdateEnvironmentVariables(appGUID, `{"foo":"deffo-not-bar"}`)
+				newCommand = "TEST_VAR=real bundle exec rackup config.ru -p $PORT -o 0.0.0.0"
+				SetCommandOnProcess(appGUID, "web", newCommand)
+				zdtRestartAndWait(appGUID)
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+			})
+
+			It("creates a new revision with the droplet, environment variables, and detected start command from the specified revision", func() {
+				deploymentGUID := RollbackDeployment(appGUID, originalRevisionGUID)
+				Expect(deploymentGUID).ToNot(BeEmpty())
+				WaitUntilDeploymentReachesStatus(deploymentGUID, "FINALIZED", "DEPLOYED")
+
+				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 2))
+				revision := GetNewestRevision(appGUID)
+				Expect(revision.Droplet.Guid).To(Equal(dropletGUID))
+				Expect(revision.Guid).NotTo(Equal(originalRevisionGUID))
+
+				Expect(GetRevisionEnvVars(originalRevisionGUID).Var["foo"]).To(Equal("bar"))
+				Expect(revision.Processes["web"]["command"]).To(Equal(GetRevision(originalRevisionGUID).Processes["web"]["command"]))
+
+				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
+				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
+
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
+				Expect(helpers.CurlApp(Config, appName, "/env/foo")).To(Equal("bar"))
+			})
+		})
+
+		// Rollback with no droplet swap — only the command / env change.
+		Context("rolling back to specified dora command", func() {
+			var (
+				newCommand string
+			)
+
+			BeforeEach(func() {
 				newCommand = "TEST_VAR=real ./bin/catnip"
 				SetCommandOnProcess(appGUID, "web", newCommand)
+				UpdateEnvironmentVariables(appGUID, `{"foo":"deffo-not-bar"}`)
 				zdtRestartAndWait(appGUID)
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 			})
@@ -404,41 +461,7 @@ var _ = Describe("revisions", func() {
 				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
 				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
 
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
-				Expect(helpers.CurlApp(Config, appName, "/env/foo")).To(Equal("bar"))
-			})
-		})
-
-		Context("rolling back to specified dora command", func() {
-			var (
-				newCommand string
-			)
-
-			BeforeEach(func() {
-				newCommand = "TEST_VAR=real bundle exec rackup config.ru -p $PORT -o 0.0.0.0"
-				SetCommandOnProcess(appGUID, "web", newCommand)
-				UpdateEnvironmentVariables(appGUID, `{"foo":"deffo-not-bar"}`)
-				zdtRestartAndWait(appGUID)
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
-			})
-
-			It("creates a new revision with the droplet, environment variables, and detected start command from the specified revision", func() {
-				deploymentGUID := RollbackDeployment(appGUID, originalRevisionGUID)
-				Expect(deploymentGUID).ToNot(BeEmpty())
-				WaitUntilDeploymentReachesStatus(deploymentGUID, "FINALIZED", "DEPLOYED")
-
-				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 2))
-				revision := GetNewestRevision(appGUID)
-				Expect(revision.Droplet.Guid).To(Equal(dropletGUID))
-				Expect(revision.Guid).NotTo(Equal(originalRevisionGUID))
-
-				Expect(GetRevisionEnvVars(originalRevisionGUID).Var["foo"]).To(Equal("bar"))
-				Expect(revision.Processes["web"]["command"]).To(Equal(GetRevision(originalRevisionGUID).Processes["web"]["command"]))
-
-				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
-				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
-
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hi, I'm Dora!"))
+				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 				Expect(helpers.CurlApp(Config, appName, "/env/foo")).To(Equal("bar"))
 			})
 		})

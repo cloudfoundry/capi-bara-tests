@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"testing"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/cloudfoundry/capi-bara-tests/helpers/config"
 	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
@@ -87,9 +89,24 @@ func TestBARA(t *testing.T) {
 		}
 
 		return []byte{}
-	}, func([]byte) {})
-
-	BeforeEach(func() {
+	}, func([]byte) {
+		// This closure runs once per Ginkgo parallel process.
+		//
+		// Historically the org/space/user creation lived inside a
+		// per-test BeforeEach, which meant every single It() paid the
+		// cost of `cf create-quota` + `cf create-org` + `cf create-space`
+		// + `cf create-user` + `cf set-space-role` (×3) + `cf api` +
+		// `cf auth` + `cf target` — roughly 15-20s of pure fixture work
+		// before any actual assertion. Multiplied by ~60 tests that's
+		// 15-20 minutes per suite run.
+		//
+		// The reusable state (space, user, cf home dir, credentials) is
+		// safe to share across tests in a single process because every
+		// test uses random_name.BARARandomName for its own resources and
+		// its AfterEach explicitly deletes them. Tests that must operate
+		// in a different org/space (e.g. Quotas) create + tear down their
+		// own scope entirely and the per-test BeforeEach below re-targets
+		// the shared space afterwards.
 		SetDefaultEventuallyTimeout(Config.DefaultTimeoutDuration())
 		SetDefaultEventuallyPollingInterval(1 * time.Second)
 
@@ -97,19 +114,81 @@ func TestBARA(t *testing.T) {
 		TestSetup.Setup()
 	})
 
-	AfterEach(func() {
+	BeforeEach(func() {
+		// Cheap safety net: ensure the cf CLI is always targeted at the
+		// shared regular-user space before a test starts, in case an
+		// earlier test (e.g. Quotas) targeted somewhere else. This is a
+		// single `cf target` call, not a full Setup().
+		TestSetup.RegularUserContext().TargetSpace()
+	})
+
+	SynchronizedAfterSuite(func() {
+		// Per-process teardown: drop the shared org/space/user created
+		// in the matching SynchronizedBeforeSuite closure above.
 		if TestSetup != nil {
 			TestSetup.Teardown()
 		}
-	})
-
-	SynchronizedAfterSuite(func() {}, func() {
+	}, func() {
 		os.Remove(assets.NewAssets().DoraZip)
 		os.Remove(assets.NewAssets().BadDoraZip)
 		os.Remove(assets.NewAssets().StaticfileZip)
 		os.Remove(assets.NewAssets().CatnipZip)
 		os.Remove(assets.NewAssets().PythonWithoutProcfileZip)
 		os.Remove(assets.NewAssets().SleepySidecarBuildpackZip)
+	})
+
+	// Per-spec timing marker printed to stdout so CI logs contain the
+	// data even when the JUnit XML artifact is not accessible. Format
+	// is deliberately grep-friendly:
+	//
+	//   [BARA_SPEC_TIMING] node=3 state=passed time=45.20s spec="deployments Canary deployments deploys an app, transitions to pause, is continued and then deploys successfully"
+	//
+	// Grep with:  grep BARA_SPEC_TIMING <ci-log> | sort -k4 -t= -rn
+	ReportAfterEach(func(report SpecReport) {
+		fmt.Printf("[BARA_SPEC_TIMING] node=%d state=%s time=%.2fs num_attempts=%d spec=%q\n",
+			GinkgoParallelProcess(),
+			report.State,
+			report.RunTime.Seconds(),
+			report.NumAttempts,
+			report.FullText())
+	})
+
+	// At the end of the whole run (aggregated across all parallel
+	// processes) print a top-40 slowest-specs summary block. This is
+	// the primary artefact for prioritising further speedups: whatever
+	// sits at the top is the current critical-path anchor.
+	ReportAfterSuite("bara timings summary", func(report Report) {
+		specs := make([]SpecReport, 0, len(report.SpecReports))
+		for _, s := range report.SpecReports {
+			if s.LeafNodeType != types.NodeTypeIt {
+				continue
+			}
+			specs = append(specs, s)
+		}
+		sort.Slice(specs, func(i, j int) bool {
+			return specs[i].RunTime > specs[j].RunTime
+		})
+
+		n := 40
+		if len(specs) < n {
+			n = len(specs)
+		}
+
+		fmt.Println()
+		fmt.Println("================ BARA TOP SLOWEST SPECS ================")
+		fmt.Printf("Suite wall time: %s | Total specs: %d | Showing top %d\n",
+			report.RunTime.Round(time.Second), len(specs), n)
+		fmt.Println("--------------------------------------------------------")
+		for i := 0; i < n; i++ {
+			s := specs[i]
+			fmt.Printf("%3d. %7.1fs [%s]%s  %s\n",
+				i+1,
+				s.RunTime.Seconds(),
+				s.State,
+				retryTag(s),
+				s.FullText())
+		}
+		fmt.Println("========================================================")
 	})
 
 	_, rc := GinkgoConfiguration()
@@ -122,4 +201,13 @@ func TestBARA(t *testing.T) {
 	}
 
 	RunSpecs(t, "BARA", rc)
+}
+
+// retryTag returns a compact marker for specs that Ginkgo retried
+// (i.e. flaked and were re-run). Empty string when the spec ran once.
+func retryTag(s SpecReport) string {
+	if s.NumAttempts > 1 {
+		return fmt.Sprintf(" (RETRIED×%d)", s.NumAttempts)
+	}
+	return ""
 }

@@ -682,6 +682,15 @@ applications:
 
 				PollJob(GetJobPath(response))
 
+				// TODO: this `cf restage` is a hint that the test was
+				// originally intended to verify the restaged app can
+				// actually *use* the bound service (VCAP_SERVICES
+				// present, reachable, etc.) but the follow-up
+				// assertion below only checks CC metadata via
+				// `cf service`. Either fill in that runtime-side
+				// assertion or replace the restage with a comment
+				// explaining why it's here — do not silently remove
+				// it, since that hides the coverage gap.
 				session = cf.Cf("restage", apps[0].name).Wait(Config.CfPushTimeoutDuration())
 
 				workflowhelpers.AsUser(TestSetup.AdminUserContext(), Config.DefaultTimeoutDuration(), func() {

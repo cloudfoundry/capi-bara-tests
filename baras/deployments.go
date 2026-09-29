@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/app_helpers"
@@ -97,8 +96,6 @@ var _ = Describe("deployments", func() {
 			deploymentGuid := CreateDeploymentForDroplet(appGUID, newDropletGuid, "rolling")
 			Expect(deploymentGuid).ToNot(BeEmpty())
 
-			time.Sleep(60 * time.Second)
-
 			deploymentPath := fmt.Sprintf("/v3/deployments/%s", deploymentGuid)
 
 			type deploymentStatus struct {
@@ -110,26 +107,21 @@ var _ = Describe("deployments", func() {
 				Status deploymentStatus `json:"status"`
 			}{}
 
-			session := cf.Cf("curl", "-f", deploymentPath).Wait()
-			Expect(session.Wait()).To(Exit(0))
-			json.Unmarshal(session.Out.Contents(), &deploymentJson)
-
-			Expect(deploymentJson.Status.Value).To(Equal("ACTIVE"))
-			Expect(deploymentJson.Status.Reason).To(Equal("DEPLOYING"))
-			Expect(deploymentJson.Status.HealthCheckTime).To(Equal(""))
-		})
-	})
-
-	Describe("Health check timeout is set on the app", func() {
-		BeforeEach(func() {
-			ScaleApp(appGUID, 2)
-			SetHealthCheckTimeoutOnProcess(appGUID, "web", 5)
-		})
-
-		It("completes the deployment", func() {
-			deploymentGUID := CreateDeployment(appGUID, "rolling", 1)
-			Expect(deploymentGUID).ToNot(BeEmpty())
-			WaitUntilDeploymentReachesStatus(deploymentGUID, "FINALIZED", "DEPLOYED")
+			// Verify that for at least one CC deployment-updater cycle the
+			// deployment stays ACTIVE/DEPLOYING and no successful healthcheck
+			// is ever recorded (bad-dora never boots). Polling instead of a
+			// hard Sleep means we fail fast if the state regresses.
+			Consistently(func() deploymentStatus {
+				session := cf.Cf("curl", "-f", deploymentPath).Wait()
+				Expect(session).To(Exit(0))
+				deploymentJson.Status = deploymentStatus{}
+				json.Unmarshal(session.Out.Contents(), &deploymentJson)
+				return deploymentJson.Status
+			}, Config.CcClockCycleDuration(), "2s").Should(Equal(deploymentStatus{
+				Value:           "ACTIVE",
+				Reason:          "DEPLOYING",
+				HealthCheckTime: "",
+			}))
 		})
 	})
 
@@ -434,6 +426,58 @@ var _ = Describe("deployments", func() {
 				return GetRunningInstancesStats(newDeploymentGuid)
 			}).Should(Equal(instances))
 		})
+	})
+})
+
+// The "health-check timeout" scenario needs an app that boots fast
+// enough for a 5-second timeout to be a comfortable margin, otherwise
+// the deployment races the healthcheck and the test flakes. Ruby Dora
+// can easily exceed 5s of boot on a busy environment; Catnip is a
+// static Go binary that starts in well under a second. This suite is
+// therefore its own top-level Describe with a Catnip-based setup — it
+// deliberately does not share the Dora BeforeEach above.
+var _ = Describe("deployment with a tight healthcheck timeout", func() {
+	var (
+		appName    string
+		appGUID    string
+		spaceGUID  string
+		spaceName  string
+		domainGUID string
+	)
+
+	BeforeEach(func() {
+		appName = random_name.BARARandomName("APP")
+		spaceName = TestSetup.RegularUserContext().Space
+		spaceGUID = GetSpaceGuidFromName(spaceName)
+		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
+
+		By("Creating a Catnip-backed app")
+		appGUID = CreateApp(appName, spaceGUID, `{}`)
+		_ = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().CatnipZip, Config.GetGoBuildpackName())
+
+		CreateAndMapRoute(appGUID, spaceGUID, domainGUID, appName)
+		ScaleApp(appGUID, 2)
+		StartApp(appGUID)
+
+		By("waiting until all instances are running")
+		Eventually(func() int {
+			guids := GetProcessGuidsForType(appGUID, "web")
+			Expect(guids).ToNot(BeEmpty())
+			return GetRunningInstancesStats(guids[0])
+		}, Config.CfPushTimeoutDuration()).Should(Equal(2))
+
+		SetHealthCheckTimeoutOnProcess(appGUID, "web", 5)
+	})
+
+	AfterEach(func() {
+		app_helpers.AppReport(appName)
+		DeleteApp(appGUID)
+	})
+
+	It("completes the deployment", func() {
+		deploymentGUID := CreateDeployment(appGUID, "rolling", 1)
+		Expect(deploymentGUID).ToNot(BeEmpty())
+		WaitUntilDeploymentReachesStatus(deploymentGUID, "FINALIZED", "DEPLOYED")
 	})
 })
 
