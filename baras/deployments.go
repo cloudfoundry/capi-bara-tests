@@ -28,7 +28,13 @@ var _ = Describe("deployments", func() {
 		spaceName      string
 		dropletGuid    string
 		newDropletGuid string
-		instances      = 4
+		// Default scale is 2 — the canary / cancel / superseded / bad-
+		// droplet tests all work with 2 web instances and this halves
+		// the "wait until all instances are running" cost for them. The
+		// two suites that genuinely need 4 (canary "with instance steps"
+		// and both max-in-flight tests) scale up locally in their own
+		// BeforeEach.
+		instances = 2
 	)
 
 	BeforeEach(func() {
@@ -182,7 +188,7 @@ var _ = Describe("deployments", func() {
 					counter = 0
 				}
 				return counter
-			}).Should(Equal(10))
+			}).Should(Equal(5))
 
 			Eventually(func() bool {
 				restartEventExists, _ := GetLastAppUseEventForProcess("worker", "STARTED", originalWorkerStartEvent.Guid)
@@ -244,7 +250,7 @@ var _ = Describe("deployments", func() {
 					counter = 0
 				}
 				return counter
-			}).Should(Equal(10))
+			}).Should(Equal(5))
 		})
 
 		It("deploys an app, transitions to pause and can be superseded", func() {
@@ -294,10 +300,21 @@ var _ = Describe("deployments", func() {
 					counter = 0
 				}
 				return counter
-			}).Should(Equal(10))
+			}).Should(Equal(5))
 		})
 
 		Context("with instance steps", func() {
+			// This scenario asserts canary instance counts 1..4 at each
+			// step, so it needs 4 web instances (not the default 2).
+			BeforeEach(func() {
+				ScaleApp(appGUID, 4)
+				Eventually(func() int {
+					guids := GetProcessGuidsForType(appGUID, "web")
+					Expect(guids).ToNot(BeEmpty())
+					return GetRunningInstancesStats(guids[0])
+				}, Config.CfPushTimeoutDuration()).Should(Equal(4))
+			})
+
 			It("deploys an app, transitions to pause and can be continued multiple times and then deploys successfully", func() {
 				By("Pushing a canary deployment")
 				Eventually(func() string {
@@ -345,9 +362,11 @@ var _ = Describe("deployments", func() {
 				processGuids := GetProcessGuidsForType(appGUID, "web")
 				canaryProcessGuid := processGuids[len(processGuids)-1]
 
+				// This scenario scaled the app up to 4 in its own
+				// BeforeEach; the outer `instances` default is 2.
 				Eventually(func() int {
 					return GetRunningInstancesStats(canaryProcessGuid)
-				}).Should(Equal(instances))
+				}).Should(Equal(4))
 
 				counter := 0
 				Eventually(func() int {
@@ -357,7 +376,7 @@ var _ = Describe("deployments", func() {
 						counter = 0
 					}
 					return counter
-				}).Should(Equal(10))
+				}).Should(Equal(5))
 
 				Eventually(func() bool {
 					restartEventExists, _ := GetLastAppUseEventForProcess("worker", "STARTED", originalWorkerStartEvent.Guid)
@@ -368,6 +387,18 @@ var _ = Describe("deployments", func() {
 	})
 
 	Describe("max-in-flight deployments", func() {
+		// Both scenarios assert on max_in_flight = 4 with 4 target web
+		// instances (Consistently 4, running-stats Equal 4). Scale up
+		// from the default 2 in a local BeforeEach.
+		BeforeEach(func() {
+			ScaleApp(appGUID, 4)
+			Eventually(func() int {
+				guids := GetProcessGuidsForType(appGUID, "web")
+				Expect(guids).ToNot(BeEmpty())
+				return GetRunningInstancesStats(guids[0])
+			}, Config.CfPushTimeoutDuration()).Should(Equal(4))
+		})
+
 		It("deploys an app with max_in_flight with a rolling deployment", func() {
 			By("Pushing a new rolling deployment with max in flight of 4")
 			Eventually(func() string {
@@ -390,7 +421,7 @@ var _ = Describe("deployments", func() {
 
 			Eventually(func() int {
 				return GetRunningInstancesStats(newDeploymentGuid)
-			}).Should(Equal(instances))
+			}).Should(Equal(4))
 		})
 
 		It("deploys an app with max_in_flight after a canary deployment has been continued", func() {
@@ -424,7 +455,7 @@ var _ = Describe("deployments", func() {
 
 			Eventually(func() int {
 				return GetRunningInstancesStats(newDeploymentGuid)
-			}).Should(Equal(instances))
+			}).Should(Equal(4))
 		})
 	})
 })
