@@ -38,7 +38,14 @@ var _ = Describe("sidecars", func() {
 
 		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"WHAT_AM_I":"MOTORCYCLE"}`)
-		_ = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().DoraZip, Config.GetRubyBuildpackName())
+		// The Dora droplet used to be staged here for every spec in
+		// this file. The "multiple buildpacks / cf push" spec below
+		// immediately overwrites the droplet with its own `cf push`,
+		// so staging Dora here for that spec was ~60-90s of wasted
+		// Ruby staging. Move the stage into the Context that actually
+		// uses it (the sidecar-associated-with-web-process one, whose
+		// nested tests do `cf start appName` and rely on the outer
+		// droplet).
 	})
 
 	AfterEach(func() {
@@ -48,6 +55,8 @@ var _ = Describe("sidecars", func() {
 
 	Context("when the app has a sidecar associated with its web process", func() {
 		BeforeEach(func() {
+			_ = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().DoraZip, Config.GetRubyBuildpackName())
+
 			CreateSidecar("my_sidecar1", []string{"web"}, fmt.Sprintf("WHAT_AM_I=LEFT_SIDECAR bundle exec rackup config.ru -o 0.0.0.0 -p %d", 8081), 50, appGUID)
 			CreateSidecar("my_sidecar2", []string{"web"}, fmt.Sprintf("WHAT_AM_I=RIGHT_SIDECAR bundle exec rackup config.ru -o 0.0.0.0 -p %d", 8082), 100, appGUID)
 
