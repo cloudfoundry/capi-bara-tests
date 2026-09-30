@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"testing"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/cloudfoundry/capi-bara-tests/helpers/config"
 	"github.com/cloudfoundry/cf-test-helpers/v2/helpers"
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
@@ -112,6 +114,63 @@ func TestBARA(t *testing.T) {
 		os.Remove(assets.NewAssets().SleepySidecarBuildpackZip)
 	})
 
+	// Per-spec timing marker printed to stdout so CI logs contain the
+	// data even when the JUnit XML artifact is not accessible. Format
+	// is deliberately grep-friendly:
+	//
+	//   [BARA_SPEC_TIMING] node=3 state=passed time=45.20s num_attempts=1 spec="deployments Canary deployments deploys an app, transitions to pause, is continued and then deploys successfully"
+	//
+	// Grep with:  grep BARA_SPEC_TIMING <ci-log>
+	// then sort on the time= field to see the distribution across all
+	// parallel processes.
+	ReportAfterEach(func(report SpecReport) {
+		fmt.Printf("[BARA_SPEC_TIMING] node=%d state=%s time=%.2fs num_attempts=%d spec=%q\n",
+			GinkgoParallelProcess(),
+			report.State,
+			report.RunTime.Seconds(),
+			report.NumAttempts,
+			report.FullText())
+	})
+
+	// At the end of the whole run (aggregated across all parallel
+	// processes) print a top-40 slowest-specs summary block. This is
+	// the primary artefact for prioritising optimisations: whichever
+	// spec sits at position #1 is the current critical-path anchor on
+	// the slowest node.
+	ReportAfterSuite("bara timings summary", func(report Report) {
+		specs := make([]SpecReport, 0, len(report.SpecReports))
+		for _, s := range report.SpecReports {
+			if s.LeafNodeType != types.NodeTypeIt {
+				continue
+			}
+			specs = append(specs, s)
+		}
+		sort.Slice(specs, func(i, j int) bool {
+			return specs[i].RunTime > specs[j].RunTime
+		})
+
+		n := 40
+		if len(specs) < n {
+			n = len(specs)
+		}
+
+		fmt.Println()
+		fmt.Println("================ BARA TOP SLOWEST SPECS ================")
+		fmt.Printf("Suite wall time: %s | Total specs: %d | Showing top %d\n",
+			report.RunTime.Round(time.Second), len(specs), n)
+		fmt.Println("--------------------------------------------------------")
+		for i := 0; i < n; i++ {
+			s := specs[i]
+			fmt.Printf("%3d. %7.1fs [%s]%s  %s\n",
+				i+1,
+				s.RunTime.Seconds(),
+				s.State,
+				retryTag(s),
+				s.FullText())
+		}
+		fmt.Println("========================================================")
+	})
+
 	_, rc := GinkgoConfiguration()
 
 	if validationError == nil {
@@ -122,4 +181,13 @@ func TestBARA(t *testing.T) {
 	}
 
 	RunSpecs(t, "BARA", rc)
+}
+
+// retryTag returns a compact marker for specs that Ginkgo retried
+// (i.e. flaked and were re-run). Empty string when the spec ran once.
+func retryTag(s SpecReport) string {
+	if s.NumAttempts > 1 {
+		return fmt.Sprintf(" (RETRIED×%d)", s.NumAttempts)
+	}
+	return ""
 }
