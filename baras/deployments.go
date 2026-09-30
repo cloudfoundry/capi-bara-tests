@@ -28,7 +28,16 @@ var _ = Describe("deployments", func() {
 		spaceName      string
 		dropletGuid    string
 		newDropletGuid string
-		instances      = 4
+		// Default web-process scale is 2. Most specs in this file
+		// assert only on 'canary process has N instances' where N is
+		// specific to the moment in the deployment lifecycle (usually
+		// 1 during pause, then `instances` after finalisation) — they
+		// work correctly with any 'instances >= 2' and gain nothing
+		// from 4. The three specs that genuinely need 4
+		// ('with instance steps' asserts canary=i for i in 1..4, both
+		// max-in-flight specs assert `Consistently Instances == 4`)
+		// scale up to 4 locally in their own BeforeEach.
+		instances = 2
 	)
 
 	BeforeEach(func() {
@@ -298,6 +307,19 @@ var _ = Describe("deployments", func() {
 		})
 
 		Context("with instance steps", func() {
+			// Instance-steps asserts canary process running-instance
+			// count = i at each step for i in 1..4, so the app needs
+			// 4 web instances. The Describe-level default was reduced
+			// to 2; scale back up to 4 locally.
+			BeforeEach(func() {
+				ScaleApp(appGUID, 4)
+				Eventually(func() int {
+					guids := GetProcessGuidsForType(appGUID, "web")
+					Expect(guids).ToNot(BeEmpty())
+					return GetRunningInstancesStats(guids[0])
+				}, Config.CfPushTimeoutDuration()).Should(Equal(4))
+			})
+
 			It("deploys an app, transitions to pause and can be continued multiple times and then deploys successfully", func() {
 				By("Pushing a canary deployment")
 				Eventually(func() string {
@@ -345,9 +367,13 @@ var _ = Describe("deployments", func() {
 				processGuids := GetProcessGuidsForType(appGUID, "web")
 				canaryProcessGuid := processGuids[len(processGuids)-1]
 
+				// The 'with instance steps' Context scaled the app up
+				// to 4 in its BeforeEach; the outer default 'instances'
+				// is 2. Hardcode 4 here to reflect what the test
+				// actually set up.
 				Eventually(func() int {
 					return GetRunningInstancesStats(canaryProcessGuid)
-				}).Should(Equal(instances))
+				}).Should(Equal(4))
 
 				counter := 0
 				Eventually(func() int {
@@ -368,6 +394,19 @@ var _ = Describe("deployments", func() {
 	})
 
 	Describe("max-in-flight deployments", func() {
+		// Both max-in-flight specs assert 'Consistently new_process
+		// Instances == 4' and Eventually run count == 4 — the app
+		// must have 4 web instances. The Describe-level default is 2;
+		// scale back up to 4 locally.
+		BeforeEach(func() {
+			ScaleApp(appGUID, 4)
+			Eventually(func() int {
+				guids := GetProcessGuidsForType(appGUID, "web")
+				Expect(guids).ToNot(BeEmpty())
+				return GetRunningInstancesStats(guids[0])
+			}, Config.CfPushTimeoutDuration()).Should(Equal(4))
+		})
+
 		It("deploys an app with max_in_flight with a rolling deployment", func() {
 			By("Pushing a new rolling deployment with max in flight of 4")
 			Eventually(func() string {
@@ -390,7 +429,7 @@ var _ = Describe("deployments", func() {
 
 			Eventually(func() int {
 				return GetRunningInstancesStats(newDeploymentGuid)
-			}).Should(Equal(instances))
+			}).Should(Equal(4))
 		})
 
 		It("deploys an app with max_in_flight after a canary deployment has been continued", func() {
@@ -424,7 +463,7 @@ var _ = Describe("deployments", func() {
 
 			Eventually(func() int {
 				return GetRunningInstancesStats(newDeploymentGuid)
-			}).Should(Equal(instances))
+			}).Should(Equal(4))
 		})
 	})
 })

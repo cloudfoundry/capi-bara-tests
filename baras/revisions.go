@@ -50,7 +50,15 @@ var _ = Describe("revisions", func() {
 		spaceName = TestSetup.RegularUserContext().Space
 		spaceGUID = GetSpaceGuidFromName(spaceName)
 		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
-		instances = 2
+		// None of the revisions specs assert on multi-instance
+		// behaviour — every assertion is about revision GUIDs,
+		// droplet GUIDs, and process→revision links, none of which
+		// need more than one running instance. Halving the instance
+		// count halves the Diego "wait for all instances to start"
+		// cost that every spec in this file pays, and halves the
+		// per-step count of rolling deployments in the "deployment"
+		// Describe's specs.
+		instances = 1
 
 		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"foo":"bar"}`)
