@@ -141,9 +141,40 @@ func TestBARA(t *testing.T) {
 	// data even when the JUnit XML artifact is not accessible. Format
 	// is deliberately grep-friendly:
 	//
-	//   [BARA_SPEC_TIMING] node=3 state=passed time=45.20s spec="deployments Canary deployments deploys an app, transitions to pause, is continued and then deploys successfully"
+	//   [BARA_SPEC_TIMING] node=3 state=passed time=45.20s num_attempts=1 spec="deployments Canary deployments deploys an app, transitions to pause, is continued and then deploys successfully"
 	//
-	// Grep with:  grep BARA_SPEC_TIMING <ci-log> | sort -k4 -t= -rn
+	// Grep with:  grep BARA_SPEC_TIMING <ci-log>
+	// then sort on the time= field to see the distribution across all
+	// parallel processes.
+	//
+	// EXPERIMENT NOTE (timeout_scale)
+	// -------------------------------
+	// If the baseline top-40 summary shows the slowest specs are
+	// dominated by 'WaitUntilDeploymentReachesStatus',
+	// 'Consistently(CcClockCycleDuration())', and
+	// 'waitForAllInstancesToStart' waits — those are all multiplied
+	// by Config.TimeoutScale (default 2.0). Halving TimeoutScale
+	// halves every scaled wait in the suite and can drop overall
+	// wall time significantly, at the cost of tighter margin if
+	// CC or Diego ever runs slow.
+	//
+	// This is a CI config change (the JSON $CONFIG file that this
+	// suite reads), NOT a code change. Recommended experiment:
+	//
+	//   1. Run once with timeout_scale=1.5 in the CI $CONFIG. If
+	//      the top-40 block reports 0 retried specs, the scale
+	//      reduction is safe on this CF.
+	//   2. If (1) passes, try timeout_scale=1.0.
+	//   3. If retries reappear at 1.0, back off to 1.5.
+	//
+	// Reference on the same CF for observed wall time under a
+	// non-optimised suite:
+	//
+	//     workers | timeout_scale | wall time
+	//     12      | 2.0 (default) | ~22-23 min
+	//     6       | 2.0 (default) | ~42 min
+	//     (scaling is ~93% linear in workers → the suite is not
+	//     contention-bound at 12; the ceiling is per-spec wait time)
 	ReportAfterEach(func(report SpecReport) {
 		fmt.Printf("[BARA_SPEC_TIMING] node=%d state=%s time=%.2fs num_attempts=%d spec=%q\n",
 			GinkgoParallelProcess(),
