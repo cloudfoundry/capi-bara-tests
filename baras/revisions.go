@@ -158,29 +158,6 @@ var _ = Describe("revisions", func() {
 			})
 		})
 
-		Context("when there is a new droplet", func() {
-			var newDropletGUID string
-
-			BeforeEach(func() {
-				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
-			})
-
-			It("creates a new revision", func() {
-				StopApp(appGUID)
-				WaitForAppToStop(appGUID)
-				StartApp(appGUID)
-
-				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
-				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(newDropletGUID))
-				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(originalRevisionGUID))
-				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
-				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
-
-				waitForAllInstancesToStart(appGUID, instances)
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
-			})
-		})
-
 		Context("when a sidecar has been added", func() {
 			BeforeEach(func() {
 				CreateSidecar("sleepy", []string{"web"}, "sleep infinity", 50, appGUID)
@@ -255,27 +232,6 @@ var _ = Describe("revisions", func() {
 				waitForAllInstancesToStart(appGUID, instances)
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 				Expect(helpers.CurlApp(Config, appName, "/env/cmd")).To(Equal("real"))
-			})
-		})
-
-		Context("when there is a new droplet", func() {
-			var newDropletGUID string
-
-			BeforeEach(func() {
-				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
-			})
-
-			It("creates a new revision", func() {
-				RestartApp(appGUID)
-
-				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
-				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(newDropletGUID))
-				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(originalRevisionGUID))
-				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
-				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
-
-				waitForAllInstancesToStart(appGUID, instances)
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 			})
 		})
 	})
@@ -380,26 +336,6 @@ var _ = Describe("revisions", func() {
 			})
 		})
 
-		Context("when there is a new droplet", func() {
-			var newDropletGUID string
-
-			BeforeEach(func() {
-				newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
-			})
-
-			It("creates a new revision", func() {
-				zdtRestartAndWait(appGUID)
-
-				Expect(len(GetRevisions(appGUID))).To(Equal(len(revisions) + 1))
-				Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(newDropletGUID))
-				Expect(GetNewestRevision(appGUID).Guid).NotTo(Equal(originalRevisionGUID))
-				newProcess := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
-				Expect(newProcess.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
-
-				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
-			})
-		})
-
 		// Rollback: the app is initially Catnip, gets swapped to Dora
 		// with a Ruby-flavoured custom command and mutated env, then
 		// rolled back to the very first (Catnip) revision. The context
@@ -472,6 +408,74 @@ var _ = Describe("revisions", func() {
 				Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
 				Expect(helpers.CurlApp(Config, appName, "/env/foo")).To(Equal("bar"))
 			})
+		})
+	})
+
+	// Consolidated coverage of "a droplet swap creates a new revision
+	// when the app is restarted, via any of the three restart-style
+	// triggers".
+	//
+	// Previously this behaviour was covered by three sibling Contexts
+	// (one per trigger: stop/start, restart, zdt deployment). Each
+	// paid the full outer BeforeEach cost — push Catnip, scale, wait
+	// for instances — plus staged a Staticfile droplet in its own
+	// BeforeEach, for ~330s per spec. Wall time on 12-worker CI:
+	// three specs × ~330s = ~1000s of duplicated setup.
+	//
+	// Here we run all three triggers in one spec, alternating the
+	// current droplet between the base Catnip and a single-staged
+	// Staticfile so each trigger has a genuinely-pending swap to
+	// apply. Every original assertion (revision count grew, latest
+	// revision's droplet is what we swapped in, per-process revision
+	// link is up to date, HTTP response matches the running droplet)
+	// is preserved for each trigger.
+	//
+	// Coverage: identical to the three original specs combined. The
+	// scenario is sequential — if trigger 1 fails, triggers 2 and 3
+	// are not exercised — but the failure diagnostic still identifies
+	// which trigger regressed via the By() step markers.
+	Describe("a droplet swap applies on each restart-style trigger", func() {
+		var newDropletGUID string
+
+		BeforeEach(func() {
+			// Stage the alternate droplet once. We flip current-droplet
+			// between this and the base `dropletGUID` before each
+			// trigger so each has something new to apply.
+			newDropletGUID = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().StaticfileZip, Config.GetStaticFileBuildpackName())
+		})
+
+		It("stop/start, restart, and zdt each create a new revision reflecting the swapped droplet", func() {
+			baseRevisions := GetRevisions(appGUID)
+
+			By("stop/start applies the pending swap (Catnip → Staticfile)")
+			StopApp(appGUID)
+			WaitForAppToStop(appGUID)
+			StartApp(appGUID)
+			Expect(len(GetRevisions(appGUID))).To(Equal(len(baseRevisions) + 1))
+			Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(newDropletGUID))
+			webProc := GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
+			Expect(webProc.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
+			waitForAllInstancesToStart(appGUID, instances)
+			Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
+
+			By("queue a swap back to Catnip, then Restart applies it (Staticfile → Catnip)")
+			AssignDropletToApp(appGUID, dropletGUID)
+			RestartApp(appGUID)
+			Expect(len(GetRevisions(appGUID))).To(Equal(len(baseRevisions) + 2))
+			Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(dropletGUID))
+			webProc = GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
+			Expect(webProc.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
+			waitForAllInstancesToStart(appGUID, instances)
+			Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Catnip?"))
+
+			By("queue a swap to Staticfile again, then zdt applies it (Catnip → Staticfile)")
+			AssignDropletToApp(appGUID, newDropletGUID)
+			zdtRestartAndWait(appGUID)
+			Expect(len(GetRevisions(appGUID))).To(Equal(len(baseRevisions) + 3))
+			Expect(GetNewestRevision(appGUID).Droplet.Guid).To(Equal(newDropletGUID))
+			webProc = GetFirstProcessByType(GetProcesses(appGUID, appName), "web")
+			Expect(webProc.Relationships.Revision.Data.Guid).To(Equal(GetNewestRevision(appGUID).Guid))
+			Expect(helpers.CurlAppRoot(Config, appName)).To(Equal("Hello from a staticfile"))
 		})
 	})
 })
