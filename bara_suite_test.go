@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -93,6 +94,10 @@ func TestBARA(t *testing.T) {
 		SetDefaultEventuallyTimeout(Config.DefaultTimeoutDuration())
 		SetDefaultEventuallyPollingInterval(1 * time.Second)
 
+		if slices.Contains(CurrentSpecReport().Labels(), "no-cf-setup") {
+			TestSetup = nil
+			return
+		}
 		TestSetup = workflowhelpers.NewTestSuiteSetup(Config)
 		TestSetup.Setup()
 	})
