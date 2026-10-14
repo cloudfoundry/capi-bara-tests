@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	. "github.com/cloudfoundry/capi-bara-tests/bara_suite_helpers"
 	"github.com/cloudfoundry/capi-bara-tests/helpers/app_helpers"
@@ -29,7 +28,7 @@ var _ = Describe("deployments", func() {
 		spaceName      string
 		dropletGuid    string
 		newDropletGuid string
-		instances      = 4
+		instances = 2
 	)
 
 	BeforeEach(func() {
@@ -97,8 +96,6 @@ var _ = Describe("deployments", func() {
 			deploymentGuid := CreateDeploymentForDroplet(appGUID, newDropletGuid, "rolling")
 			Expect(deploymentGuid).ToNot(BeEmpty())
 
-			time.Sleep(60 * time.Second)
-
 			deploymentPath := fmt.Sprintf("/v3/deployments/%s", deploymentGuid)
 
 			type deploymentStatus struct {
@@ -110,26 +107,18 @@ var _ = Describe("deployments", func() {
 				Status deploymentStatus `json:"status"`
 			}{}
 
-			session := cf.Cf("curl", "-f", deploymentPath).Wait()
-			Expect(session.Wait()).To(Exit(0))
-			json.Unmarshal(session.Out.Contents(), &deploymentJson)
-
-			Expect(deploymentJson.Status.Value).To(Equal("ACTIVE"))
-			Expect(deploymentJson.Status.Reason).To(Equal("DEPLOYING"))
-			Expect(deploymentJson.Status.HealthCheckTime).To(Equal(""))
-		})
-	})
-
-	Describe("Health check timeout is set on the app", func() {
-		BeforeEach(func() {
-			ScaleApp(appGUID, 2)
-			SetHealthCheckTimeoutOnProcess(appGUID, "web", 5)
-		})
-
-		It("completes the deployment", func() {
-			deploymentGUID := CreateDeployment(appGUID, "rolling", 1)
-			Expect(deploymentGUID).ToNot(BeEmpty())
-			WaitUntilDeploymentReachesStatus(deploymentGUID, "FINALIZED", "DEPLOYED")
+			// Polling instead of a hard sleep: fail fast if the deployment status regresses.
+			Consistently(func() deploymentStatus {
+				session := cf.Cf("curl", "-f", deploymentPath).Wait()
+				Expect(session).To(Exit(0))
+				deploymentJson.Status = deploymentStatus{}
+				json.Unmarshal(session.Out.Contents(), &deploymentJson)
+				return deploymentJson.Status
+			}, Config.CcClockCycleDuration(), "2s").Should(Equal(deploymentStatus{
+				Value:           "ACTIVE",
+				Reason:          "DEPLOYING",
+				HealthCheckTime: "",
+			}))
 		})
 	})
 
@@ -306,6 +295,15 @@ var _ = Describe("deployments", func() {
 		})
 
 		Context("with instance steps", func() {
+			BeforeEach(func() {
+				ScaleApp(appGUID, 4)
+				Eventually(func() int {
+					guids := GetProcessGuidsForType(appGUID, "web")
+					Expect(guids).ToNot(BeEmpty())
+					return GetRunningInstancesStats(guids[0])
+				}, Config.CfPushTimeoutDuration()).Should(Equal(4))
+			})
+
 			It("deploys an app, transitions to pause and can be continued multiple times and then deploys successfully", func() {
 				By("Pushing a canary deployment")
 				Eventually(func() string {
@@ -355,7 +353,7 @@ var _ = Describe("deployments", func() {
 
 				Eventually(func() int {
 					return GetRunningInstancesStats(canaryProcessGuid)
-				}).Should(Equal(instances))
+				}).Should(Equal(4))
 
 				counter := 0
 				Eventually(func() int {
@@ -376,6 +374,15 @@ var _ = Describe("deployments", func() {
 	})
 
 	Describe("max-in-flight deployments", func() {
+		BeforeEach(func() {
+			ScaleApp(appGUID, 4)
+			Eventually(func() int {
+				guids := GetProcessGuidsForType(appGUID, "web")
+				Expect(guids).ToNot(BeEmpty())
+				return GetRunningInstancesStats(guids[0])
+			}, Config.CfPushTimeoutDuration()).Should(Equal(4))
+		})
+
 		It("deploys an app with max_in_flight with a rolling deployment", func() {
 			By("Pushing a new rolling deployment with max in flight of 4")
 			Eventually(func() string {
@@ -398,7 +405,7 @@ var _ = Describe("deployments", func() {
 
 			Eventually(func() int {
 				return GetRunningInstancesStats(newDeploymentGuid)
-			}).Should(Equal(instances))
+			}).Should(Equal(4))
 		})
 
 		It("deploys an app with max_in_flight after a canary deployment has been continued", func() {
@@ -432,8 +439,53 @@ var _ = Describe("deployments", func() {
 
 			Eventually(func() int {
 				return GetRunningInstancesStats(newDeploymentGuid)
-			}).Should(Equal(instances))
+			}).Should(Equal(4))
 		})
+	})
+})
+
+var _ = Describe("deployment with a tight healthcheck timeout", func() {
+	var (
+		appName    string
+		appGUID    string
+		spaceGUID  string
+		spaceName  string
+		domainGUID string
+	)
+
+	BeforeEach(func() {
+		appName = random_name.BARARandomName("APP")
+		spaceName = TestSetup.RegularUserContext().Space
+		spaceGUID = GetSpaceGuidFromName(spaceName)
+		domainGUID = GetDomainGUIDFromName(Config.GetAppsDomain())
+
+		By("Creating a Catnip-backed app")
+		appGUID = CreateApp(appName, spaceGUID, `{}`)
+		_ = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().CatnipZip, Config.GetGoBuildpackName())
+
+		CreateAndMapRoute(appGUID, spaceGUID, domainGUID, appName)
+		ScaleApp(appGUID, 2)
+		StartApp(appGUID)
+
+		By("waiting until all instances are running")
+		Eventually(func() int {
+			guids := GetProcessGuidsForType(appGUID, "web")
+			Expect(guids).ToNot(BeEmpty())
+			return GetRunningInstancesStats(guids[0])
+		}, Config.CfPushTimeoutDuration()).Should(Equal(2))
+
+		SetHealthCheckTimeoutOnProcess(appGUID, "web", 5)
+	})
+
+	AfterEach(func() {
+		app_helpers.AppReport(appName)
+		DeleteApp(appGUID)
+	})
+
+	It("completes the deployment", func() {
+		deploymentGUID := CreateDeployment(appGUID, "rolling", 1)
+		Expect(deploymentGUID).ToNot(BeEmpty())
+		WaitUntilDeploymentReachesStatus(deploymentGUID, "FINALIZED", "DEPLOYED")
 	})
 })
 
