@@ -657,8 +657,6 @@ applications:
 
 		Describe("services", func() {
 			BeforeEach(func() {
-				apps = append(apps, makeApp(spaceGUID))
-
 				By("Registering a Service Broker")
 				broker = NewServiceBroker(
 					random_name.BARARandomName("BRKR"),
@@ -712,19 +710,27 @@ applications:
 				})
 			})
 		})
+	})
+})
 
-		Context("with multiple processes and custom commands in the manifest", func() {
-			It("starts all the processes", func() {
-				appName := random_name.BARARandomName("APP")
-				session := cf.Cf("create-app", appName)
-				Expect(session.Wait()).To(Exit(0))
+var _ = Describe("apply_manifest with multiple processes and custom commands", func() {
+	var spaceGUID string
 
-				session = cf.Cf("app", appName, "--guid")
-				Expect(session.Wait()).To(Exit(0))
-				appGUID := strings.TrimSpace(string(session.Out.Contents()))
+	BeforeEach(func() {
+		spaceGUID = GetSpaceGuidFromName(TestSetup.RegularUserContext().Space)
+	})
 
-				applyEndpoint = fmt.Sprintf("/v3/spaces/%s/actions/apply_manifest", spaceGUID)
-				manifestToApply := fmt.Sprintf(`
+	It("starts all the processes", func() {
+		appName := random_name.BARARandomName("APP")
+		session := cf.Cf("create-app", appName)
+		Expect(session.Wait()).To(Exit(0))
+
+		session = cf.Cf("app", appName, "--guid")
+		Expect(session.Wait()).To(Exit(0))
+		appGUID := strings.TrimSpace(string(session.Out.Contents()))
+
+		applyEndpoint := fmt.Sprintf("/v3/spaces/%s/actions/apply_manifest", spaceGUID)
+		manifestToApply := fmt.Sprintf(`
 ---
 applications:
 - name: %s
@@ -746,25 +752,23 @@ applications:
     health-check-http-endpoint: '/'
 `, appName, Config.GetRubyBuildpackName())
 
-				session = cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
-				Expect(session.Wait()).To(Exit(0))
-				response := session.Out.Contents()
-				Expect(string(response)).To(ContainSubstring("202 Accepted"))
+		session = cf.Cf("curl", applyEndpoint, "-X", "POST", "-H", "Content-Type: application/x-yaml", "-d", manifestToApply, "-i")
+		Expect(session.Wait()).To(Exit(0))
+		response := session.Out.Contents()
+		Expect(string(response)).To(ContainSubstring("202 Accepted"))
 
-				PollJob(GetJobPath(response))
+		PollJob(GetJobPath(response))
 
-				session = cf.Cf("push", appName, "-p", assets.NewAssets().Dora)
-				Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
+		session = cf.Cf("push", appName, "-p", assets.NewAssets().Dora)
+		Expect(session.Wait(Config.CfPushTimeoutDuration())).To(Exit(0))
 
-				waitForAllInstancesToStart(appGUID, 1)
+		waitForAllInstancesToStart(appGUID, 1)
 
-				session = cf.Cf("app", appName).Wait()
-				Eventually(session).Should(Say(`type:\s+logs`))
-				Eventually(session).Should(Say(`sidecars:`))
-				Eventually(session).Should(Say(`instances:\s+1/1`))
+		session = cf.Cf("app", appName).Wait()
+		Eventually(session).Should(Say(`type:\s+logs`))
+		Eventually(session).Should(Say(`sidecars:`))
+		Eventually(session).Should(Say(`instances:\s+1/1`))
 
-				DeleteApp(appGUID)
-			})
-		})
+		DeleteApp(appGUID)
 	})
 })
