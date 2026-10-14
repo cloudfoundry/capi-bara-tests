@@ -3,22 +3,13 @@ package app_helpers
 import (
 	"fmt"
 	"strings"
-        "time"
+	"time"
 
 	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
 )
-
-func GetAppGuid(appName string) string {
-	cfApp := cf.Cf("app", appName, "--guid")
-	Eventually(cfApp).Should(Exit(0))
-
-	appGuid := strings.TrimSpace(string(cfApp.Out.Contents()))
-	Expect(appGuid).NotTo(Equal(""))
-	return appGuid
-}
 
 func printStartAppReport(appName string) {
 	printAppReportBanner(fmt.Sprintf("***** APP REPORT: %s *****", appName))
@@ -40,7 +31,6 @@ func AppReport(appName string) {
 
 	printEndAppReport(appName)
 }
-
 
 func printAppReportBanner(announcement string) {
 	startColor, endColor := getColor()
