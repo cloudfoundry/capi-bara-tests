@@ -38,7 +38,6 @@ var _ = Describe("sidecars", func() {
 
 		By("Creating an app")
 		appGUID = CreateApp(appName, spaceGUID, `{"WHAT_AM_I":"MOTORCYCLE"}`)
-		_ = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().DoraZip, Config.GetRubyBuildpackName())
 	})
 
 	AfterEach(func() {
@@ -48,6 +47,8 @@ var _ = Describe("sidecars", func() {
 
 	Context("when the app has a sidecar associated with its web process", func() {
 		BeforeEach(func() {
+			_ = CreateAndAssociateNewDroplet(appGUID, assets.NewAssets().DoraZip, Config.GetRubyBuildpackName())
+
 			CreateSidecar("my_sidecar1", []string{"web"}, fmt.Sprintf("WHAT_AM_I=LEFT_SIDECAR bundle exec rackup config.ru -o 0.0.0.0 -p %d", 8081), 50, appGUID)
 			CreateSidecar("my_sidecar2", []string{"web"}, fmt.Sprintf("WHAT_AM_I=RIGHT_SIDECAR bundle exec rackup config.ru -o 0.0.0.0 -p %d", 8082), 100, appGUID)
 
@@ -135,24 +136,26 @@ var _ = Describe("sidecars", func() {
 				Eventually(session).Should(Say("502"))
 				Eventually(session).Should(Exit(0))
 
+				// Diego's crash-recovery cycle can exceed the default Eventually budget
+				// under parallel CI runs; CfPushTimeout matches what cf push allows.
 				By("Polling the app and sidecar for 404s")
 				Eventually(func() *Session {
 					session := helpers.Curl(Config, fmt.Sprintf("%s.%s", appRoutePrefix, Config.GetAppsDomain()))
 					Eventually(session).Should(Exit(0))
 					return session
-				}, Config.DefaultTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
+				}, Config.CfPushTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
 				Eventually(func() *Session {
 					session := helpers.Curl(Config, fmt.Sprintf("%s.%s", sidecarRoutePrefix2, Config.GetAppsDomain()))
 					Eventually(session).Should(Exit(0))
 					return session
-				}, Config.DefaultTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
+				}, Config.CfPushTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
 
 				By("Polling for the app to be restarted by Diego")
 				Eventually(func() *Session {
 					session := helpers.Curl(Config, fmt.Sprintf("%s.%s", appRoutePrefix, Config.GetAppsDomain()))
 					Eventually(session).Should(Exit(0))
 					return session
-				}, Config.DefaultTimeoutDuration()).Should(Say("Hi, I'm Dora!"))
+				}, Config.CfPushTimeoutDuration()).Should(Say("Hi, I'm Dora!"))
 			})
 		})
 
@@ -175,25 +178,25 @@ var _ = Describe("sidecars", func() {
 					session := helpers.Curl(Config, fmt.Sprintf("%s.%s", sidecarRoutePrefix1, Config.GetAppsDomain()))
 					Eventually(session).Should(Exit(0))
 					return session
-				}, Config.DefaultTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
+				}, Config.CfPushTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
 				Eventually(func() *Session {
 					session := helpers.Curl(Config, fmt.Sprintf("%s.%s", sidecarRoutePrefix2, Config.GetAppsDomain()))
 					Eventually(session).Should(Exit(0))
 					return session
-				}, Config.DefaultTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
+				}, Config.CfPushTimeoutDuration()).Should(Say("404 Not Found: Requested route"))
 
 				By("Polling for the sidecars to be restarted by Diego")
 				Eventually(func() *Session {
 					session := helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix1, Config.GetAppsDomain()))
 					Eventually(session).Should(Exit(0))
 					return session
-				}, Config.DefaultTimeoutDuration()).Should(Say("LEFT_SIDECAR"))
+				}, Config.CfPushTimeoutDuration()).Should(Say("LEFT_SIDECAR"))
 
 				Eventually(func() *Session {
 					session := helpers.Curl(Config, fmt.Sprintf("%s.%s/env/WHAT_AM_I", sidecarRoutePrefix2, Config.GetAppsDomain()))
 					Eventually(session).Should(Exit(0))
 					return session
-				}, Config.DefaultTimeoutDuration()).Should(Say("RIGHT_SIDECAR"))
+				}, Config.CfPushTimeoutDuration()).Should(Say("RIGHT_SIDECAR"))
 			})
 		})
 	})

@@ -8,10 +8,12 @@ results
 /logs
 assets/*/.bundle
 assets/catnip/bin
+assets/bad-dora.zip
+assets/catnip.zip
 assets/dora.zip
+assets/python-without-procfile.zip
+assets/sleepy-sidecar-buildpack.zip
 assets/staticfile.zip
-assets/credhub-enabled-app/build
-assets/credhub-enabled-app/.gradle
 bin/ginkgo
 /vendor/
 *~
