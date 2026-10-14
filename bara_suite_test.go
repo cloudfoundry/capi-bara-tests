@@ -88,9 +88,7 @@ func TestBARA(t *testing.T) {
 		}
 
 		return []byte{}
-	}, func([]byte) {})
-
-	BeforeEach(func() {
+	}, func([]byte) {
 		SetDefaultEventuallyTimeout(Config.DefaultTimeoutDuration())
 		SetDefaultEventuallyPollingInterval(1 * time.Second)
 
@@ -102,13 +100,15 @@ func TestBARA(t *testing.T) {
 		TestSetup.Setup()
 	})
 
-	AfterEach(func() {
+	BeforeEach(func() {
+		TestSetup.RegularUserContext().TargetSpace()
+	})
+
+	SynchronizedAfterSuite(func() {
 		if TestSetup != nil {
 			TestSetup.Teardown()
 		}
-	})
-
-	SynchronizedAfterSuite(func() {}, func() {
+	}, func() {
 		os.Remove(assets.NewAssets().DoraZip)
 		os.Remove(assets.NewAssets().BadDoraZip)
 		os.Remove(assets.NewAssets().StaticfileZip)
