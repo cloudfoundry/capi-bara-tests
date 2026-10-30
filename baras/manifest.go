@@ -46,6 +46,23 @@ func makeApp(spaceGUID string) app {
 	return newApp
 }
 
+func getAppStack(appGUID string) string {
+	var appResource struct {
+		Lifecycle struct {
+			Data struct {
+				Stack string `json:"stack"`
+			} `json:"data"`
+		} `json:"lifecycle"`
+	}
+
+	session := cf.Cf("curl", "-f", fmt.Sprintf("/v3/apps/%s", appGUID)).Wait()
+	Expect(session).To(Exit(0))
+	Expect(json.Unmarshal(session.Out.Contents(), &appResource)).To(Succeed())
+	Expect(appResource.Lifecycle.Data.Stack).NotTo(BeEmpty())
+
+	return appResource.Lifecycle.Data.Stack
+}
+
 type app struct {
 	guid        string
 	name        string
@@ -146,6 +163,7 @@ applications:
 
 		Context("when routes are specified", func() {
 			BeforeEach(func() {
+				stack := getAppStack(apps[0].guid)
 				manifestToApply = fmt.Sprintf(`
 applications:
 - name: "%s"
@@ -192,7 +210,7 @@ applications:
     annotations:
       contact: "jack@example.com diane@example.org"
       cougar: mellencamp
-  stack: cflinuxfs4
+  stack: %s
   processes:
   - disk_quota: 1024M
     health-check-http-endpoint: /env
@@ -210,7 +228,7 @@ applications:
     memory: 256M
     readiness-health-check-type: process
     type: worker
-`, apps[0].name, Config.GetRubyBuildpackName(), apps[0].route)
+`, apps[0].name, Config.GetRubyBuildpackName(), apps[0].route, stack)
 			})
 
 			It("successfully completes the job", func() {
