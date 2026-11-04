@@ -88,7 +88,10 @@ func TestBARA(t *testing.T) {
 		}
 
 		return []byte{}
-	}, func([]byte) {})
+	}, func([]byte) {
+		SetDefaultEventuallyTimeout(Config.DefaultTimeoutDuration())
+		SetDefaultEventuallyPollingInterval(1 * time.Second)
+	})
 
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(Config.DefaultTimeoutDuration())
