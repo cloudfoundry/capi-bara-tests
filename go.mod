@@ -5,7 +5,7 @@ go 1.26.8
 require (
 	github.com/cloudfoundry/cf-test-helpers/v2 v2.15.0
 	github.com/mholt/archiver v3.1.1+incompatible
-	github.com/onsi/ginkgo/v2 v2.33.1
+	github.com/onsi/ginkgo/v2 v2.34.0
 	github.com/onsi/gomega v1.44.0
 )
 
